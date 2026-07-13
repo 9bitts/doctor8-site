@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Activity, Loader2 } from "lucide-react";
 import PatientMonitoringCards from "@/components/admin/patients/PatientMonitoringCards";
 import PatientAlertsPanel from "@/components/admin/patients/PatientAlertsPanel";
@@ -15,7 +15,7 @@ import PatientConsultationsExportBar from "@/components/admin/patients/PatientCo
 import LastUpdatedIndicator from "@/components/admin/patients/LastUpdatedIndicator";
 
 const POLL_MS = 12000;
-const STORAGE_KEY = "admin-patients-queue-alert-min";
+const STORAGE_KEY = "admin-hum-patients-queue-alert-min";
 
 interface ListResponse {
   patients: MonitoringListRow[];
@@ -57,30 +57,16 @@ function loadStoredAlertMinutes(): number {
   return 30;
 }
 
-export default function PatientsAdminClient() {
-  const [attentionItems, setAttentionItems] = useState<
-    { appointmentId: string; patientProfileId: string; patientFirstName: string; professionalName: string; scheduledAt: string; reason: string }[]
-  >([]);
-
-  const loadAttention = useCallback(async () => {
-    try {
-      const res = await fetch("/api/admin/patients/attention");
-      if (res.ok) {
-        const data = await res.json();
-        setAttentionItems(data.items ?? []);
-      }
-    } catch { /* ignore */ }
-  }, []);
-
-  useEffect(() => {
-    void loadAttention();
-  }, [loadAttention]);
-
-  const [filters, setFilters] = useState<PatientFiltersState>({
+export default function PatientsHumanitarianAdminClient() {
+  const defaultFilters = useMemo<PatientFiltersState>(() => ({
     ...DEFAULT_FILTERS,
     queueAlertMinutes: 30,
-  });
-  const [appliedFilters, setAppliedFilters] = useState<PatientFiltersState>(filters);
+    origin: "humanitarian",
+    acquisitionChannel: "DOCTOR8_HUMANITARIAN",
+  }), []);
+
+  const [filters, setFilters] = useState<PatientFiltersState>(defaultFilters);
+  const [appliedFilters, setAppliedFilters] = useState<PatientFiltersState>(defaultFilters);
   const [data, setData] = useState<ListResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [countries, setCountries] = useState<string[]>([]);
@@ -88,14 +74,14 @@ export default function PatientsAdminClient() {
 
   useEffect(() => {
     const stored = loadStoredAlertMinutes();
-    setFilters((f) => ({ ...f, queueAlertMinutes: stored }));
-    setAppliedFilters((f) => ({ ...f, queueAlertMinutes: stored }));
+    setFilters((f) => ({ ...f, queueAlertMinutes: stored, origin: "humanitarian" }));
+    setAppliedFilters((f) => ({ ...f, queueAlertMinutes: stored, origin: "humanitarian" }));
   }, []);
 
   const fetchData = useCallback(async (f: PatientFiltersState, silent = false) => {
     if (!silent) setLoading(true);
     try {
-      const qs = filtersToQuery(f);
+      const qs = filtersToQuery({ ...f, origin: "humanitarian", acquisitionChannel: "DOCTOR8_HUMANITARIAN" });
       const res = await fetch(`/api/admin/patients?${qs}`);
       const json = await res.json();
       if (res.ok) {
@@ -122,11 +108,11 @@ export default function PatientsAdminClient() {
     try {
       localStorage.setItem(STORAGE_KEY, String(filters.queueAlertMinutes));
     } catch { /* ignore */ }
-    setAppliedFilters({ ...filters });
+    setAppliedFilters({ ...filters, origin: "humanitarian", acquisitionChannel: "DOCTOR8_HUMANITARIAN" });
   }
 
   function filterPendingAcura() {
-    // Acura integration retired — keep UI stable but do nothing.
+    // This screen is post-ACURA; keep action as no-op.
   }
 
   return (
@@ -134,11 +120,11 @@ export default function PatientsAdminClient() {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-            <Activity size={24} className="text-brand-500" />
-            Monitoramento de pacientes
+            <Activity size={24} className="text-rose-500" />
+            Pacientes humanitários
           </h1>
           <p className="text-slate-500 mt-1 text-sm">
-            Acompanhamento em tempo real do atendimento humanitário e regular
+            Lista e monitoramento do atendimento humanitário (cadastro interno Doctor8)
           </p>
         </div>
         <LastUpdatedIndicator
@@ -149,7 +135,7 @@ export default function PatientsAdminClient() {
 
       {data ? (
         <PatientMonitoringCards
-          counters={data.counters}
+          counters={{ ...data.counters, pendingAcuraRegistration: 0 }}
           onFilterPendingAcura={filterPendingAcura}
         />
       ) : (
@@ -160,28 +146,13 @@ export default function PatientsAdminClient() {
 
       <PatientAlertsPanel alerts={data?.alerts ?? []} />
 
-      {attentionItems.length > 0 && (
-        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 space-y-2">
-          <p className="text-sm font-semibold text-amber-900">Atencao — voluntario agendado</p>
-          <ul className="space-y-1 text-xs text-amber-800">
-            {attentionItems.slice(0, 8).map((item) => (
-              <li key={item.appointmentId}>
-                {item.patientFirstName} · {item.professionalName} ·{" "}
-                {new Date(item.scheduledAt).toLocaleString("pt-BR")} ·{" "}
-                {item.reason === "approval_revoked" ? "aprovacao revogada" : "selo Acura inativo"}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
       <PatientConsultationsExportBar />
 
       <PatientFiltersBar
         filters={filters}
         countries={countries}
         specialties={specialties}
-        onChange={setFilters}
+        onChange={(next) => setFilters({ ...next, origin: "humanitarian", acquisitionChannel: "DOCTOR8_HUMANITARIAN" })}
         onApply={applyFilters}
       />
 
@@ -195,3 +166,4 @@ export default function PatientsAdminClient() {
     </div>
   );
 }
+

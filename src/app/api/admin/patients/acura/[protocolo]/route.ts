@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getPatientAdminSession } from "@/lib/admin";
+import { getAdminSession } from "@/lib/admin";
 import {
   getDefaultQueueAlertMinutes,
   loadUnlinkedIntakeDetail,
@@ -11,7 +11,7 @@ export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ protocolo: string }> },
 ) {
-  const session = await getPatientAdminSession();
+  const session = await getAdminSession();
   if (!session) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const { protocolo } = await params;

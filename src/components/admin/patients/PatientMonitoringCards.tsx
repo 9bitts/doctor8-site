@@ -20,7 +20,7 @@ export default function PatientMonitoringCards({
   const cards = [
     { label: "Total de pacientes", value: counters.total, accent: "text-slate-800" },
     {
-      label: "ACURA sem cadastro D8",
+      label: "Sem cadastro completo",
       value: counters.pendingAcuraRegistration,
       accent: "text-amber-600",
       onClick: onFilterPendingAcura,

@@ -287,6 +287,7 @@ export default function AngelFollowUpClient() {
   const locale = localeOf(lang);
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState<string>("LOADING");
+  const [rejectionReason, setRejectionReason] = useState<string | null>(null);
   const [myPatients, setMyPatients] = useState<MyPatientRow[]>([]);
   const [available, setAvailable] = useState<AvailableRow[]>([]);
   const [pendencies, setPendencies] = useState<PendencyRow[]>([]);
@@ -349,6 +350,7 @@ export default function AngelFollowUpClient() {
       }
       const data = await res.json();
       setStatus(data.status || "UNKNOWN");
+      setRejectionReason(data?.profile?.rejectionReason ?? null);
       setMyPatients(data.myPatients || []);
       setAvailable(data.available || []);
       setPendencies(data.pendencies || []);
@@ -420,6 +422,9 @@ export default function AngelFollowUpClient() {
           setError(tParams(t, "angel.portal.limitReached", { max: maxPatients }));
         } else if (data.errorCode === "ALREADY_ASSIGNED") {
           setError(t("angel.portal.alreadyAssigned"));
+        } else if (data.errorCode === "TRAINING_REQUIRED") {
+          const n = Array.isArray(data.requiredCourseIds) ? data.requiredCourseIds.length : 0;
+          setError(tParams(t, "angel.portal.trainingRequired", { n }));
         } else {
           setError(t("angel.portal.claimError"));
         }
@@ -537,6 +542,14 @@ export default function AngelFollowUpClient() {
         <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
         <h1 className="text-xl font-bold text-slate-900 mb-2">{t("angel.portal.rejectedTitle")}</h1>
         <p className="text-slate-500 text-sm">{t("angel.portal.rejectedDesc")}</p>
+        {rejectionReason && (
+          <div className="mt-5 text-left bg-slate-50 border border-slate-200 rounded-xl p-4">
+            <p className="text-xs font-semibold text-slate-700 mb-1">
+              {t("angel.portal.rejectedReasonTitle")}
+            </p>
+            <p className="text-sm text-slate-600 whitespace-pre-wrap">{rejectionReason}</p>
+          </div>
+        )}
       </div>
     );
   }

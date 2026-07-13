@@ -34,6 +34,40 @@ const PASSWORD_RULES = [
 
 const LANG_OPTIONS = ["pt", "en", "es"] as const;
 
+type AngelTrack =
+  | "ESCUTA"
+  | "CAMPO"
+  | "ENTREGAS"
+  | "PROFISSIONAL"
+  | "INTERPRETE"
+  | "RETAGUARDA"
+  | "EDUCADOR"
+  | "EMBAIXADOR";
+
+const TRACK_OPTIONS: { id: AngelTrack; labelKey: string; descKey: string }[] = [
+  { id: "ESCUTA", labelKey: "angel.track.ESCUTA", descKey: "angel.track.ESCUTA.desc" },
+  { id: "CAMPO", labelKey: "angel.track.CAMPO", descKey: "angel.track.CAMPO.desc" },
+  { id: "ENTREGAS", labelKey: "angel.track.ENTREGAS", descKey: "angel.track.ENTREGAS.desc" },
+  { id: "PROFISSIONAL", labelKey: "angel.track.PROFISSIONAL", descKey: "angel.track.PROFISSIONAL.desc" },
+  { id: "INTERPRETE", labelKey: "angel.track.INTERPRETE", descKey: "angel.track.INTERPRETE.desc" },
+  { id: "RETAGUARDA", labelKey: "angel.track.RETAGUARDA", descKey: "angel.track.RETAGUARDA.desc" },
+  { id: "EDUCADOR", labelKey: "angel.track.EDUCADOR", descKey: "angel.track.EDUCADOR.desc" },
+  { id: "EMBAIXADOR", labelKey: "angel.track.EMBAIXADOR", descKey: "angel.track.EMBAIXADOR.desc" },
+];
+
+const DEFAULT_SKILLS = [
+  "direito",
+  "contabilidade",
+  "design",
+  "tecnologia",
+  "marketing",
+  "educacao",
+  "cozinha",
+  "transporte",
+  "organizacao",
+  "idiomas",
+] as const;
+
 export default function RegisterAngelPage() {
   const router = useRouter();
   const [lang, setLang] = useState<Lang>("pt");
@@ -49,6 +83,12 @@ export default function RegisterAngelPage() {
   });
   const [profession, setProfession] = useState("");
   const [volunteerHelp, setVolunteerHelp] = useState("");
+  const [tracks, setTracks] = useState<AngelTrack[]>(["ESCUTA"]);
+  const [skills, setSkills] = useState<string[]>([]);
+  const [customSkill, setCustomSkill] = useState("");
+  const [city, setCity] = useState("");
+  const [hasVehicle, setHasVehicle] = useState(false);
+  const [availabilityNote, setAvailabilityNote] = useState("");
   const [idDocument, setIdDocument] = useState<File | null>(null);
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -89,6 +129,11 @@ export default function RegisterAngelPage() {
   const isPasswordValid = passwordStrength === PASSWORD_RULES.length;
   const isPhoneValid = validateRegistrationPhone(phone.ddi, phone.nationalNumber).ok;
 
+  const requiresVehicle = tracks.includes("ENTREGAS") || tracks.includes("CAMPO");
+  const needsIdDocument = tracks.some((tId) =>
+    ["ESCUTA", "INTERPRETE", "CAMPO", "ENTREGAS", "PROFISSIONAL", "RETAGUARDA"].includes(tId),
+  );
+
   function handleRegionChange(next: Region) {
     setRegion(next);
     setPhone((prev) => ({ ...prev, ddi: defaultDdiForRegion(next) }));
@@ -100,7 +145,9 @@ export default function RegisterAngelPage() {
     languages.length > 0 &&
     isPhoneValid &&
     profession.trim().length > 0 &&
-    volunteerHelp.trim().length > 0;
+    volunteerHelp.trim().length > 0 &&
+    tracks.length > 0 &&
+    (!needsIdDocument || Boolean(idDocument));
 
   const missingFields: string[] = [];
   if (!isPhoneValid) missingFields.push(t("angel.register.missing.phone"));
@@ -109,15 +156,37 @@ export default function RegisterAngelPage() {
   if (!volunteerHelp.trim()) missingFields.push(t("angel.register.missing.volunteerHelp"));
   if (!acceptedTerms || !acceptedPrivacy) missingFields.push(t("angel.register.missing.terms"));
   if (languages.length === 0) missingFields.push(t("angel.register.missing.languages"));
+  if (tracks.length === 0) missingFields.push(t("angel.register.missing.tracks"));
+  if (needsIdDocument && !idDocument) missingFields.push(t("angel.register.missing.idDocument"));
 
   const loginHref = buildAuthHref(ANGEL_LOGIN, {
-    callbackUrl: "/humanitarian/angel",
+    callbackUrl: "/admin/angel",
   });
 
   function toggleLanguage(code: string) {
     setLanguages((prev) =>
       prev.includes(code) ? prev.filter((l) => l !== code) : [...prev, code],
     );
+  }
+
+  function toggleTrack(trackId: AngelTrack) {
+    setTracks((prev) =>
+      prev.includes(trackId) ? prev.filter((tId) => tId !== trackId) : [...prev, trackId],
+    );
+  }
+
+  function toggleSkill(skillId: string) {
+    setSkills((prev) =>
+      prev.includes(skillId) ? prev.filter((s) => s !== skillId) : [...prev, skillId],
+    );
+  }
+
+  function addCustomSkill() {
+    const raw = customSkill.trim();
+    if (!raw) return;
+    const normalized = raw.toLowerCase().slice(0, 40);
+    setSkills((prev) => (prev.includes(normalized) ? prev : [...prev, normalized]));
+    setCustomSkill("");
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -138,6 +207,11 @@ export default function RegisterAngelPage() {
       form.append("profession", profession.trim());
       form.append("volunteerHelp", volunteerHelp.trim());
       form.append("languages", JSON.stringify(languages));
+      form.append("tracks", JSON.stringify(tracks));
+      form.append("skills", JSON.stringify(skills));
+      if (city.trim()) form.append("city", city.trim());
+      form.append("hasVehicle", String(requiresVehicle ? hasVehicle : false));
+      if (availabilityNote.trim()) form.append("availabilityNote", availabilityNote.trim());
       if (motivation) form.append("motivation", motivation);
       form.append("campaignSlug", campaignSlug);
       form.append("language", lang);
@@ -158,7 +232,7 @@ export default function RegisterAngelPage() {
         buildRegisterSuccessHref({
           role: "ANGEL",
           email,
-          callbackUrl: "/humanitarian/angel",
+          callbackUrl: "/admin/angel",
           emailSent: data.emailSent !== false,
         }),
       );
@@ -249,6 +323,124 @@ export default function RegisterAngelPage() {
             </div>
 
             <div>
+              <label className="block text-sm font-medium text-slate-300 mb-2">
+                {t("angel.register.tracks")}
+              </label>
+              <div className="space-y-2">
+                {TRACK_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    onClick={() => toggleTrack(opt.id)}
+                    className={`w-full text-left p-3 rounded-xl border transition ${
+                      tracks.includes(opt.id)
+                        ? "border-rose-400 bg-rose-500/10"
+                        : "border-white/10 bg-white/5 hover:border-rose-500/40"
+                    }`}
+                  >
+                    <p className={`text-sm font-semibold ${tracks.includes(opt.id) ? "text-white" : "text-slate-200"}`}>
+                      {t(opt.labelKey)}
+                    </p>
+                    <p className="text-xs text-slate-400 mt-1">{t(opt.descKey)}</p>
+                  </button>
+                ))}
+              </div>
+              {errors.tracks && <p className="text-red-400 text-xs mt-1">{errors.tracks[0]}</p>}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">
+                  {t("angel.register.city")}
+                </label>
+                <input
+                  type="text"
+                  value={city}
+                  onChange={(e) => setCity(e.target.value)}
+                  placeholder={t("angel.register.cityPlaceholder")}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-rose-500/50"
+                />
+              </div>
+              <div className="flex items-end">
+                <label className={`flex items-start gap-3 cursor-pointer w-full p-3 rounded-xl border ${
+                  requiresVehicle ? "border-white/10 bg-white/5" : "border-white/5 bg-white/5 opacity-60"
+                }`}>
+                  <input
+                    type="checkbox"
+                    checked={hasVehicle}
+                    disabled={!requiresVehicle}
+                    onChange={(e) => setHasVehicle(e.target.checked)}
+                    className="mt-1"
+                  />
+                  <span className="text-sm text-slate-200">
+                    {t("angel.register.hasVehicle")}
+                    {!requiresVehicle && (
+                      <span className="block text-xs text-slate-500 mt-0.5">
+                        {t("angel.register.hasVehicleHint")}
+                      </span>
+                    )}
+                  </span>
+                </label>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-2">
+                {t("angel.register.skills")}
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {DEFAULT_SKILLS.map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => toggleSkill(s)}
+                    className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition ${
+                      skills.includes(s)
+                        ? "bg-rose-500 border-rose-500 text-white"
+                        : "border-white/20 text-slate-400 hover:border-rose-400"
+                    }`}
+                  >
+                    {t(`angel.skill.${s}`)}
+                  </button>
+                ))}
+              </div>
+              <div className="flex gap-2 mt-3">
+                <input
+                  type="text"
+                  value={customSkill}
+                  onChange={(e) => setCustomSkill(e.target.value)}
+                  placeholder={t("angel.register.skillsOtherPlaceholder")}
+                  className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-rose-500/50"
+                />
+                <button
+                  type="button"
+                  onClick={addCustomSkill}
+                  className="px-4 py-3 rounded-xl bg-white/10 hover:bg-white/15 text-white text-sm font-semibold"
+                >
+                  {t("angel.register.skillsAdd")}
+                </button>
+              </div>
+              {skills.length > 0 && (
+                <p className="text-xs text-slate-500 mt-2">
+                  {t("angel.register.skillsSelected")} {skills.join(", ")}
+                </p>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-2">
+                {t("angel.register.availability")}
+              </label>
+              <textarea
+                value={availabilityNote}
+                onChange={(e) => setAvailabilityNote(e.target.value)}
+                rows={2}
+                placeholder={t("angel.register.availabilityPlaceholder")}
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white resize-none focus:outline-none focus:ring-2 focus:ring-rose-500/50"
+              />
+            </div>
+
+            <div>
               <label className="block text-sm font-medium text-slate-300 mb-2">{t("angel.register.idDocument")}</label>
               <input
                 type="file"
@@ -256,7 +448,9 @@ export default function RegisterAngelPage() {
                 onChange={(e) => setIdDocument(e.target.files?.[0] ?? null)}
                 className="w-full text-sm text-slate-300 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-rose-500/20 file:text-rose-200 file:font-medium"
               />
-              <p className="text-xs text-slate-500 mt-1">{t("angel.register.idDocumentHint")}</p>
+              <p className="text-xs text-slate-500 mt-1">
+                {needsIdDocument ? t("angel.register.idDocumentRequiredHint") : t("angel.register.idDocumentHint")}
+              </p>
               {errors.idDocument && <p className="text-red-400 text-xs mt-1">{errors.idDocument[0]}</p>}
             </div>
 

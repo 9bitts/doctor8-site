@@ -26,7 +26,7 @@ const PORTAL_LABELS: Record<PlatformPortalId, string> = {
   LABORATORY: "Laboratory B2B portal (/laboratorios/painel)",
   PHARMACY_NETWORK_PHARMACIST: "Pharmacist network portal (/farmacias/farmaceutico/painel)",
   ADMIN: "Admin portal (/admin ? ADMIN role only)",
-  ANGEL: "Angel volunteer portal (/admin/patients, /admin/angel ? ANGEL role)",
+  ANGEL: "Angel volunteer portal (/admin/angel ? ANGEL role)",
 };
 
 export function buildGeneratedNavKnowledge(): string {

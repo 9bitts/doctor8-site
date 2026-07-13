@@ -111,7 +111,7 @@ test.describe.serial("humanitarian queue flow", () => {
   test("called queue patient can fetch humanitarian video session", async ({ page }) => {
     const patientCreds = e2eQueuePatientCredentials()!;
     await loginWithCredentials(page, patientCreds.email, patientCreds.password);
-    await waitForAuthenticatedSession(page, creds.email);
+    await waitForAuthenticatedSession(page, patientCreds.email);
 
     let entryId: string | undefined;
     let status: string | undefined;

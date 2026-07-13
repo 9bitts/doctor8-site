@@ -1,6 +1,6 @@
 // ADMIN ONLY ? patient monitoring detail.
 import { NextRequest, NextResponse } from "next/server";
-import { getPatientAdminSession } from "@/lib/admin";
+import { getAdminSession } from "@/lib/admin";
 import {
   getDefaultQueueAlertMinutes,
   loadPatientDetail,
@@ -12,7 +12,7 @@ export async function GET(
   req: NextRequest,
   { params }: { params: { id: string } },
 ) {
-  const session = await getPatientAdminSession();
+  const session = await getAdminSession();
   if (!session) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const sp = new URL(req.url).searchParams;

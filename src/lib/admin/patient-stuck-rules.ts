@@ -1,6 +1,5 @@
-import type { PatientAcquisitionChannel, PartnerIntakeStatus } from "@prisma/client";
+import type { PatientAcquisitionChannel } from "@prisma/client";
 import type { AdminJourneyStepKey, IntakeJourneySnapshot, PartnerIntakeJourneySnapshot } from "@/lib/admin/patient-journey";
-import { isAcuraTriageComplete } from "@/lib/partner/acura-intake";
 
 export type StuckAlertSeverity = "warning" | "critical";
 
@@ -31,10 +30,6 @@ function mapPriority(raw: string | null | undefined): StuckRuleInput["priority"]
   if (p.includes("alta") || p.includes("urgent")) return "alta";
   if (p) return "regular";
   return null;
-}
-
-function acuraStatusIsNova(status: PartnerIntakeStatus): boolean {
-  return status === "NOVA";
 }
 
 function hoursSince(from: Date, now: Date): number {
@@ -69,102 +64,8 @@ export function computeDoctor8StuckAlerts(input: StuckRuleInput): StuckAlert[] {
   const isHumanitarian =
     input.acquisitionChannel !== "REGULAR" || intake !== null || partnerIntake !== null;
 
-  if (partnerIntake) {
-    if (
-      !hasPatientAccount &&
-      hoursSince(partnerIntake.submittedAt, now) >= 0.5
-    ) {
-      pushAlert(alerts, {
-        rule: "ACURA_FORM_NO_D8",
-        severity:
-          hoursSince(partnerIntake.submittedAt, now) >= 6 ? "critical" : "warning",
-        message: "Preencheu formulário ACURA mas ainda não fez cadastro na Doctor8",
-        since: partnerIntake.submittedAt.toISOString(),
-        step: "d8_register",
-      });
-    }
-
-    if (
-      !hasPatientAccount &&
-      partnerIntake.clickedDoctor8LoginAt &&
-      !partnerIntake.clickedDoctor8RegisterAt
-    ) {
-      pushAlert(alerts, {
-        rule: "ACURA_CLICKED_LOGIN_NO_REGISTER",
-        severity:
-          hoursSince(partnerIntake.clickedDoctor8LoginAt, now) >= 12
-            ? "critical"
-            : "warning",
-        message: "Clicou login Doctor8 mas não concluiu cadastro",
-        since: partnerIntake.clickedDoctor8LoginAt.toISOString(),
-        step: "d8_register",
-      });
-    }
-
-    if (
-      !hasPatientAccount &&
-      partnerIntake.clickedDoctor8RegisterAt &&
-      hoursSince(partnerIntake.clickedDoctor8RegisterAt, now) >= 2
-    ) {
-      pushAlert(alerts, {
-        rule: "ACURA_CLICKED_REGISTER_NO_ACCOUNT",
-        severity:
-          hoursSince(partnerIntake.clickedDoctor8RegisterAt, now) >= 12
-            ? "critical"
-            : "warning",
-        message: "Clicou cadastro Doctor8 mas não concluiu",
-        since: partnerIntake.clickedDoctor8RegisterAt.toISOString(),
-        step: "d8_register",
-      });
-    }
-
-    if (
-      acuraStatusIsNova(partnerIntake.acuraStatus) &&
-      hoursSince(partnerIntake.submittedAt, now) >= (priority === "emergencia" ? 0.5 : 2)
-    ) {
-      pushAlert(alerts, {
-        rule: priority === "emergencia" ? "ACURA_NO_TRIAGE_CRITICAL" : "ACURA_NO_TRIAGE",
-        severity:
-          priority === "emergencia" || hoursSince(partnerIntake.submittedAt, now) >= 6
-            ? "critical"
-            : "warning",
-        message:
-          priority === "emergencia"
-            ? "Emergência ACURA sem triagem"
-            : "Formulário ACURA aguardando triagem",
-        since: partnerIntake.submittedAt.toISOString(),
-        step: "acura_triage",
-      });
-    }
-
-    if (
-      partnerIntake.acuraStatus === "ORIENTADO_DOCTOR8" &&
-      !hasPatientAccount &&
-      hoursSince(partnerIntake.submittedAt, now) >= (priority === "emergencia" ? 2 : 12)
-    ) {
-      pushAlert(alerts, {
-        rule: "ACURA_ORIENTED_NO_D8",
-        severity: hoursSince(partnerIntake.submittedAt, now) >= 24 ? "critical" : "warning",
-        message: "Orientado no Doctor8 (ACURA) mas sem conta criada",
-        since: partnerIntake.submittedAt.toISOString(),
-        step: "d8_register",
-      });
-    }
-
-    if (
-      isAcuraTriageComplete(partnerIntake.acuraStatus) &&
-      !hasPatientAccount &&
-      hoursSince(partnerIntake.submittedAt, now) >= (priority === "emergencia" ? 1 : 6)
-    ) {
-      pushAlert(alerts, {
-        rule: "ACURA_CLICK_NO_REGISTER",
-        severity: hoursSince(partnerIntake.submittedAt, now) >= 12 ? "critical" : "warning",
-        message: "Triagem ACURA concluída — paciente ainda sem cadastro Doctor8",
-        since: partnerIntake.submittedAt.toISOString(),
-        step: "d8_register",
-      });
-    }
-  }
+  // Acura partner intake flow retired; keep partnerIntake param for backwards compatibility,
+  // but do not emit ACURA-derived alerts.
 
   if (!isHumanitarian) return alerts;
 

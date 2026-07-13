@@ -9,6 +9,7 @@ import {
   MAX_PATIENTS_PER_ANGEL,
   resolveAngelAccess,
 } from "@/lib/humanitarian/angel";
+import { hasCompletedTrackTraining } from "@/lib/humanitarian/angel-training";
 
 export async function POST(
   req: NextRequest,
@@ -31,6 +32,18 @@ export async function POST(
   const access = await resolveAngelAccess(session.user.id, campaignSlug);
   if (!access.ok) {
     return NextResponse.json({ errorCode: access.reason, error: access.reason }, { status: 403 });
+  }
+
+  const training = await hasCompletedTrackTraining({ userId: session.user.id, track: "ESCUTA" });
+  if (!training.ok) {
+    return NextResponse.json(
+      {
+        errorCode: "TRAINING_REQUIRED",
+        error: "TRAINING_REQUIRED",
+        requiredCourseIds: training.requiredCourseIds,
+      },
+      { status: 403 },
+    );
   }
 
   const result = await claimAngelPatient(access.campaignId, session.user.id, patientUserId);

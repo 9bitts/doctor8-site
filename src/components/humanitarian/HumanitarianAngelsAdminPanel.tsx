@@ -21,6 +21,9 @@ interface AngelRow {
   motivation: string | null;
   preferredCampaignSlug: string | null;
   approvalStatus: string;
+  screeningStatus?: string;
+  screeningReviewedAt?: string | null;
+  trackEnrollments?: { track: string; status: string; approvedAt: string | null }[];
   licenseDocCount: number;
   enrollmentActive: boolean;
   createdAt: string;
@@ -127,6 +130,41 @@ export default function HumanitarianAngelsAdminPanel() {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId, action }),
+      });
+      await load();
+    } catch { /* ignore */ }
+    setActing(null);
+  }
+
+  async function actTrack(
+    userId: string,
+    track: string,
+    action: "approveTrack" | "pauseTrack" | "revokeTrack",
+  ) {
+    const key = `${userId}:${track}:${action}`;
+    setActing(key);
+    try {
+      await fetch("/api/admin/humanitarian/angels", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId, action, track }),
+      });
+      await load();
+    } catch { /* ignore */ }
+    setActing(null);
+  }
+
+  async function setScreening(
+    userId: string,
+    screeningStatus: "NOT_SUBMITTED" | "SUBMITTED" | "IN_REVIEW" | "VERIFIED" | "REJECTED",
+  ) {
+    const key = `${userId}:screening:${screeningStatus}`;
+    setActing(key);
+    try {
+      await fetch("/api/admin/humanitarian/angels", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId, action: "setScreening", screeningStatus }),
       });
       await load();
     } catch { /* ignore */ }
@@ -378,6 +416,75 @@ export default function HumanitarianAngelsAdminPanel() {
                         </span>
                         {a.motivation}
                       </p>
+                    )}
+
+                    {(a.screeningStatus || (a.trackEnrollments && a.trackEnrollments.length > 0)) && (
+                      <div className="mt-3 space-y-2">
+                        {a.screeningStatus && (
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="text-[11px] font-semibold text-slate-600">Screening:</span>
+                            <span className="text-[11px] font-semibold px-2 py-1 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
+                              {a.screeningStatus}
+                            </span>
+                            <div className="flex flex-wrap gap-1">
+                              {(["SUBMITTED", "IN_REVIEW", "VERIFIED", "REJECTED"] as const).map((s) => (
+                                <button
+                                  key={s}
+                                  type="button"
+                                  disabled={acting === `${a.userId}:screening:${s}`}
+                                  onClick={() => setScreening(a.userId, s)}
+                                  className="text-[11px] px-2 py-1 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+                                >
+                                  {s}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {a.trackEnrollments && a.trackEnrollments.length > 0 && (
+                          <div className="space-y-1">
+                            <p className="text-[11px] font-semibold text-slate-600">Trilhas:</p>
+                            {a.trackEnrollments.map((e) => (
+                              <div
+                                key={`${a.userId}:${e.track}`}
+                                className="flex flex-wrap items-center justify-between gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2"
+                              >
+                                <div className="text-xs">
+                                  <span className="font-semibold text-slate-900">{e.track}</span>
+                                  <span className="text-slate-500"> · {e.status}</span>
+                                </div>
+                                <div className="flex flex-wrap gap-1">
+                                  <button
+                                    type="button"
+                                    disabled={acting === `${a.userId}:${e.track}:approveTrack`}
+                                    onClick={() => actTrack(a.userId, e.track, "approveTrack")}
+                                    className="text-[11px] px-2 py-1 rounded-lg bg-emerald-600 text-white font-semibold disabled:opacity-50"
+                                  >
+                                    Aprovar
+                                  </button>
+                                  <button
+                                    type="button"
+                                    disabled={acting === `${a.userId}:${e.track}:pauseTrack`}
+                                    onClick={() => actTrack(a.userId, e.track, "pauseTrack")}
+                                    className="text-[11px] px-2 py-1 rounded-lg border border-slate-200 text-slate-700 font-semibold disabled:opacity-50"
+                                  >
+                                    Pausar
+                                  </button>
+                                  <button
+                                    type="button"
+                                    disabled={acting === `${a.userId}:${e.track}:revokeTrack`}
+                                    onClick={() => actTrack(a.userId, e.track, "revokeTrack")}
+                                    className="text-[11px] px-2 py-1 rounded-lg border border-red-200 text-red-700 font-semibold disabled:opacity-50"
+                                  >
+                                    Revogar
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     )}
                   </div>
                   <div className="flex flex-col gap-2 shrink-0">

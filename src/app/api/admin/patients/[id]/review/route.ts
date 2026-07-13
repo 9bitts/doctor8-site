@@ -1,6 +1,6 @@
 // ADMIN ONLY - save admin observation and reviewed flag on patient.
 import { NextRequest, NextResponse } from "next/server";
-import { getPatientAdminSession } from "@/lib/admin";
+import { getAdminSession } from "@/lib/admin";
 import { createAuditLog } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { AuditAction } from "@prisma/client";
@@ -17,7 +17,7 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: { id: string } },
 ) {
-  const session = await getPatientAdminSession();
+  const session = await getAdminSession();
   if (!session) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const body = await req.json();

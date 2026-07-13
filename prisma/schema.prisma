@@ -467,6 +467,38 @@ enum AngelApprovalStatus {
   REJECTED
 }
 
+enum AngelTrack {
+  ESCUTA        // acompanhamento pós-consulta (sistema atual)
+  CAMPO         // eventos/mutirões presenciais
+  ENTREGAS      // logística de doações
+  PROFISSIONAL  // pro bono com a própria profissão
+  INTERPRETE    // tradução pt/es
+  RETAGUARDA    // apoio administrativo remoto
+  EDUCADOR      // cursos e oficinas
+  EMBAIXADOR    // divulgação/mobilização
+}
+
+enum AngelTrackStatus {
+  INTERESTED
+  APPROVED
+  PAUSED
+  REVOKED
+}
+
+enum AngelAvailabilityStatus {
+  AVAILABLE
+  LIMITED
+  PAUSED
+}
+
+enum AngelScreeningStatus {
+  NOT_SUBMITTED
+  SUBMITTED
+  IN_REVIEW
+  VERIFIED
+  REJECTED
+}
+
 enum AngelFollowUpChannel {
   WHATSAPP
   PHONE
@@ -3780,15 +3812,73 @@ model AngelProfile {
   motivation      String?
   preferredCampaignSlug String?
 
+  // Matching signals / multi-track program (Onda 1)
+  skills          String[]            @default([])
+  city            String?
+  hasVehicle      Boolean             @default(false)
+  availabilityNote String?
+  availabilityStatus AngelAvailabilityStatus @default(AVAILABLE)
+  pausedUntil     DateTime?
+
+  // Screening workflow (proportional to track risk)
+  screeningStatus AngelScreeningStatus @default(NOT_SUBMITTED)
+  screeningNotes  String?
+  screeningReviewedAt DateTime?
+  screeningReviewedById String?
+
   approvalStatus  AngelApprovalStatus @default(PENDING)
   approvedAt      DateTime?
   approvedById    String?
   rejectionReason String?
 
+  trackEnrollments AngelTrackEnrollment[]
+  trainingExemptions AngelTrackTrainingExemption[]
+
   createdAt       DateTime            @default(now())
   updatedAt       DateTime            @updatedAt
 
   @@index([approvalStatus])
+}
+
+model AngelTrackEnrollment {
+  id           String         @id @default(cuid())
+  profileId    String
+  profile      AngelProfile   @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  track        AngelTrack
+  status       AngelTrackStatus @default(INTERESTED)
+  approvedAt   DateTime?
+  approvedById String?
+  notes        String?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  @@unique([profileId, track])
+  @@index([track, status])
+}
+
+model AngelTrackTrainingRequirement {
+  id        String     @id @default(cuid())
+  track     AngelTrack
+  courseId  String
+  required  Boolean    @default(true)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@unique([track, courseId])
+  @@index([track])
+}
+
+model AngelTrackTrainingExemption {
+  id         String     @id @default(cuid())
+  profileId  String
+  profile    AngelProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  track      AngelTrack
+  exemptedAt DateTime   @default(now())
+  exemptedById String?
+  reason     String?
+
+  @@unique([profileId, track])
+  @@index([track])
 }
 
 model HumanitarianAngel {

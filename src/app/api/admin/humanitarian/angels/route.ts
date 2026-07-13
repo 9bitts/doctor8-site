@@ -3,10 +3,41 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { z } from "zod";
 import { VENEZUELA_CAMPAIGN_SLUG } from "@/lib/humanitarian/constants";
+import { randomBytes } from "crypto";
+import {
+  screeningRequirementForTrack,
+  screeningSatisfiesRequirement,
+} from "@/lib/humanitarian/angel-tracks";
+import type { AngelScreeningStatus, AngelTrack, AngelTrackStatus } from "@prisma/client";
+
+function randomId(): string {
+  return randomBytes(16).toString("hex");
+}
 
 const patchSchema = z.object({
   userId: z.string(),
-  action: z.enum(["approve", "reject", "pause", "reactivate"]),
+  action: z.enum([
+    "approve",
+    "reject",
+    "pause",
+    "reactivate",
+    "approveTrack",
+    "pauseTrack",
+    "revokeTrack",
+    "setScreening",
+  ]),
+  track: z.enum([
+    "ESCUTA",
+    "CAMPO",
+    "ENTREGAS",
+    "PROFISSIONAL",
+    "INTERPRETE",
+    "RETAGUARDA",
+    "EDUCADOR",
+    "EMBAIXADOR",
+  ]).optional(),
+  screeningStatus: z.enum(["NOT_SUBMITTED", "SUBMITTED", "IN_REVIEW", "VERIFIED", "REJECTED"]).optional(),
+  screeningNotes: z.string().max(2000).optional(),
   rejectionReason: z.string().max(500).optional(),
   campaignSlug: z.string().optional(),
 });
@@ -20,6 +51,7 @@ export async function GET() {
   const angels = await db.angelProfile.findMany({
     orderBy: { createdAt: "desc" },
     include: {
+      trackEnrollments: true,
       user: {
         select: {
           id: true,
@@ -51,6 +83,13 @@ export async function GET() {
       approvalStatus: a.approvalStatus,
       approvedAt: a.approvedAt?.toISOString() ?? null,
       rejectionReason: a.rejectionReason,
+      screeningStatus: a.screeningStatus,
+      screeningReviewedAt: a.screeningReviewedAt?.toISOString() ?? null,
+      trackEnrollments: (a.trackEnrollments || []).map((e) => ({
+        track: e.track,
+        status: e.status,
+        approvedAt: e.approvedAt?.toISOString() ?? null,
+      })),
       email: a.user.email,
       emailVerified: !!a.user.emailVerified,
       region: a.user.region,
@@ -76,6 +115,7 @@ export async function PATCH(req: NextRequest) {
 
   const profile = await db.angelProfile.findFirst({
     where: { userId: parsed.data.userId },
+    include: { trackEnrollments: true },
   });
   if (!profile) {
     return NextResponse.json({ error: "Angel not found" }, { status: 404 });
@@ -83,6 +123,73 @@ export async function PATCH(req: NextRequest) {
 
   const campaignSlug =
     parsed.data.campaignSlug || profile.preferredCampaignSlug || VENEZUELA_CAMPAIGN_SLUG;
+
+  if (parsed.data.action === "setScreening") {
+    const screeningStatus = parsed.data.screeningStatus as AngelScreeningStatus | undefined;
+    if (!screeningStatus) {
+      return NextResponse.json({ error: "screeningStatus required" }, { status: 400 });
+    }
+    await db.angelProfile.update({
+      where: { id: profile.id },
+      data: {
+        screeningStatus,
+        screeningNotes: parsed.data.screeningNotes?.trim() || null,
+        screeningReviewedAt: new Date(),
+        screeningReviewedById: session.user.id,
+      },
+    });
+    return NextResponse.json({ success: true });
+  }
+
+  if (
+    parsed.data.action === "approveTrack"
+    || parsed.data.action === "pauseTrack"
+    || parsed.data.action === "revokeTrack"
+  ) {
+    const track = parsed.data.track as AngelTrack | undefined;
+    if (!track) {
+      return NextResponse.json({ error: "track required" }, { status: 400 });
+    }
+    if (profile.approvalStatus !== "APPROVED") {
+      return NextResponse.json({ error: "Angel must be approved before track changes" }, { status: 400 });
+    }
+
+    if (parsed.data.action === "approveTrack") {
+      const requirement = screeningRequirementForTrack(track);
+      if (!screeningSatisfiesRequirement(profile.screeningStatus, requirement)) {
+        return NextResponse.json(
+          { error: `Screening requirement not met for ${track}` },
+          { status: 400 },
+        );
+      }
+    }
+
+    const nextStatus: AngelTrackStatus =
+      parsed.data.action === "approveTrack"
+        ? "APPROVED"
+        : parsed.data.action === "pauseTrack"
+          ? "PAUSED"
+          : "REVOKED";
+
+    await db.angelTrackEnrollment.upsert({
+      where: { profileId_track: { profileId: profile.id, track } },
+      create: {
+        id: randomId(),
+        profileId: profile.id,
+        track,
+        status: nextStatus,
+        approvedAt: nextStatus === "APPROVED" ? new Date() : null,
+        approvedById: nextStatus === "APPROVED" ? session.user.id : null,
+      },
+      update: {
+        status: nextStatus,
+        approvedAt: nextStatus === "APPROVED" ? new Date() : null,
+        approvedById: nextStatus === "APPROVED" ? session.user.id : null,
+      },
+    });
+
+    return NextResponse.json({ success: true });
+  }
 
   if (parsed.data.action === "pause") {
     await db.humanitarianAngel.updateMany({
@@ -166,6 +273,24 @@ export async function PATCH(req: NextRequest) {
         approvedAt: new Date(),
         approvedById: session.user!.id,
         rejectionReason: null,
+      },
+    });
+
+    // Back-compat: approving the angel also approves ESCUTA track unless explicitly set otherwise.
+    await tx.angelTrackEnrollment.upsert({
+      where: { profileId_track: { profileId: profile.id, track: "ESCUTA" } },
+      create: {
+        id: randomId(),
+        profileId: profile.id,
+        track: "ESCUTA",
+        status: "APPROVED",
+        approvedAt: new Date(),
+        approvedById: session.user!.id,
+      },
+      update: {
+        status: "APPROVED",
+        approvedAt: new Date(),
+        approvedById: session.user!.id,
       },
     });
 

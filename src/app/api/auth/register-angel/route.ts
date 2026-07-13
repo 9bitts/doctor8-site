@@ -3,7 +3,7 @@ import { db } from "@/lib/db";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { randomBytes } from "crypto";
-import { UserRole, ConsentType } from "@prisma/client";
+import { UserRole, ConsentType, type AngelTrack } from "@prisma/client";
 import { REGISTRATION_REGION_CODES, requiresGdpr } from "@/lib/registration-regions";
 import { sendEmailVerification } from "@/lib/email";
 import { ANGEL_LOGIN } from "@/lib/auth-portals";
@@ -26,6 +26,11 @@ import {
   rateLimitResponse,
 } from "@/lib/rate-limit";
 
+function randomId(): string {
+  // Prisma uses cuid() at the client layer; for createMany we generate a stable unique id here.
+  return randomBytes(16).toString("hex");
+}
+
 const passwordSchema = z
   .string()
   .min(8, "At least 8 characters")
@@ -44,6 +49,20 @@ const registerAngelSchema = z.object({
   profession: z.string().min(1).max(120),
   volunteerHelp: z.string().min(1).max(2000),
   languages: z.array(z.enum(["pt", "en", "es"])).min(1),
+  tracks: z.array(z.enum([
+    "ESCUTA",
+    "CAMPO",
+    "ENTREGAS",
+    "PROFISSIONAL",
+    "INTERPRETE",
+    "RETAGUARDA",
+    "EDUCADOR",
+    "EMBAIXADOR",
+  ])).min(1),
+  skills: z.array(z.string().min(1).max(40)).max(50).optional(),
+  city: z.string().max(120).optional(),
+  hasVehicle: z.boolean().optional(),
+  availabilityNote: z.string().max(500).optional(),
   motivation: z.string().max(2000).optional(),
   campaignSlug: z.string().optional(),
   language: z.string().optional(),
@@ -76,6 +95,22 @@ async function parseRegisterBody(req: NextRequest): Promise<{
       return { data: null, idDocument: null, fieldErrors: { languages: ["Invalid languages"] } };
     }
 
+    const tracksRaw = form.get("tracks");
+    let tracks: string[] = [];
+    try {
+      tracks = JSON.parse(String(tracksRaw || "[]"));
+    } catch {
+      return { data: null, idDocument: null, fieldErrors: { tracks: ["Invalid tracks"] } };
+    }
+
+    const skillsRaw = form.get("skills");
+    let skills: string[] = [];
+    try {
+      skills = JSON.parse(String(skillsRaw || "[]"));
+    } catch {
+      skills = [];
+    }
+
     const parsed = registerAngelSchema.safeParse({
       email: form.get("email"),
       password: form.get("password"),
@@ -87,6 +122,11 @@ async function parseRegisterBody(req: NextRequest): Promise<{
       profession: form.get("profession"),
       volunteerHelp: form.get("volunteerHelp"),
       languages,
+      tracks,
+      skills,
+      city: form.get("city") || undefined,
+      hasVehicle: form.get("hasVehicle") === "true",
+      availabilityNote: form.get("availabilityNote") || undefined,
       motivation: form.get("motivation") || undefined,
       campaignSlug: form.get("campaignSlug") || undefined,
       language: form.get("language") || undefined,
@@ -206,6 +246,11 @@ export async function POST(req: NextRequest) {
       profession,
       volunteerHelp,
       languages,
+      tracks,
+      skills,
+      city,
+      hasVehicle,
+      availabilityNote,
       motivation,
       campaignSlug,
       language,
@@ -213,6 +258,16 @@ export async function POST(req: NextRequest) {
       acceptedPrivacy,
       acceptedGdpr,
     } = data;
+
+    const needsIdDocument = tracks.some((t) =>
+      ["ESCUTA", "INTERPRETE", "CAMPO", "ENTREGAS", "PROFISSIONAL", "RETAGUARDA"].includes(t),
+    );
+    if (needsIdDocument && !idDocument) {
+      return NextResponse.json(
+        { error: { idDocument: ["Documento obrigatório para a(s) trilha(s) selecionada(s)."] } },
+        { status: 400 },
+      );
+    }
 
     if (requiresGdpr(region) && !acceptedGdpr) {
       return NextResponse.json(
@@ -286,7 +341,7 @@ export async function POST(req: NextRequest) {
         },
       });
 
-      await tx.angelProfile.create({
+      const profile = await tx.angelProfile.create({
         data: {
           userId: newUser.id,
           firstName,
@@ -297,7 +352,22 @@ export async function POST(req: NextRequest) {
           motivation: motivation || null,
           preferredCampaignSlug,
           approvalStatus: "PENDING",
+          skills: (skills ?? []).map((s) => s.trim().toLowerCase()).filter(Boolean),
+          city: city?.trim() || null,
+          hasVehicle: Boolean(hasVehicle),
+          availabilityNote: availabilityNote?.trim() || null,
+          screeningStatus: idDocument ? "SUBMITTED" : "NOT_SUBMITTED",
         },
+      });
+
+      await tx.angelTrackEnrollment.createMany({
+        data: tracks.map((track) => ({
+          id: randomId(),
+          profileId: profile.id,
+          track: track as AngelTrack,
+          status: "INTERESTED",
+        })),
+        skipDuplicates: true,
       });
 
       const consents: { type: ConsentType; granted: boolean; version: string }[] = [

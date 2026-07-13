@@ -78,6 +78,16 @@ export async function resolveAngelAccess(userId: string, campaignSlug: string): 
   });
   if (!enrollment?.active) return { ok: false, reason: "NOT_ENROLLED" };
 
+  // Multi-track gate (back-compat): if an ESCUTA enrollment exists, it must be APPROVED.
+  // If no enrollment row exists (legacy angels before Onda 1 backfill), allow access.
+  const escuta = await db.angelTrackEnrollment.findUnique({
+    where: { profileId_track: { profileId: user.angelProfile.id, track: "ESCUTA" } },
+    select: { status: true },
+  });
+  if (escuta && escuta.status !== "APPROVED") {
+    return { ok: false, reason: "NOT_ENROLLED" };
+  }
+
   return {
     ok: true,
     profile: {

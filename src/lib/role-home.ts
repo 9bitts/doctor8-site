@@ -46,7 +46,7 @@ export function resolveRoleHome(
     case "OCCUPATIONAL_PHYSICIAN":
       return "/empresas/medico/painel";
     case "ANGEL":
-      return "/admin/patients";
+      return "/admin/angel";
     case "PATIENT":
     default:
       return "/patient";
@@ -54,7 +54,7 @@ export function resolveRoleHome(
 }
 
 const ROLE_ROUTE_CHECKS: { prefix: string; roles: string[] }[] = [
-  { prefix: "/admin/patients", roles: ["ADMIN", "ANGEL"] },
+  { prefix: "/admin/patients", roles: ["ADMIN"] },
   { prefix: "/admin/angel", roles: ["ADMIN", "ANGEL"] },
   { prefix: "/admin", roles: ["ADMIN"] },
   { prefix: "/professional", roles: ["PROFESSIONAL", "ADMIN"] },

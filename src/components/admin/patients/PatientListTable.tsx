@@ -24,7 +24,7 @@ function anamneseLabel(status: string | null): string {
 
 function rowHref(row: MonitoringListRow): string {
   if (row.kind === "unlinked_intake") {
-    return `/admin/patients/acura/${encodeURIComponent(row.protocolo)}`;
+    return "/admin/patients";
   }
   return `/admin/patients/${row.id}`;
 }

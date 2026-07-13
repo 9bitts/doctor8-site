@@ -7,7 +7,6 @@ import AdminViewPhoneButton from "@/components/admin/AdminViewPhoneButton";
 import AdminAccountActions from "@/components/admin/AdminAccountActions";
 import PatientStatusBadge, { AcquisitionBadge } from "@/components/admin/patients/PatientStatusBadge";
 import PatientJourneyStepper from "@/components/admin/patients/PatientJourneyStepper";
-import AcuraIntakePanel from "@/components/admin/patients/AcuraIntakePanel";
 import PatientLiveStatusPanel from "@/components/admin/patients/PatientLiveStatusPanel";
 import PatientTimeline from "@/components/admin/patients/PatientTimeline";
 import PatientConsultationsList from "@/components/admin/patients/PatientConsultationsList";
@@ -105,9 +104,6 @@ export default function PatientDetailClient({ patientId }: { patientId: string }
           <div>
             <h1 className="text-xl font-bold text-slate-900">{patient.name}</h1>
             <p className="text-sm text-slate-500 mt-1">{patient.email}</p>
-            {patient.acuraIntake && (
-              <p className="text-xs text-violet-600 font-mono mt-1">{patient.acuraIntake.protocolo}</p>
-            )}
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <PatientStatusBadge status={patient.status} detail={patient.statusDetail} />
@@ -198,8 +194,6 @@ export default function PatientDetailClient({ patientId }: { patientId: string }
         providerTab={patient.liveConsult?.providerTab ?? null}
         onActionDone={() => load(true)}
       />
-
-      {patient.acuraIntake && <AcuraIntakePanel intake={patient.acuraIntake} />}
 
       <PatientAnamnesePanel anamnese={patient.anamnese} />
 

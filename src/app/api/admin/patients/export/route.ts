@@ -1,6 +1,6 @@
 // ADMIN ONLY - export completed consultations as CSV by date range.
 import { NextRequest, NextResponse } from "next/server";
-import { getPatientAdminSession } from "@/lib/admin";
+import { getAdminSession } from "@/lib/admin";
 import {
   buildConsultationsCsv,
   loadConsultationsForExport,
@@ -9,7 +9,7 @@ import {
 export const runtime = "nodejs";
 
 export async function GET(req: NextRequest) {
-  const session = await getPatientAdminSession();
+  const session = await getAdminSession();
   if (!session) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const sp = new URL(req.url).searchParams;

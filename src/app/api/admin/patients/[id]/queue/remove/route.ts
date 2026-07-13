@@ -1,6 +1,6 @@
 // ADMIN ONLY ? remove patient from humanitarian queue with reason.
 import { NextRequest, NextResponse } from "next/server";
-import { getPatientAdminSession } from "@/lib/admin";
+import { getAdminSession } from "@/lib/admin";
 import { createAuditLog } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { adminRemoveFromQueue } from "@/lib/humanitarian/admin-queue";
@@ -18,7 +18,7 @@ export async function POST(
   req: NextRequest,
   { params }: { params: { id: string } },
 ) {
-  const session = await getPatientAdminSession();
+  const session = await getAdminSession();
   if (!session) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const body = await req.json();

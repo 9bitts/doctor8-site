@@ -28,7 +28,7 @@ const STATUS_CONFIG: Record<
     className: "bg-rose-100 text-rose-700",
   },
   PENDING_D8_REGISTRATION: {
-    label: "ACURA sem cadastro D8",
+    label: "Cadastro incompleto",
     className: "bg-amber-50 text-amber-800 border border-amber-200",
   },
 };

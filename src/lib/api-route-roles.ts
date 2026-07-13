@@ -36,10 +36,6 @@ export function isApiRoleAllowed(pathname: string, role: string | undefined | nu
   if (!role) return false;
   if (role === "ADMIN") return true;
 
-  if (isPatientAdminPath(pathname) && (role === "ADMIN" || role === "ANGEL")) {
-    return true;
-  }
-
   // PDF handlers on professional routes already enforce patient/pro ownership.
   if (
     role === "PATIENT" &&

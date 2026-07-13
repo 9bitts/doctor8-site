@@ -734,11 +734,8 @@ export async function loadUnlinkedPartnerIntakeContexts(queueAlertMinutes: numbe
 }
 
 export async function loadFullMonitoringData(queueAlertMinutes: number) {
-  const [patientContexts, unlinkedIntakeContexts] = await Promise.all([
-    loadPatientMonitoringData(queueAlertMinutes),
-    loadUnlinkedPartnerIntakeContexts(queueAlertMinutes),
-  ]);
-  return { patientContexts, unlinkedIntakeContexts };
+  const patientContexts = await loadPatientMonitoringData(queueAlertMinutes);
+  return { patientContexts, unlinkedIntakeContexts: [] as UnlinkedIntakeContext[] };
 }
 
 export interface UnlinkedIntakeDetailDto {
@@ -1115,15 +1112,12 @@ export function buildFullMonitoringCounters(
   unlinkedContexts: UnlinkedIntakeContext[],
 ): MonitoringCounters {
   const base = buildMonitoringCounters(patientContexts);
-  let extraProblems = 0;
-  for (const ctx of unlinkedContexts) {
-    if (ctx.status === "PROBLEM") extraProblems++;
-  }
   return {
     ...base,
-    total: base.total + unlinkedContexts.length,
-    withProblem: base.withProblem + extraProblems,
-    pendingAcuraRegistration: unlinkedContexts.length,
+    // Acura integration retired: ignore unlinked partner intakes for admin monitoring.
+    total: base.total,
+    withProblem: base.withProblem,
+    pendingAcuraRegistration: 0,
   };
 }
 
@@ -1132,27 +1126,7 @@ export function buildFullMonitoringAlerts(
   unlinkedContexts: UnlinkedIntakeContext[],
 ): MonitoringAlert[] {
   const alerts = buildMonitoringAlerts(patientContexts);
-
-  for (const ctx of unlinkedContexts) {
-    const name = unlinkedDisplayName(ctx.intake);
-    for (const reason of ctx.problemReasons) {
-      alerts.push({
-        id: `${ctx.intake.id}-acura-${reason.slice(0, 20)}`,
-        type: "acura_pending",
-        partnerIntakeId: ctx.intake.id,
-        protocolo: ctx.intake.protocolo,
-        patientName: name,
-        message: reason,
-        severity:
-          reason.includes("Emergência") || reason.includes("crític") ? "critical" : "warning",
-        createdAt: ctx.lastActivityAt?.toISOString() ?? ctx.intake.submittedAt.toISOString(),
-      });
-    }
-  }
-
-  return alerts.sort(
-    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-  );
+  return alerts;
 }
 
 export function buildMonitoringCounters(contexts: PatientContext[]): MonitoringCounters {

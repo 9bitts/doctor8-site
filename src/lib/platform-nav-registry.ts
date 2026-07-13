@@ -636,6 +636,7 @@ export const ADMIN_NAV: PlatformNavEntry[] = [
   { href: "/admin/doctors", labelKey: "nav.adminDoctors", roles: ["ADMIN"], iconKey: "Stethoscope" },
   { href: "/admin/medicos-ocupacionais", labelKey: "nav.adminOccupational", roles: ["ADMIN"], iconKey: "Stethoscope" },
   { href: "/admin/patients", labelKey: "nav.adminPatients", roles: ["ADMIN"], iconKey: "Users" },
+  { href: "/admin/patients-humanitarian", labelKey: "nav.adminHumanitarianPatients", roles: ["ADMIN"], iconKey: "Heart" },
   { href: "/admin/mensagens", labelKey: "nav.adminMessages", roles: ["ADMIN"], iconKey: "MessageCircle" },
   { href: "/admin/empresas", labelKey: "nav.adminEmployers", roles: ["ADMIN"], iconKey: "Building2" },
   { href: "/admin/clinicas", labelKey: "nav.adminClinics", roles: ["ADMIN"], iconKey: "Building2" },
@@ -662,6 +663,7 @@ export const ADMIN_NAV_GROUPS: PlatformNavGroup[] = [
       { href: "/admin", labelKey: "admin.home.title", roles: ["ADMIN"], iconKey: "Shield" },
       { href: "/admin/users", labelKey: "nav.adminUsers", roles: ["ADMIN"], iconKey: "UserCog" },
       { href: "/admin/patients", labelKey: "nav.adminPatients", roles: ["ADMIN"], iconKey: "Users" },
+      { href: "/admin/patients-humanitarian", labelKey: "nav.adminHumanitarianPatients", roles: ["ADMIN"], iconKey: "Heart" },
   { href: "/admin/mensagens", labelKey: "nav.adminMessages", roles: ["ADMIN"], iconKey: "MessageCircle" },
       { href: "/admin/doctors", labelKey: "nav.adminDoctors", roles: ["ADMIN"], iconKey: "Stethoscope" },
       { href: "/admin/medicos-ocupacionais", labelKey: "nav.adminOccupational", roles: ["ADMIN"], iconKey: "Stethoscope" },
@@ -702,7 +704,6 @@ export const ADMIN_NAV_GROUPS: PlatformNavGroup[] = [
 
 /** Angel volunteers — patient monitoring + follow-up (subset of admin). */
 export const ANGEL_NAV: PlatformNavEntry[] = [
-  { href: "/admin/patients", labelKey: "nav.adminPatients", roles: ["ANGEL"], iconKey: "Users" },
   { href: "/admin/angel", labelKey: "angel.nav.followUp", roles: ["ANGEL"], iconKey: "Heart" },
 ];
 

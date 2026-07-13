@@ -7,16 +7,12 @@ interface MonitoringAlert {
   id: string;
   type: string;
   patientProfileId?: string;
-  protocolo?: string;
   patientName: string;
   message: string;
   severity: "warning" | "critical";
 }
 
 function alertHref(alert: MonitoringAlert): string {
-  if (alert.protocolo) {
-    return `/admin/patients/acura/${encodeURIComponent(alert.protocolo)}`;
-  }
   if (alert.patientProfileId) {
     return `/admin/patients/${alert.patientProfileId}`;
   }
@@ -61,9 +57,6 @@ export default function PatientAlertsPanel({
               <div className="min-w-0">
                 <p className="font-medium text-slate-800 truncate">{a.patientName}</p>
                 <p className="text-slate-500 text-xs mt-0.5">{a.message}</p>
-                {a.protocolo && (
-                  <p className="text-[10px] text-violet-600 font-mono mt-0.5">{a.protocolo}</p>
-                )}
               </div>
             </Link>
           </li>

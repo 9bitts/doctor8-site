@@ -26,7 +26,7 @@ function homeHrefForRole(
   isVolunteer: boolean,
   isAngel: boolean,
 ): string {
-  if (isAngel) return "/admin/patients";
+  if (isAngel) return "/admin/angel";
   if (!isVolunteer) return "/patient";
   if (!role) return "/patient";
   if (role === "PROFESSIONAL" || role === "PSYCHOANALYST" || role === "INTEGRATIVE_THERAPIST") {
