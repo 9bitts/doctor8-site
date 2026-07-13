@@ -18,6 +18,7 @@ import {
   cacheVolunteerDashboard,
   loadCachedVolunteerDashboard,
 } from "@/lib/humanitarian/offline-draft";
+import { resolveRoleHome } from "@/lib/role-home";
 
 interface PoolRow {
   id: string;
@@ -163,8 +164,12 @@ export default function HumanitarianVolunteerPage() {
           router.push(loginPath);
           return;
         }
-        if (!["PROFESSIONAL", "PSYCHOANALYST", "INTEGRATIVE_THERAPIST"].includes(s.user.role)) {
-          router.push(`/humanitarian/${VENEZUELA_CAMPAIGN_SLUG}`);
+        if (!["PROFESSIONAL", "PSYCHOANALYST", "INTEGRATIVE_THERAPIST", "ADMIN"].includes(s.user.role)) {
+          if (s.user.role === "PATIENT") {
+            router.push(`/humanitarian/${VENEZUELA_CAMPAIGN_SLUG}`);
+          } else {
+            router.replace(resolveRoleHome(s.user.role, s.user.professionalSpecialty));
+          }
           return;
         }
         setUserId(s.user.id);

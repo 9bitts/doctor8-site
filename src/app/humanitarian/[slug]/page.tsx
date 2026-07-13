@@ -23,6 +23,7 @@ import HumanitarianOfflineBanner from "@/components/humanitarian/HumanitarianOff
 import HumanitarianVolunteerOnlineAlertButton from "@/components/humanitarian/HumanitarianVolunteerOnlineAlertButton";
 import { buildAuthHref } from "@/components/auth/login-shared";
 import { MAIN_LOGIN } from "@/lib/auth-portals";
+import { resolveRoleHome } from "@/lib/role-home";
 
 function NoVolunteersScheduledCta({
   lang,
@@ -160,8 +161,20 @@ export default function HumanitarianCampaignPage() {
           router.push(buildAuthHref(MAIN_LOGIN, { callbackUrl: `/humanitarian/${slug}` }));
           return;
         }
-        if (s.user.role !== "PATIENT") {
+        if (s.user.role === "ADMIN") {
+          router.replace("/admin/humanitarian");
+          return;
+        }
+        if (
+          s.user.role === "PROFESSIONAL"
+          || s.user.role === "PSYCHOANALYST"
+          || s.user.role === "INTEGRATIVE_THERAPIST"
+        ) {
           router.push("/humanitarian/volunteer");
+          return;
+        }
+        if (s.user.role !== "PATIENT") {
+          router.replace(resolveRoleHome(s.user.role, s.user.professionalSpecialty));
           return;
         }
         setUserId(s.user.id);

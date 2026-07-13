@@ -108,7 +108,9 @@ export default function HumanitarianPatientPortalPage() {
 
   useEffect(() => {
     getSession().then((session) => {
-      if (session?.user?.id) router.replace(callbackUrl);
+      if (session?.user?.role === "PATIENT") {
+        router.replace(callbackUrl);
+      }
     });
   }, [callbackUrl, router]);
 
