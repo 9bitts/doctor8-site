@@ -24,6 +24,21 @@ export type PlatformMatch = {
   linkStatus: "NONE" | "PENDING" | "ACCEPTED" | "REJECTED" | "REVOKED";
 };
 
+export function splitDisplayName(displayName: string): { firstName: string; lastName: string } {
+  const parts = displayName.trim().split(/\s+/);
+  return {
+    firstName: parts[0] || displayName,
+    lastName: parts.slice(1).join(" "),
+  };
+}
+
+export function displayNameInitials(displayName: string): string {
+  const parts = displayName.trim().split(/\s+/);
+  const first = parts[0]?.[0] ?? "";
+  const last = parts.length > 1 ? parts[parts.length - 1][0] ?? "" : "";
+  return `${first}${last}`.toUpperCase();
+}
+
 export type PlatformRxTarget = {
   patientUserId: string;
   patientProfileId: string;

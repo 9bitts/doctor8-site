@@ -5,7 +5,9 @@ import type { Chart } from "@/components/professional/emissions/types";
 import { keepFocusOnPointerDown } from "@/lib/combobox-interaction";
 import type { PrescriptionsPortalConfig } from "@/lib/prescriptions-portal-config";
 import {
+  displayNameInitials,
   missingLabel,
+  splitDisplayName,
   type ImportablePatient,
   type PlatformMatch,
   type PlatformRxTarget,
@@ -98,7 +100,7 @@ export function PatientPicker({
       ) : platformTarget ? (
         <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-xl p-3">
           <div className="w-10 h-10 rounded-xl bg-slate-200 flex items-center justify-center font-bold text-slate-600 text-sm shrink-0">
-            {platformTarget.displayName[0]}
+            {displayNameInitials(platformTarget.displayName)}
           </div>
           <div className="flex-1 min-w-0">
             <p className="font-semibold text-slate-800 text-sm">{platformTarget.displayName}</p>
@@ -203,7 +205,7 @@ export function PatientPicker({
                     >
                       <div className="flex items-center gap-3 flex-1 min-w-0">
                         <div className="w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center font-bold text-slate-500 text-xs shrink-0">
-                          {match.displayName[0]}
+                          {displayNameInitials(match.displayName)}
                         </div>
                         <div className="min-w-0">
                           <p className="font-medium text-slate-800 text-sm">{match.displayName}</p>
@@ -248,15 +250,18 @@ export function PatientPicker({
                             type="button"
                             disabled={importingPatientId === match.patientProfileId}
                             onMouseDown={keepFocusOnPointerDown}
-                            onClick={() => onImportPatient({
+                            onClick={() => {
+                              const { firstName, lastName } = splitDisplayName(match.displayName);
+                              onImportPatient({
                               patientProfileId: match.patientProfileId,
                               userId: match.patientUserId,
-                              firstName: match.displayName.split(" ")[0] || match.displayName,
-                              lastName: "",
+                              firstName,
+                              lastName,
                               email: null,
                               hasAccount: true,
                               source: "appointment",
-                            })}
+                            });
+                            }}
                             className="text-xs font-semibold border border-emerald-200 text-emerald-700 px-2.5 py-1.5 rounded-lg disabled:opacity-50 min-h-[44px]"
                           >
                             {importingPatientId === match.patientProfileId ? (

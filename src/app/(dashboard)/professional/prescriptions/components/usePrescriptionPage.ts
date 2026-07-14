@@ -67,6 +67,7 @@ import {
   emissionKindFromDoc,
   isMedsFormValid,
   parseBulkMedicationLines,
+  splitDisplayName,
   MN_RX_SEARCH_TABS,
   type ClinicalDocument,
   type Prescription,
@@ -1401,10 +1402,11 @@ export function usePrescriptionPage() {
         const label = selectedPatient
           ? `${selectedPatient.firstName} ${selectedPatient.lastName}`
           : platformTarget!.displayName;
+        const platformName = platformTarget ? splitDisplayName(platformTarget.displayName) : null;
         const patientForSave: Chart = selectedPatient ?? {
           id: "",
-          firstName: platformTarget!.displayName.split(" ")[0] || platformTarget!.displayName,
-          lastName: "",
+          firstName: platformName!.firstName,
+          lastName: platformName!.lastName,
           email: null,
           hasAccount: true,
         };

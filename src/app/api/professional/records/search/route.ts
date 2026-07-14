@@ -8,8 +8,8 @@ import { createAuditLog } from "@/lib/audit";
 import { AuditAction } from "@prisma/client";
 import { checkRateLimit, rateLimitResponse } from "@/lib/rate-limit";
 import {
+  formatPatientDisplayName,
   getAcceptedLinkMap,
-  maskPatientDisplayName,
   type LinkStatus,
 } from "@/lib/patient-professional-link";
 
@@ -253,7 +253,7 @@ export async function GET(req: NextRequest) {
       return {
         patientProfileId: profile.id,
         patientUserId: profile.userId,
-        displayName: maskPatientDisplayName(firstName, lastName),
+        displayName: formatPatientDisplayName(firstName, lastName),
         city: profile.city || null,
         hasLink: linkStatus === "ACCEPTED",
         linkStatus,

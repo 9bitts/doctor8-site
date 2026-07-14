@@ -5,10 +5,8 @@ import { linkDb, type LinkStatus, type PatientProfessionalLinkRow } from "@/lib/
 
 export type { LinkStatus, PatientProfessionalLinkRow };
 
-export function maskPatientDisplayName(firstName: string, lastName: string): string {
-  const first = firstName.trim();
-  const initial = lastName.trim()[0];
-  return initial ? `${first} ${initial}.` : first;
+export function formatPatientDisplayName(firstName: string, lastName: string): string {
+  return `${firstName.trim()} ${lastName.trim()}`.trim();
 }
 
 export async function getLink(
