@@ -5,7 +5,24 @@ import {
   professionalPortalBaseFromSpecialty,
 } from "@/lib/psychologist-portal";
 
-export type NotificationRole = "PATIENT" | "PROFESSIONAL" | "ADMIN";
+export type NotificationRole =
+  | "PATIENT"
+  | "PROFESSIONAL"
+  | "PSYCHOANALYST"
+  | "INTEGRATIVE_THERAPIST"
+  | "ADMIN";
+
+function providerResourcesPath(
+  role: NotificationRole,
+  professionalSpecialty?: string | null,
+): string {
+  if (role === "PSYCHOANALYST") return "/psychoanalyst/resources";
+  if (role === "INTEGRATIVE_THERAPIST") return "/integrative-therapist/resources";
+  if (role === "PROFESSIONAL") {
+    return `${proPortal(role, professionalSpecialty)}/resources`;
+  }
+  return "/professional/resources";
+}
 
 export function parseNotificationData(data: unknown): Record<string, unknown> {
   if (!data) return {};
@@ -140,7 +157,10 @@ export function resolveNotificationHref(
 
     case "DOCUMENT_SHARED": {
       if (typeof d.resourceId === "string") {
-        return `${portal}/resources?resourceId=${d.resourceId}`;
+        if (role === "PATIENT") {
+          return "/patient/resources";
+        }
+        return `${providerResourcesPath(role, professionalSpecialty)}?resourceId=${d.resourceId}`;
       }
       if (typeof d.documentId === "string") {
         return `/patient/documents?documentId=${d.documentId}`;

@@ -61,7 +61,15 @@ export default function NotificationBell() {
       .then((r) => r.json())
       .then((s) => {
         const r = s?.user?.role;
-        if (r === "PATIENT" || r === "PROFESSIONAL" || r === "ADMIN") setRole(r);
+        if (
+          r === "PATIENT" ||
+          r === "PROFESSIONAL" ||
+          r === "PSYCHOANALYST" ||
+          r === "INTEGRATIVE_THERAPIST" ||
+          r === "ADMIN"
+        ) {
+          setRole(r);
+        }
         setProfessionalSpecialty(s?.user?.professionalSpecialty ?? null);
       })
       .catch(() => {});

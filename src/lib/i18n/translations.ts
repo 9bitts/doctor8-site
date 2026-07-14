@@ -13,6 +13,11 @@ import {
   floraisReferencePt,
 } from "./florais-reference-i18n";
 import { dentalEn, dentalEs, dentalPt } from "./dental-i18n";
+import {
+  professionalLibraryEn,
+  professionalLibraryEs,
+  professionalLibraryPt,
+} from "./professional-library-i18n";
 
 export type Lang = "pt" | "en" | "es";
 
@@ -18647,9 +18652,9 @@ const es: LocaleDict = {
 };
 
 export const dictionaries: Record<Lang, LocaleDict> = {
-  en: { ...en, ...naturalMedicineEn, ...floraisReferenceEn, ...dentalEn } as LocaleDict,
-  pt: { ...pt, ...naturalMedicinePt, ...floraisReferencePt, ...dentalPt },
-  es: { ...es, ...naturalMedicineEs, ...floraisReferenceEs, ...dentalEs },
+  en: { ...en, ...naturalMedicineEn, ...floraisReferenceEn, ...dentalEn, ...professionalLibraryEn } as LocaleDict,
+  pt: { ...pt, ...naturalMedicinePt, ...floraisReferencePt, ...dentalPt, ...professionalLibraryPt },
+  es: { ...es, ...naturalMedicineEs, ...floraisReferenceEs, ...dentalEs, ...professionalLibraryEs },
 };
 
 export function translate(lang: Lang, key: TranslationKey): string;

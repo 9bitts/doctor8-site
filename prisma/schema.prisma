@@ -909,7 +909,8 @@ model ProfessionalProfile {
   virtualCard         VirtualCard?        @relation("ProfessionalVirtualCard")
   patientRecords      PatientRecord[]
   sharedDocuments  SharedRecord[]  @relation("DocsSharedWithProfessional")
-  resources      Resource[]
+  resources             Resource[]
+  resourceCollections   ResourceCollection[]
 
   jitSessions       JitSession[]
   favorites         PatientFavorite[]
@@ -1044,7 +1045,8 @@ model PsychoanalystProfile {
   practiceLocations   PracticeLocation[]        @relation("PsychoanalystLocations")
   services            ProviderService[]         @relation("PsychoanalystServices")
   slotAlerts          SlotAvailabilityAlert[]   @relation("PsychoanalystSlotAlerts")
-  resources           Resource[]
+  resources             Resource[]
+  resourceCollections   ResourceCollection[]
   humanitarianVolunteers HumanitarianVolunteer[]
   poolContributions       PoolContribution[]
   consultationValidations ConsultationValidation[]
@@ -1125,6 +1127,7 @@ model IntegrativeTherapistProfile {
   clientRecords          IntegrativeClientRecord[]
   availabilitySlots      IntegrativeTherapistAvailabilitySlot[]
   resources              Resource[]
+  resourceCollections    ResourceCollection[]
   humanitarianVolunteers HumanitarianVolunteer[]
   virtualCard            VirtualCard?                    @relation("IntegrativeTherapistVirtualCard")
   healthPlans            IntegrativeTherapistHealthPlan[]
@@ -3312,6 +3315,7 @@ model IntegrativeClientRecord {
   archivedAt      DateTime?
 
   medicalDocuments MedicalDocument[]
+  resourceShares   IntegrativeResourceShare[]
 
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -3477,6 +3481,27 @@ model BuyingClubMember {
   @@index([userId])
 }
 
+model ResourceCollection {
+  id                     String                      @id @default(cuid())
+  professionalId         String?
+  professional           ProfessionalProfile?        @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+  psychoanalystId        String?
+  psychoanalyst          PsychoanalystProfile?       @relation(fields: [psychoanalystId], references: [id], onDelete: Cascade)
+  integrativeTherapistId String?
+  integrativeTherapist   IntegrativeTherapistProfile? @relation(fields: [integrativeTherapistId], references: [id], onDelete: Cascade)
+  title                  String                      // encrypted
+  description            String?                     // encrypted
+  category               String                      @default("general")
+  active                 Boolean                     @default(true)
+  createdAt              DateTime                    @default(now())
+  updatedAt              DateTime                    @updatedAt
+  resources              Resource[]
+
+  @@index([professionalId])
+  @@index([psychoanalystId])
+  @@index([integrativeTherapistId])
+}
+
 model Resource {
   id              String               @id @default(cuid())
   professionalId  String?
@@ -3485,19 +3510,27 @@ model Resource {
   psychoanalyst   PsychoanalystProfile? @relation(fields: [psychoanalystId], references: [id], onDelete: Cascade)
   integrativeTherapistId String?
   integrativeTherapist   IntegrativeTherapistProfile? @relation(fields: [integrativeTherapistId], references: [id], onDelete: Cascade)
+  collectionId    String?
+  collection      ResourceCollection?  @relation(fields: [collectionId], references: [id], onDelete: SetNull)
   title           String               // encrypted
   content         String?              // encrypted — description/notes
   url             String?              // YouTube link (plain — not PHI)
   fileUrl         String?              // encrypted S3 key
+  category        String               @default("general")
+  contentType     String               @default("link") // link | file | text
+  sourcePackId    String?              // platform pack id when imported
   active          Boolean              @default(true)
   createdAt       DateTime             @default(now())
   updatedAt       DateTime             @updatedAt
   shares          ResourceShare[]
   analysandShares AnalysandResourceShare[]
+  integrativeShares IntegrativeResourceShare[]
 
   @@index([professionalId])
   @@index([psychoanalystId])
   @@index([integrativeTherapistId])
+  @@index([collectionId])
+  @@index([category])
 }
 
 model ResourceShare {
@@ -3507,6 +3540,8 @@ model ResourceShare {
   patientRecordId String
   patientRecord   PatientRecord @relation(fields: [patientRecordId], references: [id], onDelete: Cascade)
   sharedAt        DateTime      @default(now())
+  viewedAt        DateTime?
+  viewCount       Int           @default(0)
 
   @@unique([resourceId, patientRecordId])
 }
@@ -3518,8 +3553,23 @@ model AnalysandResourceShare {
   analysandRecordId String
   analysandRecord   AnalysandRecord @relation(fields: [analysandRecordId], references: [id], onDelete: Cascade)
   sharedAt          DateTime        @default(now())
+  viewedAt          DateTime?
+  viewCount         Int             @default(0)
 
   @@unique([resourceId, analysandRecordId])
+}
+
+model IntegrativeResourceShare {
+  id                      String                  @id @default(cuid())
+  resourceId              String
+  resource                Resource                @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+  integrativeClientRecordId String
+  integrativeClientRecord IntegrativeClientRecord @relation(fields: [integrativeClientRecordId], references: [id], onDelete: Cascade)
+  sharedAt                DateTime                @default(now())
+  viewedAt                DateTime?
+  viewCount               Int                     @default(0)
+
+  @@unique([resourceId, integrativeClientRecordId])
 }
 
 // ─────────────────────────────────────────

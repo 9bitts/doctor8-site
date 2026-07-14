@@ -16,9 +16,10 @@ import {
   ArrowLeft, Plus, X, FileText, Paperclip, CheckCircle2, AlertCircle,
   Share2, Mail, Loader2, Tag, Pencil, Send, MapPin, MessageCircle, ExternalLink,
   Copy, Printer, RotateCw, ChevronDown, ChevronUp, FileType, Film, Download,
-  Activity, Stethoscope, Syringe, LineChart, Grid3X3, Ear, Utensils, HeartPulse, Pill, FileCheck, Clock,
+  Activity, Stethoscope, Syringe, LineChart, Grid3X3, Ear, Utensils, HeartPulse, Pill, FileCheck, Clock, BookMarked,
 } from "lucide-react";
 import AiSummarizeButton from "@/components/AiSummarizeButton";
+import SendEducationModal from "@/components/professional/library/SendEducationModal";
 import { EmissionCardActions } from "@/components/professional/emissions/EmissionCardActions";
 import { EmissionsSignModal, type EmissionKind, type SignTarget } from "@/components/professional/emissions/EmissionsSignModal";
 import VideoConsultReturnBanner from "@/components/professional/VideoConsultReturnBanner";
@@ -387,6 +388,7 @@ export default function RecordDetailClient({
   // Share state, keyed by document id
   const [shareStatus, setShareStatus] = useState<Record<string, string>>({});
   const [sharingId, setSharingId] = useState<string | null>(null);
+  const [showEducationModal, setShowEducationModal] = useState(false);
   const [signConfig, setSignConfig] = useState<{ configured: boolean; cpfMasked: string; recentAuth?: boolean } | null>(null);
   const [signTarget, setSignTarget] = useState<SignTarget | null>(null);
 
@@ -1430,6 +1432,13 @@ export default function RecordDetailClient({
                   <button type="button" onClick={openExamResultForm} className="inline-flex items-center gap-1.5 text-xs font-medium text-cyan-700 bg-cyan-50 hover:bg-cyan-100 border border-cyan-200 px-3 py-1.5 rounded-lg transition">
                     <FileCheck size={13} /> {t("chartAct.examResult")}
                   </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowEducationModal(true)}
+                    className="inline-flex items-center gap-1.5 text-xs font-medium text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 px-3 py-1.5 rounded-lg transition"
+                  >
+                    <BookMarked size={13} /> {t("libHub.sendEducation")}
+                  </button>
                 </div>
                 <ChartClinicalActions chartId={chart.id} returnUrl={professionalPatientsHref(pathname, chart.id)} />
                 {isOwner && <ReferralPanel chartId={chart.id} />}
@@ -2082,6 +2091,14 @@ export default function RecordDetailClient({
           signConfig={signConfig}
           deliverAfter
           onClose={() => setSignTarget(null)}
+        />
+      )}
+
+      {showEducationModal && (
+        <SendEducationModal
+          chartId={chart.id}
+          patientName={`${displayFirstName} ${displayLastName}`.trim()}
+          onClose={() => setShowEducationModal(false)}
         />
       )}
     </div>

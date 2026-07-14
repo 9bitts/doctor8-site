@@ -2,11 +2,11 @@
 
 import ProfessionalLibraryHub from "@/components/professional/library/ProfessionalLibraryHub";
 
-export default function PsychoanalystResourcesPage() {
+export default function IntegrativeTherapistResourcesPage() {
   return (
     <ProfessionalLibraryHub
-      apiBase="/api/psychoanalyst"
-      recipientMode="analysand"
+      apiBase="/api/integrative-therapist"
+      recipientMode="integrative_client"
     />
   );
 }

@@ -8,9 +8,10 @@ import { db } from "@/lib/db";
 import { encrypt, decrypt } from "@/lib/encryption";
 import { z } from "zod";
 
+import { mapResourceRow, safeDecryptResource as libSafeDecrypt } from "@/lib/professional-library";
+
 function safeDecrypt(v: string | null): string {
-  if (!v) return "";
-  try { return decrypt(v); } catch { return v; }
+  return libSafeDecrypt(v);
 }
 
 const createSchema = z.object({
@@ -18,6 +19,9 @@ const createSchema = z.object({
   content: z.string().max(5000).optional().or(z.literal("")),
   url:     z.string().url().optional().or(z.literal("")),
   fileKey: z.string().optional().or(z.literal("")),
+  category: z.string().optional(),
+  contentType: z.enum(["link", "file", "text"]).optional(),
+  collectionId: z.string().optional().or(z.literal("")),
 });
 
 export async function GET(req: NextRequest) {
@@ -27,20 +31,16 @@ export async function GET(req: NextRequest) {
   
   const resources = await db.resource.findMany({
     where: { professionalId: ctx.professional.id, active: true },
-    orderBy: { createdAt: "desc" },
-    include: { _count: { select: { shares: true } } },
+    orderBy: { updatedAt: "desc" },
+    include: {
+      collection: { select: { title: true } },
+      _count: { select: { shares: true } },
+      shares: { select: { viewCount: true } },
+    },
   });
 
   return NextResponse.json({
-    resources: resources.map((r) => ({
-      id: r.id,
-      title:      safeDecrypt(r.title),
-      content:    safeDecrypt(r.content ?? null),
-      url:        r.url ?? null,
-      hasFile:    !!r.fileUrl,
-      shareCount: r._count.shares,
-      createdAt:  r.createdAt.toISOString(),
-    })),
+    resources: resources.map(mapResourceRow),
   });
 }
 
@@ -63,16 +63,16 @@ export async function POST(req: NextRequest) {
       content: d.content ? encrypt(d.content) : null,
       url:     d.url     || null,
       fileUrl: d.fileKey ? encrypt(d.fileKey) : null,
+      category: d.category || "general",
+      contentType: d.contentType || (d.fileKey ? "file" : d.url ? "link" : "text"),
+      collectionId: d.collectionId || null,
+    },
+    include: {
+      collection: { select: { title: true } },
+      _count: { select: { shares: true } },
+      shares: { select: { viewCount: true } },
     },
   });
 
-  return NextResponse.json({
-    id:        resource.id,
-    title:     d.title,
-    content:   d.content || null,
-    url:       resource.url,
-    hasFile:   !!resource.fileUrl,
-    shareCount: 0,
-    createdAt: resource.createdAt.toISOString(),
-  }, { status: 201 });
+  return NextResponse.json(mapResourceRow(resource), { status: 201 });
 }

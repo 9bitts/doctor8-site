@@ -21,6 +21,8 @@ interface ResourceItem {
   url: string | null;
   hasFile: boolean;
   sharedAt: string;
+  viewedAt: string | null;
+  viewCount: number;
   doctor: { name: string; specialty: string };
 }
 
@@ -55,7 +57,19 @@ export default function PatientResourcesPage() {
     return formatShortDateWithYear(new Date(date), userTz, locale);
   }
 
+  async function trackView(shareId: string) {
+    try {
+      await fetch(`/api/patient/resources/${shareId}/view`, { method: "POST" });
+    } catch { /* ignore */ }
+  }
+
+  async function openLink(shareId: string, url: string) {
+    void trackView(shareId);
+    window.open(url, "_blank", "noopener,noreferrer");
+  }
+
   async function downloadFile(shareId: string) {
+    void trackView(shareId);
     setDownloadingId(shareId);
     setActionError(false);
     try {
@@ -124,14 +138,13 @@ export default function PatientResourcesPage() {
                 </div>
                 <div className="flex flex-wrap gap-2 shrink-0">
                   {r.url && (
-                    <a
-                      href={r.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    <button
+                      type="button"
+                      onClick={() => openLink(r.id, r.url!)}
                       className="flex items-center gap-2 border border-slate-200 hover:border-slate-300 text-slate-700 px-4 py-2 rounded-xl text-sm font-semibold transition"
                     >
                       <ExternalLink size={14} /> {t("presRes.openLink")}
-                    </a>
+                    </button>
                   )}
                   {r.hasFile && (
                     <button
