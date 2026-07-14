@@ -104,7 +104,6 @@ export function PatientPicker({
           </div>
           <div className="flex-1 min-w-0">
             <p className="font-semibold text-slate-800 text-sm">{platformTarget.displayName}</p>
-            <p className="text-xs text-slate-500">{t("link.platformRxHint")}</p>
             {platformTarget.linkStatus === "PENDING" && (
               <p className="text-xs text-amber-600 mt-0.5">{t("link.statusPending")}</p>
             )}

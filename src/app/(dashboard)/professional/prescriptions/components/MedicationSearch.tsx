@@ -1,4 +1,4 @@
-import { FileText, Loader2, Pill, Plus, X } from "lucide-react";
+import { FileText, Loader2, Pill, Plus, Search, X } from "lucide-react";
 import DrugSearchResults, { type DrugSearchResult } from "@/components/professional/prescriptions/DrugSearchResults";
 import MedicinaNaturalSearchResults from "@/components/medicina-natural-catalog/MedicinaNaturalSearchResults";
 import { DRUG_COUNTRIES, type DrugCountryCode } from "@/lib/drug-countries";
@@ -204,40 +204,48 @@ export function MedicationSearch({
           )}
         </div>
 
-        <div className="flex items-center rounded-xl border border-slate-200 bg-white focus-within:border-brand-400 focus-within:shadow-[0_0_0_3px_rgba(33,106,134,.12)]">
-          <input
-            type="text"
-            value={drugQuery}
-            onChange={(e) => onDrugQueryChange(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                onSearchDrugs();
+        <div className="rounded-xl border-2 border-dashed border-brand-200 bg-brand-50/50 p-4 space-y-3">
+          <p className="flex items-center justify-center gap-2 text-sm font-semibold text-brand-700">
+            <Search size={16} aria-hidden />
+            {mnCatalogSearch
+              ? t(mnCatalogSearchI18nKey(mnSearchModeForUi, floralOnlyMode))
+              : t("pharmacy.searchButton")}
+          </p>
+          <div className="flex items-center rounded-xl border border-brand-200 bg-white focus-within:border-brand-400 focus-within:shadow-[0_0_0_3px_rgba(33,106,134,.12)]">
+            <input
+              type="text"
+              value={drugQuery}
+              onChange={(e) => onDrugQueryChange(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  onSearchDrugs();
+                }
+              }}
+              placeholder={
+                mnCatalogSearch
+                  ? t(mnCatalogSearchI18nKey(mnSearchModeForUi, floralOnlyMode))
+                  : t("rx2.searchDrug")
               }
-            }}
-            placeholder={
-              mnCatalogSearch
-                ? t(mnCatalogSearchI18nKey(mnSearchModeForUi, floralOnlyMode))
-                : t("rx2.searchDrug")
-            }
-            className="flex-1 min-w-0 border-0 bg-transparent outline-none py-3 pl-3.5 pr-2 text-sm text-slate-800 placeholder:text-slate-400 rounded-xl"
-          />
-          {drugSearching ? (
-            <Loader2 size={15} className="shrink-0 mr-3 text-slate-400 animate-spin" />
-          ) : (
-            <button
-              type="button"
-              onClick={onSearchDrugs}
-              disabled={drugQuery.trim().length < 2}
-              className="shrink-0 mr-1.5 px-3 py-1.5 rounded-lg bg-brand-500 hover:bg-brand-600 text-white text-xs font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {t("pubSearch.search")}
-            </button>
-          )}
+              className="flex-1 min-w-0 border-0 bg-transparent outline-none py-3 pl-3.5 pr-2 text-sm text-slate-800 placeholder:text-slate-400 rounded-xl"
+            />
+            {drugSearching ? (
+              <Loader2 size={15} className="shrink-0 mr-3 text-slate-400 animate-spin" />
+            ) : (
+              <button
+                type="button"
+                onClick={onSearchDrugs}
+                disabled={drugQuery.trim().length < 2}
+                className="shrink-0 mr-1.5 px-3 py-1.5 rounded-lg bg-brand-500 hover:bg-brand-600 text-white text-xs font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {t("pubSearch.search")}
+              </button>
+            )}
+          </div>
         </div>
 
         <button type="button" onClick={onAddManual}
-          className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border-2 border-dashed border-brand-200 bg-brand-50/50 hover:bg-brand-50 text-brand-600 font-semibold text-sm transition">
+          className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 font-medium text-sm transition">
           <Plus size={16} /> {t("rx2.addManual")}
         </button>
 

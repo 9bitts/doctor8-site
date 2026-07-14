@@ -1177,6 +1177,10 @@ export function usePrescriptionPage() {
       prescriptionType: drug.prescriptionType,
       itemKind: cfg.phytoOnly ? "phytotherapy" as const : "medication",
     }]);
+    setDrugQuery("");
+    setDrugResults([]);
+    setMnSearchResults([]);
+    setDrugSearchModalOpen(false);
   }
 
   function flagIncompleteMeds(): void {

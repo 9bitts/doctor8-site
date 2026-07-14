@@ -307,6 +307,7 @@ export default function PrescriptionMedItemForm({
             <option value="Every 12 hours">{t("med.freq12h")}</option>
             <option value="As needed">{t("med.freqAsNeeded")}</option>
             <option value="Weekly">{t("med.freqWeekly")}</option>
+            <option value="Continuous use">{t("med.freqContinuous")}</option>
           </select>
         </div>
         <div>
