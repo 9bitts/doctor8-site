@@ -3,11 +3,17 @@
 import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { ArrowLeft, BookOpen, Stethoscope } from "lucide-react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
+import { canPrescribeCannabisMedicinal } from "@/lib/profession-label";
 import { mapProfessionalPathToPortal } from "@/lib/psychologist-portal";
 import type { NaturalMedicinePracticeConfig } from "@/lib/natural-medicine/config";
 import type { DetalhesFitoterapico, FonteReferencia, StatusRegulatorio } from "@/lib/medicina-natural/item-types";
+import {
+  cannabisReceituarioBadgeKey,
+  parseDetalhesCannabis,
+} from "@/lib/medicina-natural/cannabis-display";
 import {
   acaoPrescricaoMedicinaNatural,
   labelAcaoPrescricao,
@@ -87,6 +93,7 @@ export default function MedicinaNaturalItemDetail({
   slug,
 }: MedicinaNaturalItemDetailProps) {
   const { t } = useI18n();
+  const { data: session } = useSession();
   const pathname = usePathname();
   const router = useRouter();
   const portal = detectMnCatalogPortal(pathname);
@@ -149,6 +156,10 @@ export default function MedicinaNaturalItemDetail({
   const canPrescribeHomeopathy = practice.id === "homeopatia";
   const canPrescribeAromatherapy = practice.id === "aromaterapia";
   const canPrescribeApitherapy = practice.id === "apiterapia";
+  const canPrescribeCannabis =
+    practice.id === "cannabis" &&
+    portal === "professional" &&
+    canPrescribeCannabisMedicinal(session?.user?.professionalSpecialty);
 
   const mnAddParam = canPrescribeFitoterapico
     ? "phytotherapy"
@@ -160,13 +171,19 @@ export default function MedicinaNaturalItemDetail({
           ? "aromatherapy"
           : canPrescribeApitherapy
             ? "apitherapy"
-            : null;
+            : canPrescribeCannabis
+              ? "cannabis"
+              : null;
 
   const prescribeHref = mnAddParam
     ? `${prescriptionsBasePath(portal)}?add=${mnAddParam}&mnSlug=${encodeURIComponent(item.slug)}`
     : null;
 
   const acao = acaoPrescricaoMedicinaNatural(status);
+  const cannabisDet =
+    item.categoriaPratica === "CANNABIS"
+      ? parseDetalhesCannabis(item.detalhesEspecificos)
+      : null;
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 pb-10">
@@ -360,8 +377,63 @@ export default function MedicinaNaturalItemDetail({
                   rel="noopener noreferrer"
                   className="text-emerald-700 underline"
                 >
-                  {t("nm.detail.farmacopeiaLink")}
+                  {detalhes.farmacopeiaLink}
                 </a>
+              </p>
+            )}
+          </Section>
+        )}
+        {cannabisDet && (
+          <Section title={t("nm.detail.especificos")}>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm border-collapse">
+                <tbody>
+                  <tr className="border-b border-slate-100">
+                    <td className="py-2 pr-4 font-semibold text-slate-600">{t("nm.detail.cannabis.espectro")}</td>
+                    <td className="py-2">{cannabisDet.espectro.replace(/_/g, " ")}</td>
+                  </tr>
+                  <tr className="border-b border-slate-100">
+                    <td className="py-2 pr-4 font-semibold text-slate-600">{t("nm.detail.cannabis.canabinoideDominante")}</td>
+                    <td className="py-2">{cannabisDet.canabinoideDominante}</td>
+                  </tr>
+                  {cannabisDet.concentracaoCbdMgMl != null && (
+                    <tr className="border-b border-slate-100">
+                      <td className="py-2 pr-4 font-semibold text-slate-600">{t("nm.detail.cannabis.concentracaoCbd")}</td>
+                      <td className="py-2">{cannabisDet.concentracaoCbdMgMl} mg/mL</td>
+                    </tr>
+                  )}
+                  {cannabisDet.concentracaoThcMgMl != null && (
+                    <tr className="border-b border-slate-100">
+                      <td className="py-2 pr-4 font-semibold text-slate-600">{t("nm.detail.cannabis.concentracaoThc")}</td>
+                      <td className="py-2">{cannabisDet.concentracaoThcMgMl} mg/mL</td>
+                    </tr>
+                  )}
+                  {cannabisDet.proporcaoCbdThc && (
+                    <tr className="border-b border-slate-100">
+                      <td className="py-2 pr-4 font-semibold text-slate-600">{t("nm.detail.cannabis.proporcao")}</td>
+                      <td className="py-2">{cannabisDet.proporcaoCbdThc}</td>
+                    </tr>
+                  )}
+                  <tr className="border-b border-slate-100">
+                    <td className="py-2 pr-4 font-semibold text-slate-600">{t("nm.detail.cannabis.formaFarmaceutica")}</td>
+                    <td className="py-2">{t(`rx.cannabis.forma.${cannabisDet.formaFarmaceutica}`)}</td>
+                  </tr>
+                  {cannabisDet.volumeEmbalagem && (
+                    <tr className="border-b border-slate-100">
+                      <td className="py-2 pr-4 font-semibold text-slate-600">{t("nm.detail.cannabis.volume")}</td>
+                      <td className="py-2">{cannabisDet.volumeEmbalagem}</td>
+                    </tr>
+                  )}
+                  <tr>
+                    <td className="py-2 pr-4 font-semibold text-slate-600">{t("nm.detail.cannabis.receituario")}</td>
+                    <td className="py-2">{t(cannabisReceituarioBadgeKey(cannabisDet.tipoReceituario))}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            {cannabisDet.thcAcimaLimite && (
+              <p className="mt-3 text-xs text-amber-900 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
+                {t("rx.cannabis.thcWarning")}
               </p>
             )}
           </Section>

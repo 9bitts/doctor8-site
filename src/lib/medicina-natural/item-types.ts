@@ -11,6 +11,7 @@ export const CATEGORIA_PRATICA = [
   "AROMATERAPIA",
   "HOMEOPATIA",
   "APITERAPIA",
+  "CANNABIS",
 ] as const;
 
 export type CategoriaPratica = (typeof CATEGORIA_PRATICA)[number];
@@ -20,6 +21,7 @@ export const STATUS_REGULATORIO = [
   "PRODUTO_TRADICIONAL_NOTIFICADO",
   "USO_TRADICIONAL_SEM_REGISTRO",
   "PRATICA_INTEGRATIVA_NAO_REGULADA",
+  "PRODUTO_AUTORIZADO_ANVISA",
 ] as const;
 
 export type StatusRegulatorio = (typeof STATUS_REGULATORIO)[number];
@@ -88,12 +90,27 @@ export interface DetalhesApiterapia {
   alertaAlergiaAnafilaxia?: string;
 }
 
+/** Cannabis medicinal — RDC 327/2019, RDC 660/2022, RDC 1.015/2026 */
+export interface DetalhesCannabis {
+  espectro: "isolado" | "broad_spectrum" | "full_spectrum";
+  canabinoideDominante: "CBD" | "THC" | "CBG" | "CBN" | "balanceado";
+  concentracaoCbdMgMl?: number;
+  concentracaoThcMgMl?: number;
+  outrosCanabinoides?: string;
+  proporcaoCbdThc?: string;
+  formaFarmaceutica: "oleo" | "capsula" | "goma" | "topico" | "spray_sublingual";
+  volumeEmbalagem?: string;
+  tipoReceituario: "A" | "B";
+  thcAcimaLimite: boolean;
+}
+
 export type DetalhesEspecificos =
   | DetalhesFitoterapico
   | DetalhesFloral
   | DetalhesAromaterapia
   | DetalhesHomeopatia
-  | DetalhesApiterapia;
+  | DetalhesApiterapia
+  | DetalhesCannabis;
 
 /** Registro normalizado produzido pelos seeds — independente do Prisma. */
 export interface MedicinaNaturalItemRecord {
@@ -325,3 +342,85 @@ export const ApiterapiaMonografiaInputSchema = z.object({
       "Risco de reação alérgica grave, incluindo anafilaxia. Contraindicado em pacientes com alergia conhecida a produtos apícolas.",
     ),
 });
+
+export const DetalhesCannabisSchema = z.object({
+  espectro: z.enum(["isolado", "broad_spectrum", "full_spectrum"]),
+  canabinoideDominante: z.enum(["CBD", "THC", "CBG", "CBN", "balanceado"]),
+  concentracaoCbdMgMl: z.number().optional(),
+  concentracaoThcMgMl: z.number().optional(),
+  outrosCanabinoides: z.string().optional(),
+  proporcaoCbdThc: z.string().optional(),
+  formaFarmaceutica: z.enum(["oleo", "capsula", "goma", "topico", "spray_sublingual"]),
+  volumeEmbalagem: z.string().optional(),
+  tipoReceituario: z.enum(["A", "B"]),
+  thcAcimaLimite: z.boolean(),
+});
+
+export const CannabisLoteItemSchema = z.object({
+  slug: z.string().min(1),
+  nome: z.string().min(1),
+  nomesAlternativos: z.array(z.string()).default([]),
+  nomeCientifico: z.string().nullable().optional(),
+  categoriaPratica: z.literal("CANNABIS").default("CANNABIS"),
+  indicacoes: z.string().min(1),
+  contraindicacoes: z.string().default(""),
+  precaucoes: z.string().default(""),
+  interacoesMedicamentosas: z.string().nullable().optional(),
+  posologia: z.string().min(1),
+  viaAdministracao: z.array(z.string()).default([]),
+  statusRegulatorio: z.enum(STATUS_REGULATORIO),
+  fontes: z.array(FitoterapicoFonteSchema).min(1),
+  alertaGestacaoPediatria: z.string().nullable().optional(),
+  renisus: z.boolean().default(false),
+  detalhesEspecificos: DetalhesCannabisSchema,
+  searchText: z.string().optional(),
+});
+
+export const CannabisLoteInputSchema = z.object({
+  _meta: z.record(z.unknown()).optional(),
+  itens: z.array(CannabisLoteItemSchema).min(1),
+});
+
+export type CannabisLoteInput = z.infer<typeof CannabisLoteInputSchema>;
+export type CannabisLoteItem = z.infer<typeof CannabisLoteItemSchema>;
+
+export function normalizeCannabisLoteItem(
+  item: CannabisLoteItem,
+): MedicinaNaturalItemRecord {
+  const nomesAlternativos = item.nomesAlternativos
+    .map(sanitizeNomeAlternativo)
+    .filter((x): x is string => Boolean(x));
+  const det = item.detalhesEspecificos;
+  return {
+    slug: item.slug,
+    nome: item.nome,
+    nomesAlternativos,
+    nomeCientifico: item.nomeCientifico ?? null,
+    categoriaPratica: "CANNABIS",
+    indicacoes: item.indicacoes,
+    contraindicacoes: item.contraindicacoes,
+    precaucoes: item.precaucoes,
+    interacoesMedicamentosas: item.interacoesMedicamentosas ?? null,
+    posologia: item.posologia,
+    viaAdministracao: item.viaAdministracao,
+    statusRegulatorio: item.statusRegulatorio,
+    fontes: item.fontes,
+    alertaGestacaoPediatria: item.alertaGestacaoPediatria ?? null,
+    renisus: item.renisus,
+    detalhesEspecificos: det,
+    searchText:
+      item.searchText ??
+      buildMedicinaNaturalSearchText(
+        [
+          item.nome,
+          det.espectro.replace(/_/g, " "),
+          det.canabinoideDominante,
+          det.proporcaoCbdThc,
+          det.concentracaoCbdMgMl != null ? `cbd ${det.concentracaoCbdMgMl}` : "",
+          det.concentracaoThcMgMl != null ? `thc ${det.concentracaoThcMgMl}` : "",
+          det.formaFarmaceutica,
+        ],
+        nomesAlternativos.length ? nomesAlternativos : item.nomesAlternativos,
+      ),
+  };
+}

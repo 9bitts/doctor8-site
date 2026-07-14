@@ -12,6 +12,7 @@ import {
   loadChartMedicalDocuments,
   syncChartDocuments,
 } from "@/lib/patient-chart-documents";
+import { buildChartActivityTimeline } from "@/lib/chart-activity-timeline";
 import { Suspense } from "react";
 import RecordDetailClient from "./RecordDetailClient";
 
@@ -58,10 +59,10 @@ export default async function PatientChartDetail({
     chartEmail: record.email,
   });
 
-  const medicalDocuments = await loadChartMedicalDocuments(
-    record.id,
-    access.ownerProfessionalId,
-  );
+  const [medicalDocuments, activityTimeline] = await Promise.all([
+    loadChartMedicalDocuments(record.id, access.ownerProfessionalId),
+    buildChartActivityTimeline(record.id),
+  ]);
 
   let patientAvatarUrl: string | null = null;
   let profileAllergies: string | null = null;
@@ -140,6 +141,7 @@ export default async function PatientChartDetail({
       <RecordDetailClient
         chart={chart}
         initialDocuments={documents}
+        initialActivityTimeline={activityTimeline}
         initialTags={record.tags.map((tag) => ({
           id: tag.id,
           kind: tag.kind,

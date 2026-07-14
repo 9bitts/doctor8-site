@@ -7,7 +7,8 @@ export type NaturalMedicinePracticeId =
   | "terapia_florais"
   | "aromaterapia"
   | "homeopatia"
-  | "apiterapia";
+  | "apiterapia"
+  | "cannabis";
 
 export interface NaturalMedicinePracticeConfig {
   id: NaturalMedicinePracticeId;
@@ -21,7 +22,9 @@ export interface NaturalMedicinePracticeConfig {
   cardDescKey: string;
   /** Tailwind badge colors for hub cards */
   color: string;
-  icon: "Leaf" | "Flower2" | "Wind" | "Droplets" | "Hexagon";
+  icon: "Leaf" | "Flower2" | "Wind" | "Droplets" | "Hexagon" | "Sprout";
+  /** Visible only to physicians and dentists (RDC 1.015/2026) */
+  requiresCannabisPrescriber?: boolean;
 }
 
 export const NATURAL_MEDICINE_PRACTICES: NaturalMedicinePracticeConfig[] = [
@@ -79,6 +82,18 @@ export const NATURAL_MEDICINE_PRACTICES: NaturalMedicinePracticeConfig[] = [
     cardDescKey: "nm.practice.api.cardDesc",
     color: "bg-amber-100 text-amber-700",
     icon: "Hexagon",
+  },
+  {
+    id: "cannabis",
+    urlSlug: "cannabis",
+    practiceSlug: "cannabis",
+    hubTitleKey: "nm.practice.cannabis.title",
+    hubSubtitleKey: "nm.practice.cannabis.subtitle",
+    bannerKey: "nm.practice.cannabis.banner",
+    cardDescKey: "nm.practice.cannabis.cardDesc",
+    color: "bg-lime-100 text-lime-800",
+    icon: "Sprout",
+    requiresCannabisPrescriber: true,
   },
 ];
 

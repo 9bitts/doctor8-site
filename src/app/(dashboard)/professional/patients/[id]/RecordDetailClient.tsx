@@ -16,7 +16,7 @@ import {
   ArrowLeft, Plus, X, FileText, Paperclip, CheckCircle2, AlertCircle,
   Share2, Mail, Loader2, Tag, Pencil, Send, MapPin, MessageCircle, ExternalLink,
   Copy, Printer, RotateCw, ChevronDown, ChevronUp, FileType, Film, Download,
-  Activity, Stethoscope, Syringe, LineChart, Grid3X3, Ear, Utensils, HeartPulse, Pill, FileCheck,
+  Activity, Stethoscope, Syringe, LineChart, Grid3X3, Ear, Utensils, HeartPulse, Pill, FileCheck, Clock,
 } from "lucide-react";
 import AiSummarizeButton from "@/components/AiSummarizeButton";
 import { EmissionCardActions } from "@/components/professional/emissions/EmissionCardActions";
@@ -37,6 +37,7 @@ import NutritionPatientChartPanel from "@/components/nutritionist/NutritionPatie
 import NursePatientChartPanel from "@/components/nurse/NursePatientChartPanel";
 import PharmacistPatientChartPanel from "@/components/pharmacist/PharmacistPatientChartPanel";
 import ChartClinicalActions from "@/components/professional/ChartClinicalActions";
+import ChartActivityTimeline from "@/components/professional/ChartActivityTimeline";
 import CategorySearchSelect from "@/components/professional/CategorySearchSelect";
 import { openAuthenticatedPdf, openAuthenticatedBlob } from "@/lib/open-url-safely";
 import { uploadFileToApi } from "@/lib/upload-client";
@@ -88,6 +89,7 @@ import {
   isAuthFailureStatus,
   redirectToLoginAfterAuthFailure,
 } from "@/lib/session-extend-client";
+import type { ChartActivityEvent } from "@/lib/chart-activity-timeline";
 
 interface Chart {
   id: string;
@@ -291,6 +293,7 @@ function waPhone(raw: string, country?: string | null): string {
 export default function RecordDetailClient({
   chart,
   initialDocuments,
+  initialActivityTimeline = [],
   initialTags = [],
   chartAccess = "owner",
   readOnly = false,
@@ -298,6 +301,7 @@ export default function RecordDetailClient({
 }: {
   chart: Chart;
   initialDocuments: Doc[];
+  initialActivityTimeline?: ChartActivityEvent[];
   initialTags?: ChartTag[];
   chartAccess?: "owner" | "edit" | "view";
   readOnly?: boolean;
@@ -319,7 +323,7 @@ export default function RecordDetailClient({
   const consultReturnUrl = searchParams.get("returnUrl");
   const legacyLabel = (type: string) => t(LEGACY_KEYS[type] || "doctype.OTHER");
   const [docs, setDocs] = useState<Doc[]>(initialDocuments);
-  const [chartTab, setChartTab] = useState<"records" | "evolution" | "diagnoses" | "vaccines" | "growth" | "dental" | "audio" | "nutrition" | "nursing" | "pharmacy">("records");
+  const [chartTab, setChartTab] = useState<"activity" | "records" | "evolution" | "diagnoses" | "vaccines" | "growth" | "dental" | "audio" | "nutrition" | "nursing" | "pharmacy">("activity");
   const [recordFilter, setRecordFilter] = useState<RecordTimelineFilter>("all");
   const [showForm, setShowForm] = useState(false);
   const [editingDoc, setEditingDoc] = useState<Doc | null>(null);
@@ -485,7 +489,7 @@ export default function RecordDetailClient({
   useEffect(() => {
     const tab = searchParams.get("tab") ?? searchParams.get("view");
     const validTabs = new Set([
-      "records", "evolution", "diagnoses", "vaccines", "growth", "dental", "audio",
+      "activity", "records", "evolution", "diagnoses", "vaccines", "growth", "dental", "audio",
       "nutrition", "nursing", "pharmacy",
     ]);
     if (tab && validTabs.has(tab)) {
@@ -1596,6 +1600,7 @@ export default function RecordDetailClient({
       {/* Chart tabs */}
       <div className="flex flex-wrap gap-2">
         {([
+          { id: "activity" as const, label: t("chartTab.activity"), icon: Clock },
           { id: "records" as const, label: t("chartTab.records"), icon: FileText },
           { id: "evolution" as const, label: t("chartTab.evolution"), icon: Activity },
           { id: "diagnoses" as const, label: t("chartTab.diagnoses"), icon: Stethoscope },
@@ -1628,6 +1633,14 @@ export default function RecordDetailClient({
           </button>
         ))}
       </div>
+
+      {chartTab === "activity" && (
+        <ChartActivityTimeline
+          chartId={chart.id}
+          events={initialActivityTimeline}
+          pathname={pathname}
+        />
+      )}
 
       {chartTab === "evolution" && (
         <MetricsEvolutionPanel

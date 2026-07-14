@@ -14,6 +14,7 @@ import { controlInfo, MN_RX_SEARCH_TABS, type MnAddItemKind } from "./shared";
 export type MedicationSearchProps = {
   t: (k: string) => string;
   cfg: PrescriptionsPortalConfig;
+  canPrescribeCannabis?: boolean;
   drugQuery: string;
   drugResults: DrugSearchResult[];
   drugSearching: boolean;
@@ -49,6 +50,7 @@ export type MedicationSearchProps = {
 export function MedicationSearch({
   t,
   cfg,
+  canPrescribeCannabis = false,
   drugQuery,
   drugResults,
   drugSearching,
@@ -89,7 +91,9 @@ export function MedicationSearch({
             <>
               <div className="flex flex-wrap gap-2">
                 {MN_RX_SEARCH_TABS.filter(
-                  (tab) => !tab.floralOnly || cfg.allowFloral,
+                  (tab) =>
+                    (!tab.floralOnly || cfg.allowFloral) &&
+                    (!tab.cannabisOnly || canPrescribeCannabis),
                 ).map((tab) => {
                   const Icon = tab.icon;
                   const active =
@@ -136,7 +140,9 @@ export function MedicationSearch({
                   <Pill size={16} /> {t("rx.searchMode.medication")}
                 </button>
                 {MN_RX_SEARCH_TABS.filter(
-                  (tab) => !tab.floralOnly || cfg.allowFloral,
+                  (tab) =>
+                    (!tab.floralOnly || cfg.allowFloral) &&
+                    (!tab.cannabisOnly || canPrescribeCannabis),
                 ).map((tab) => {
                   const Icon = tab.icon;
                   const active =
@@ -302,7 +308,9 @@ export function MedicationSearch({
         {cfg.phytoOnly && (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-2">
             {MN_RX_SEARCH_TABS.filter(
-              (tab) => !tab.floralOnly || cfg.allowFloral,
+              (tab) =>
+                (!tab.floralOnly || cfg.allowFloral) &&
+                (!tab.cannabisOnly || canPrescribeCannabis),
             ).map((tab) => (
               <button
                 key={tab.mode}
@@ -356,6 +364,7 @@ export function MedicationSearch({
                   results={mnSearchResults}
                   onSelect={onMnListItemSelect}
                   className="max-h-[60vh]"
+                  t={t}
                 />
               ) : drugResults.length > 0 ? (
                 <DrugSearchResults

@@ -6,7 +6,7 @@ import { buildAppointmentIntakePayload } from "@/lib/appointment-intake";
 import { onAppointmentBooked } from "@/lib/post-booking";
 import type { ProviderType } from "@/lib/providers";
 import { PSYCHOANALYSIS_SPECIALTY } from "@/lib/providers";
-import { safeDecrypt } from "@/lib/psychoanalyst-api";
+import { decryptPatientName, safeDecrypt } from "@/lib/psychoanalyst-api";
 import { Prisma } from "@prisma/client";
 import { teleconsultJoinUrl } from "@/lib/appointment-join-window";
 import { notifyProfessionalNewBooking } from "@/lib/pro-appointment-notify";
@@ -515,7 +515,7 @@ export async function fulfillConsultationPayment(params: {
       const { sendAppointmentConfirmation } = await import("@/lib/email");
       await sendAppointmentConfirmation({
         patientEmail: user.email,
-        patientName: `${patient.firstName} ${patient.lastName}`,
+        patientName: decryptPatientName(patient.firstName, patient.lastName),
         doctorName: providerName,
         specialty: providerSpecialty,
         scheduledAt: new Date(scheduledAt),

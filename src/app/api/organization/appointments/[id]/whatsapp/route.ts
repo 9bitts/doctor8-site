@@ -5,6 +5,7 @@ import {
   buildAppointmentOrWhere,
   resolveAppointmentProviderName,
 } from "@/lib/organization-providers";
+import { decryptPatientName } from "@/lib/psychoanalyst-api";
 import { db } from "@/lib/db";
 import { decrypt } from "@/lib/encryption";
 import {
@@ -66,7 +67,10 @@ export async function POST(
     return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
   }
 
-  const patientName = `${appointment.patient.firstName} ${appointment.patient.lastName}`;
+  const patientName = decryptPatientName(
+    appointment.patient.firstName,
+    appointment.patient.lastName,
+  );
   const doctorName = provider.name;
   const phone = safeDecrypt(appointment.patient.phone);
 

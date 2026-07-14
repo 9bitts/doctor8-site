@@ -63,4 +63,10 @@ export const MN_PRACTICE_THEME: Record<
     button: "bg-amber-600 hover:bg-amber-700",
     icon: "text-amber-500",
   },
+  cannabis: {
+    card: "bg-lime-50 border-lime-200",
+    border: "hover:border-lime-300",
+    button: "bg-lime-700 hover:bg-lime-800",
+    icon: "text-lime-700",
+  },
 };

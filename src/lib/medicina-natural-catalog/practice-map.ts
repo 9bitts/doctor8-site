@@ -7,6 +7,7 @@ export const CATEGORIA_BY_PRACTICE_URL: Record<string, CategoriaPratica> = {
   aromaterapia: "AROMATERAPIA",
   homeopatia: "HOMEOPATIA",
   apiterapia: "APITERAPIA",
+  cannabis: "CANNABIS",
 };
 
 export function categoriaFromPracticeUrl(urlSlug: string): CategoriaPratica | null {
@@ -19,6 +20,7 @@ export const PRACTICE_URL_BY_CATEGORIA: Record<CategoriaPratica, string> = {
   AROMATERAPIA: "aromaterapia",
   HOMEOPATIA: "homeopatia",
   APITERAPIA: "apiterapia",
+  CANNABIS: "cannabis",
 };
 
 export function practiceUrlFromCategoria(categoria: CategoriaPratica): string {

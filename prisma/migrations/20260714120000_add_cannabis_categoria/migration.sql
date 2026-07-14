@@ -1,0 +1,3 @@
+-- Add CANNABIS category and PRODUTO_AUTORIZADO_ANVISA regulatory status
+ALTER TYPE "CategoriaPraticaMedicinaNatural" ADD VALUE IF NOT EXISTS 'CANNABIS';
+ALTER TYPE "StatusRegulatorioMedicinaNatural" ADD VALUE IF NOT EXISTS 'PRODUTO_AUTORIZADO_ANVISA';

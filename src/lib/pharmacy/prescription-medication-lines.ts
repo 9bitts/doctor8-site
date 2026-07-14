@@ -33,4 +33,5 @@ export const MN_ITEM_KIND_LABELS_PT: Partial<Record<PrescriptionItemKind, string
   homeopathy: "Homeopatia",
   aromatherapy: "Aromaterapia",
   apitherapy: "Apiterapia",
+  cannabis: "Cannabis medicinal",
 };

@@ -7,7 +7,7 @@ import {
   mapProfessionalPathForSpecialty,
   professionalPortalBaseFromSpecialty,
 } from "@/lib/psychologist-portal";
-import { safeDecrypt } from "@/lib/psychoanalyst-api";
+import { decryptPatientName, safeDecrypt } from "@/lib/psychoanalyst-api";
 import {
   DEFAULT_TIME_ZONE,
   formatAppointmentTimeWithLabel,
@@ -112,10 +112,6 @@ export function buildProviderAppointmentsLink(
 ): string {
   const path = `${provider.appointmentsUrl}?id=${appointmentId}`;
   return mapProfessionalPathForSpecialty(provider.specialty, path);
-}
-
-export function decryptPatientName(firstName: string, lastName: string): string {
-  return `${safeDecrypt(firstName)} ${safeDecrypt(lastName)}`.trim() || "Patient";
 }
 
 export async function notifyProfessionalNewBooking(params: {
@@ -324,7 +320,7 @@ export async function notifyPatientAppointmentConfirmed(params: {
     const { teleconsultJoinUrl } = await import("@/lib/appointment-join-window");
     await sendAppointmentConfirmation({
       patientEmail: params.patientEmail,
-      patientName: `${safeDecrypt(params.patientFirstName)} ${safeDecrypt(params.patientLastName)}`.trim(),
+      patientName: decryptPatientName(params.patientFirstName, params.patientLastName),
       doctorName: providerName,
       specialty: "Integrative therapy",
       scheduledAt: params.scheduledAt,

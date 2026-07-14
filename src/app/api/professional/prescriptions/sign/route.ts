@@ -19,7 +19,7 @@ import { audit } from "@/lib/audit";
 import { createSignatureSession } from "@/lib/lacuna";
 import { parseLacunaError } from "@/lib/lacuna-errors";
 import { buildPrescriptionPdf, type Lang } from "@/lib/prescription-pdf";
-import { enrichMedsForPrescriptionPdf } from "@/lib/medicina-natural-catalog/enrich-meds-for-pdf";
+import { enrichMedsForPrescriptionPdf, cannabisPdfComplianceLine } from "@/lib/medicina-natural-catalog/enrich-meds-for-pdf";
 import { formatLicense, getProfessionInfo, isDentistSpecialty } from "@/lib/profession-label";
 import { requireVerifiedProfessional } from "@/lib/professional-verified";
 import { getPublicBase, buildSignReturnUrl, assertPublicSignBase, resolveRequestLang } from "@/lib/sign-helpers";
@@ -162,8 +162,7 @@ export async function POST(req: NextRequest) {
     (pro as { clinicZip?: string | null }).clinicZip,
   ]);
 
-  const meds = await enrichMedsForPrescriptionPdf(
-    (prescription.medications as {
+  const medsRaw = (prescription.medications as {
       name: string;
       dosage: string;
       frequency: string;
@@ -173,12 +172,14 @@ export async function POST(req: NextRequest) {
       pharmaceuticalForm?: string;
       mnSlug?: string;
       renisus?: boolean;
+      itemKind?: import("@/lib/prescription-item-kind").PrescriptionItemKind;
     }[]).map((m) => ({
       ...m,
       frequency: FREQ[lang][m.frequency] || m.frequency,
-    })),
-    lang,
-  );
+    }));
+
+  const meds = await enrichMedsForPrescriptionPdf(medsRaw, lang);
+  const cannabisComplianceLine = cannabisPdfComplianceLine(meds, lang);
 
   const today = new Date().toLocaleDateString(locale, { year: "numeric", month: "long", day: "numeric" });
   const validUntil = prescription.validUntil
@@ -226,6 +227,7 @@ export async function POST(req: NextRequest) {
             ? "Documento emitido conforme Resolucion CFO 278/2025 y normativa odontologica vigente."
             : "Documento emitido conforme Resolucao CFO 278/2025 e normas vigentes do exercicio odontologico.")
         : null,
+      cannabisComplianceLine,
     });
   } catch (e) {
     console.error("[SIGN] erro ao gerar PDF:", e);

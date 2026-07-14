@@ -8,6 +8,7 @@ export const PRESCRIPTION_ITEM_KINDS = [
   "homeopathy",
   "aromatherapy",
   "apitherapy",
+  "cannabis",
 ] as const;
 
 export type PrescriptionItemKindZod = (typeof PRESCRIPTION_ITEM_KINDS)[number];

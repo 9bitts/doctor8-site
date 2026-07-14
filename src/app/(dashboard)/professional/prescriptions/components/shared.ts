@@ -1,5 +1,5 @@
 import {
-  Leaf, Flower2, Droplets, Wind, Hexagon,
+  Leaf, Flower2, Droplets, Wind, Hexagon, Sprout,
 } from "lucide-react";
 import type { EmissionKind } from "@/components/professional/emissions/EmissionsSignModal";
 import type { PrescriptionMedItem } from "@/components/professional/prescriptions/PrescriptionMedItemForm";
@@ -31,7 +31,7 @@ export type PlatformRxTarget = {
   linkStatus: PlatformMatch["linkStatus"];
 };
 
-export type MnAddItemKind = "phytotherapy" | "floral" | "homeopathy" | "aromatherapy" | "apitherapy";
+export type MnAddItemKind = "phytotherapy" | "floral" | "homeopathy" | "aromatherapy" | "apitherapy" | "cannabis";
 
 export const MN_RX_SEARCH_TABS: {
   mode: MnAddItemKind;
@@ -39,12 +39,14 @@ export const MN_RX_SEARCH_TABS: {
   labelKey: string;
   activeClass: string;
   floralOnly?: boolean;
+  cannabisOnly?: boolean;
 }[] = [
   { mode: "phytotherapy", icon: Leaf, labelKey: "rx.searchMode.phytotherapy", activeClass: "border-emerald-500 bg-emerald-50 text-emerald-800 ring-2 ring-emerald-500/20" },
   { mode: "floral", icon: Flower2, labelKey: "rx.searchMode.floral", activeClass: "border-pink-500 bg-pink-50 text-pink-800 ring-2 ring-pink-500/20", floralOnly: true },
   { mode: "homeopathy", icon: Droplets, labelKey: "rx.searchMode.homeopathy", activeClass: "border-sky-500 bg-sky-50 text-sky-800 ring-2 ring-sky-500/20" },
   { mode: "aromatherapy", icon: Wind, labelKey: "rx.searchMode.aromatherapy", activeClass: "border-violet-500 bg-violet-50 text-violet-800 ring-2 ring-violet-500/20" },
   { mode: "apitherapy", icon: Hexagon, labelKey: "rx.searchMode.apitherapy", activeClass: "border-amber-500 bg-amber-50 text-amber-800 ring-2 ring-amber-500/20" },
+  { mode: "cannabis", icon: Sprout, labelKey: "rx.searchMode.cannabis", activeClass: "border-lime-600 bg-lime-50 text-lime-900 ring-2 ring-lime-600/20", cannabisOnly: true },
 ];
 
 export function controlInfo(type: string | null | undefined): {

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import type { CategoriaPraticaMedicinaNatural } from "@prisma/client";
 import { requireProfessionalApi, isApiError } from "@/lib/api-auth";
+import { canPrescribeCannabisMedicinal } from "@/lib/profession-label";
+import { db } from "@/lib/db";
 import {
   countMedicinaNaturalItems,
   searchMedicinaNaturalItems,
@@ -12,6 +14,7 @@ const VALID_CATEGORIAS = new Set<string>([
   "AROMATERAPIA",
   "HOMEOPATIA",
   "APITERAPIA",
+  "CANNABIS",
 ]);
 
 export async function GET(req: NextRequest) {
@@ -26,6 +29,19 @@ export async function GET(req: NextRequest) {
     : undefined;
   const renisus = searchParams.get("renisus") === "1";
   const take = Math.min(Number(searchParams.get("take") || 20), 100);
+
+  if (categoria === "CANNABIS") {
+    const pro = await db.professionalProfile.findUnique({
+      where: { userId: ctx.userId },
+      select: { specialty: true },
+    });
+    if (!canPrescribeCannabisMedicinal(pro?.specialty)) {
+      return NextResponse.json(
+        { error: "Cannabis search restricted to physicians and dentists" },
+        { status: 403 },
+      );
+    }
+  }
 
   if (q && q.trim().length < 2) {
     return NextResponse.json({ items: [], total: 0 });

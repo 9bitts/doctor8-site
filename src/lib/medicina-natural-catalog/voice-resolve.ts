@@ -8,6 +8,7 @@ const CATEGORIA_TO_ITEM_KIND: Record<CategoriaPratica, PrescriptionItemKind> = {
   HOMEOPATIA: "homeopathy",
   AROMATERAPIA: "aromatherapy",
   APITERAPIA: "apitherapy",
+  CANNABIS: "cannabis",
 };
 
 export function itemKindFromMnCategoria(

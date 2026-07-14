@@ -19,6 +19,7 @@ import { sendEmailVerification } from "@/lib/email";
 import { resolveLoginPathForRegistration } from "@/lib/auth-portals";
 import { registerAckResponse } from "@/lib/register-anti-enum";
 import { encrypt } from "@/lib/encryption";
+import { safeDecrypt } from "@/lib/psychoanalyst-api";
 import {
   attachLinkedDocumentsToPatientProfile,
   linkChartsToPatientOnSignup,
@@ -295,12 +296,13 @@ export async function POST(req: NextRequest) {
           data: { identifier: normalizedEmail, token, expires },
         });
         try {
-          const resendName =
+          const resendName = safeDecrypt(
             existing.psychoanalystProfile?.firstName ||
             existing.integrativeTherapistProfile?.firstName ||
             existing.professionalProfile?.firstName ||
             existing.patientProfile?.firstName ||
-            firstName;
+            firstName,
+          );
           await sendEmailVerification({
             email: normalizedEmail,
             name: resendName,

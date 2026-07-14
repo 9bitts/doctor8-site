@@ -1,8 +1,9 @@
 ﻿"use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { usePathname, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
+import { canPrescribeCannabisMedicinal } from "@/lib/profession-label";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { localeOf } from "@/lib/i18n/translations";
 import { useToast } from "@/components/ui/toast";
@@ -70,7 +71,10 @@ import { type SavedEmission } from "@/components/professional/emissions/Emission
 
 export function usePrescriptionPage() {
   const { t, lang } = useI18n();
-  const { update: updateSession } = useSession();
+  const { data: session, update: updateSession } = useSession();
+  const canPrescribeCannabis = canPrescribeCannabisMedicinal(
+    session?.user?.professionalSpecialty,
+  );
   const toast = useToast();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -919,11 +923,11 @@ export function usePrescriptionPage() {
       if (floralCatalogSearch) {
         const items = await fetchMnByCategoriaForPrescription(cfg.apiBase, q, "FLORAL");
         setMnSearchResults(items);
-        setDrugResults(mapMnItemsToDrugResults(items));
+        setDrugResults(mapMnItemsToDrugResults(items, "floral"));
       } else if (mnSearchCategoria) {
         const items = await fetchMnByCategoriaForPrescription(cfg.apiBase, q, mnSearchCategoria);
         setMnSearchResults(items);
-        setDrugResults(mapMnItemsToDrugResults(items));
+        setDrugResults(mapMnItemsToDrugResults(items, mnSearchModeForUi));
       } else {
         const url = `/api/professional/drugs/search?q=${encodeURIComponent(q)}&country=${drugCountry}`;
         const res = await fetch(url);
@@ -1273,6 +1277,7 @@ export function usePrescriptionPage() {
     locale,
     cfg,
     accountHref,
+    canPrescribeCannabis,
     toast,
     view,
     savedEmission,

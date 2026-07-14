@@ -13,6 +13,7 @@ export const MN_LIST_SELECT = {
   alertaGestacaoPediatria: true,
   posologia: true,
   indicacoes: true,
+  detalhesEspecificos: true,
 } as const;
 
 export type MedicinaNaturalListItem = Prisma.MedicinaNaturalItemGetPayload<{

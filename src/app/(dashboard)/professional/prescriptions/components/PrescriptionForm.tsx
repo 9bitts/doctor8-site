@@ -171,13 +171,16 @@ export function PrescriptionForm({
             <div className="space-y-3">
               {medications.map((med, index) => {
                 const kind = med.itemKind || "medication";
-                const kindLabel = kind === "device" ? t("rx.itemKind.device")
-                  : kind === "phytotherapy" ? t("rx.itemKind.phytotherapy")
-                  : kind === "floral" ? t("rx.itemKind.floral")
-                  : kind === "homeopathy" ? t("rx.itemKind.homeopathy")
-                  : kind === "aromatherapy" ? t("rx.itemKind.aromatherapy")
-                  : kind === "apitherapy" ? t("rx.itemKind.apitherapy")
-                  : null;
+                const kindLabelMap: Partial<Record<typeof kind, string>> = {
+                  device: t("rx.itemKind.device"),
+                  phytotherapy: t("rx.itemKind.phytotherapy"),
+                  floral: t("rx.itemKind.floral"),
+                  homeopathy: t("rx.itemKind.homeopathy"),
+                  aromatherapy: t("rx.itemKind.aromatherapy"),
+                  apitherapy: t("rx.itemKind.apitherapy"),
+                  cannabis: t("rx.itemKind.cannabis"),
+                };
+                const kindLabel = kindLabelMap[kind] ?? null;
                 const fieldErrors = medItemFieldErrors(med);
                 const itemInvalid = !isMedItemValid(med);
                 const showErrors = highlightIncompleteMeds && itemInvalid;

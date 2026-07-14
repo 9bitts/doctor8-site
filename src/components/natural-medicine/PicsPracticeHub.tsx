@@ -16,6 +16,7 @@ import {
   Leaf,
   Library,
   Stethoscope,
+  Sprout,
   Users,
   Wind,
 } from "lucide-react";
@@ -34,6 +35,7 @@ const PRACTICE_ICONS = {
   Wind,
   Droplets,
   Hexagon,
+  Sprout,
 } as const;
 
 interface PicsPracticeHubProps {

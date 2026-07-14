@@ -22,6 +22,8 @@ import {
   NATURAL_MEDICINE_PRACTICES,
   naturalMedicineBasePath,
 } from "@/lib/natural-medicine/config";
+import { canPrescribeCannabisMedicinal } from "@/lib/profession-label";
+import { useSession } from "next-auth/react";
 import {
   fetchMedicinaNaturalCount,
   fetchMedicinaNaturalSearch,
@@ -45,6 +47,7 @@ const ICONS = {
   Droplets,
   FlaskConical,
   Hexagon,
+  Sprout,
 } as const;
 
 interface NaturalMedicineMainHubProps {
@@ -58,14 +61,22 @@ export default function NaturalMedicineMainHub({
   enabledPractices,
 }: NaturalMedicineMainHubProps) {
   const { t } = useI18n();
+  const { data: session } = useSession();
   const pathname = usePathname();
   const base = naturalMedicineBasePath(portal);
   const catalogPortal = naturalPortalToCatalogPortal(portal);
   const catalogBase = mnCatalogBasePath(catalogPortal);
 
-  const practices =
+  const canPrescribeCannabis = canPrescribeCannabisMedicinal(
+    session?.user?.professionalSpecialty,
+  );
+
+  const practices = (
     enabledPractices ??
-    (portal === "professional" ? NATURAL_MEDICINE_PRACTICES : []);
+    (portal === "professional" ? NATURAL_MEDICINE_PRACTICES : [])
+  ).filter(
+    (p) => !p.requiresCannabisPrescriber || canPrescribeCannabis,
+  );
 
   const href = (path: string) =>
     portal === "professional" ? mapProfessionalPathToPortal(pathname, path) : path;

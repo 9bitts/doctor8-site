@@ -12,6 +12,11 @@ export function safeDecrypt(v: string | null): string {
   }
 }
 
+/** PatientProfile first/last names are stored encrypted; use before display or email. */
+export function decryptPatientName(firstName: string, lastName: string): string {
+  return `${safeDecrypt(firstName)} ${safeDecrypt(lastName)}`.trim() || "Paciente";
+}
+
 /** Plain-text in DB; legacy rows may still hold PatientProfile ciphertext after manual conversion. */
 export function decryptPsychoanalystNameFields<T extends { firstName: string; lastName: string }>(
   row: T
