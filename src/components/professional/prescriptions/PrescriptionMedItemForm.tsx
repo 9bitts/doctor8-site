@@ -207,19 +207,6 @@ export default function PrescriptionMedItemForm({
             placeholder={t("rx2.manualNamePlaceholder")}
             className={`rx-inp-sm${rxFieldClass(showErrors && fieldErrors.name)}`}
           />
-          {med.presentation?.trim() && (
-            <div>
-              <label className="text-xs font-medium text-slate-600 block mb-1">
-                {"Apresenta\u00e7\u00e3o"}
-              </label>
-              <input
-                type="text"
-                readOnly
-                value={med.presentation}
-                className="rx-inp-sm bg-slate-100 text-slate-600 cursor-default"
-              />
-            </div>
-          )}
           {med.controlled && ci && (
             <p className="text-[11px] text-red-700 bg-red-50 rounded-md px-2 py-1 inline-flex items-center gap-1">
               <AlertCircle size={11} />
