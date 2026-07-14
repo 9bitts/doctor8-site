@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { encrypt } from "@/lib/encryption";
-import { requireIntegrativeTherapist, safeDecrypt } from "@/lib/integrative-therapist-api";
+import { requireIntegrativeTherapist } from "@/lib/integrative-therapist-api";
+import { shareResourceWithIntegrativeClient } from "@/lib/professional-library/share-helpers";
 
 export async function POST(
   req: NextRequest,
@@ -29,36 +29,14 @@ export async function POST(
     return NextResponse.json({ error: "Client not found" }, { status: 404 });
   }
 
-  await db.integrativeResourceShare.upsert({
-    where: {
-      resourceId_integrativeClientRecordId: {
-        resourceId: params.id,
-        integrativeClientRecordId,
-      },
-    },
-    create: { resourceId: params.id, integrativeClientRecordId },
-    update: { sharedAt: new Date() },
-  });
-
-  const title = safeDecrypt(resource.title);
-
-  if (client.linkedUserId) {
-    await db.notification
-      .create({
-        data: {
-          userId: client.linkedUserId,
-          type: "DOCUMENT_SHARED",
-          title: "Novo recurso compartilhado",
-          body: `Seu terapeuta compartilhou um recurso: ${title}`,
-          data: JSON.stringify({
-            titleKey: "notif.newResource.title",
-            bodyKey: "notif.newResource.body",
-            bodyParams: { title },
-          }),
-        },
-      })
-      .catch(() => {});
+  const result = await shareResourceWithIntegrativeClient(
+    resource,
+    integrativeClientRecordId,
+    therapist.id,
+  );
+  if ("error" in result) {
+    return NextResponse.json({ error: result.error }, { status: result.status });
   }
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, documentId: result.documentId, reused: result.reused });
 }

@@ -18,5 +18,8 @@ export async function GET(req: NextRequest) {
 
   const lang = parseLang(req.nextUrl.searchParams.get("lang"));
   const result = await suggestResourcesForChart(ctx, chartId, lang);
+  if ("error" in result && result.error === "FORBIDDEN") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   return NextResponse.json(result);
 }

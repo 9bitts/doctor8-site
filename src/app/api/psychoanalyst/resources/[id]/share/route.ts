@@ -1,18 +1,13 @@
-// POST ? share a resource with an analysand
+// POST — share a resource with an analysand
 
 import { NextRequest, NextResponse } from "next/server";
-import { encrypt, decrypt } from "@/lib/encryption";
 import { requirePsychoanalyst } from "@/lib/psychoanalyst-api";
 import { db } from "@/lib/db";
-
-function safeDecrypt(v: string | null): string {
-  if (!v) return "";
-  try { return decrypt(v); } catch { return v; }
-}
+import { shareResourceWithAnalysand } from "@/lib/professional-library/share-helpers";
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   const ctx = await requirePsychoanalyst();
   if ("error" in ctx && ctx.error) return ctx.error;
@@ -34,47 +29,10 @@ export async function POST(
     return NextResponse.json({ error: "Analysand not found" }, { status: 404 });
   }
 
-  await db.analysandResourceShare.upsert({
-    where: {
-      resourceId_analysandRecordId: { resourceId: params.id, analysandRecordId },
-    },
-    create: { resourceId: params.id, analysandRecordId },
-    update: { sharedAt: new Date() },
-  });
-
-  const title = safeDecrypt(resource.title);
-  const docContent = [
-    safeDecrypt(resource.content ?? null),
-    resource.url ? `Link: ${resource.url}` : "",
-  ].filter(Boolean).join("\n\n");
-
-  const doc = await db.medicalDocument.create({
-    data: {
-      analysandRecordId,
-      psychoanalystId: psychoanalyst.id,
-      type: "OTHER",
-      title:   encrypt(title),
-      content: docContent ? encrypt(docContent) : null,
-      fileUrl: resource.fileUrl ?? null,
-    },
-  });
-
-  if (record.linkedUserId) {
-    await db.notification.create({
-      data: {
-        userId: record.linkedUserId,
-        type:   "DOCUMENT_SHARED",
-        title:  "Novo recurso compartilhado",
-        body:   `Seu psicanalista compartilhou um recurso: ${title}`,
-        data:   JSON.stringify({
-          documentId: doc.id,
-          titleKey: "notif.newResource.title",
-          bodyKey: "notif.newResource.body",
-          bodyParams: { title },
-        }),
-      },
-    }).catch(() => {});
+  const result = await shareResourceWithAnalysand(resource, analysandRecordId, psychoanalyst.id);
+  if ("error" in result) {
+    return NextResponse.json({ error: result.error }, { status: result.status });
   }
 
-  return NextResponse.json({ ok: true, documentId: doc.id });
+  return NextResponse.json({ ok: true, documentId: result.documentId, reused: result.reused });
 }

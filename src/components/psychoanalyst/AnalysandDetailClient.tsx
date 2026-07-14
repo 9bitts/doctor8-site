@@ -9,8 +9,9 @@ import {
   formatShortDateWithYear,
   formatAppointmentTimeWithLabel,
 } from "@/lib/timezone";
-import { Loader2, ArrowLeft, Share2, Mail, Phone } from "lucide-react";
+import { Loader2, ArrowLeft, Share2, Mail, Phone, BookMarked } from "lucide-react";
 import VideoConsultReturnBanner from "@/components/professional/VideoConsultReturnBanner";
+import SendEducationModal from "@/components/professional/library/SendEducationModal";
 
 interface Note {
   id: string;
@@ -62,6 +63,7 @@ export default function AnalysandDetailClient({
   const [saveError, setSaveError] = useState("");
   const [shareStatus, setShareStatus] = useState<Record<string, ShareStatus>>({});
   const [confirmShareNoteId, setConfirmShareNoteId] = useState<string | null>(null);
+  const [showEducationModal, setShowEducationModal] = useState(false);
 
   async function loadAnalysand() {
     const res = await fetch(`/api/psychoanalyst/analysands/${analysandId}`);
@@ -187,6 +189,13 @@ export default function AnalysandDetailClient({
               </span>
             )}
           </div>
+          <button
+            type="button"
+            onClick={() => setShowEducationModal(true)}
+            className="inline-flex items-center gap-2 text-sm font-semibold text-violet-700 bg-violet-50 hover:bg-violet-100 border border-violet-200 px-3 py-2 rounded-xl"
+          >
+            <BookMarked size={16} /> {t("libHub.sendEducation")}
+          </button>
         </div>
       )}
 
@@ -287,6 +296,16 @@ export default function AnalysandDetailClient({
           ))
         )}
       </div>
+
+      {showEducationModal && analysand && (
+        <SendEducationModal
+          apiBase="/api/psychoanalyst"
+          chartId={analysandId}
+          patientName={`${analysand.firstName} ${analysand.lastName}`.trim()}
+          recipientMode="analysand"
+          onClose={() => setShowEducationModal(false)}
+        />
+      )}
     </div>
   );
 }

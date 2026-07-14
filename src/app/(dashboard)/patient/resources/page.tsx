@@ -18,12 +18,14 @@ interface ResourceItem {
   id: string;
   title: string;
   contentPreview: string | null;
+  fullContent?: string | null;
   url: string | null;
   hasFile: boolean;
   sharedAt: string;
   viewedAt: string | null;
   viewCount: number;
-  doctor: { name: string; specialty: string };
+  provider?: { name: string; specialty: string };
+  doctor?: { name: string; specialty: string };
 }
 
 export default function PatientResourcesPage() {
@@ -35,6 +37,7 @@ export default function PatientResourcesPage() {
   const [loadError, setLoadError] = useState(false);
   const [actionError, setActionError] = useState(false);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   useEffect(() => { fetchData(); }, []);
 
@@ -118,22 +121,39 @@ export default function PatientResourcesPage() {
         </div>
       ) : (
         <div className="space-y-3">
-          {resources.map((r) => (
+          {resources.map((r) => {
+            const provider = r.provider ?? r.doctor ?? { name: "", specialty: "" };
+            const showFull = expandedId === r.id;
+            const textBody = showFull ? (r.fullContent || r.contentPreview) : r.contentPreview;
+            return (
             <div key={r.id} className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
               <div className="flex items-start justify-between gap-4 flex-wrap">
                 <div className="min-w-0 flex-1">
                   <p className="font-semibold text-slate-800">{r.title}</p>
                   <p className="text-xs text-slate-400 mt-1">
-                    {t("presRes.fromDoctor").replace("{{name}}", r.doctor.name)}
-                    {r.doctor.specialty && (
-                      <span> · {getProfessionLabel(lang, r.doctor.specialty)}</span>
+                    {t("presRes.fromProvider").replace("{{name}}", provider.name)}
+                    {provider.specialty && (
+                      <span> · {getProfessionLabel(lang, provider.specialty)}</span>
                     )}
                   </p>
                   <p className="text-xs text-slate-400 mt-0.5">
                     {t("presRes.sharedAt").replace("{{date}}", fmt(r.sharedAt))}
                   </p>
-                  {r.contentPreview && (
-                    <p className="text-sm text-slate-600 mt-2 line-clamp-3">{r.contentPreview}</p>
+                  {textBody && (
+                    <div className="mt-2">
+                      <p className={`text-sm text-slate-600 whitespace-pre-line ${!showFull ? "line-clamp-3" : ""}`}>
+                        {textBody}
+                      </p>
+                      {(r.fullContent && r.fullContent.length > 300) && (
+                        <button
+                          type="button"
+                          onClick={() => setExpandedId(showFull ? null : r.id)}
+                          className="text-xs text-brand-600 mt-1 font-medium"
+                        >
+                          {showFull ? t("libHub.seeLess") : t("libHub.seeMore")}
+                        </button>
+                      )}
+                    </div>
                   )}
                 </div>
                 <div className="flex flex-wrap gap-2 shrink-0">
@@ -165,7 +185,8 @@ export default function PatientResourcesPage() {
                 </div>
               </div>
             </div>
-          ))}
+          );
+          })}
         </div>
       )}
     </div>

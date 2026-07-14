@@ -2,11 +2,12 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import {
   BookOpen, Plus, Loader2, Search, Share2, ExternalLink, Paperclip,
-  Sparkles, TrendingUp, Eye, Package, Stethoscope,
+  TrendingUp, Eye, Package, Stethoscope,
   Leaf, Flower2, Brain, Pill, Utensils, Heart, Microscope, FileText,
-  Pencil, Printer, Trash2, ChevronDown, ChevronUp,
+  Pencil, Printer, Trash2, ChevronDown, ChevronUp, FolderOpen, AlertCircle,
 } from "lucide-react";
 import AiSummarizeButton from "@/components/AiSummarizeButton";
 import { useI18n } from "@/lib/i18n/I18nProvider";
@@ -15,6 +16,7 @@ import type { LibraryProfessionKey, LibraryResourceDto, ResourceCategory } from 
 import { categoriesForProfession } from "@/lib/professional-library/profession";
 import ShareResourceModal from "./ShareResourceModal";
 import ShareWithColleagueModal from "./ShareWithColleagueModal";
+import ShareCollectionModal from "./ShareCollectionModal";
 import ResourceFormModal from "./ResourceFormModal";
 
 type HubTab = "mine" | "packs" | "reference";
@@ -50,7 +52,7 @@ export interface ProfessionalLibraryHubProps {
   apiBase?: string;
   /** Label for recipient in share modal (patient vs analysand vs integrative client) */
   recipientMode?: "patient" | "analysand" | "integrative_client";
-  /** Enable sharing with other Doctor8 professionals (health portal only). */
+  /** Enable sharing with other Doctor8 professionals. */
   allowColleagueShare?: boolean;
 }
 
@@ -79,30 +81,59 @@ export default function ProfessionalLibraryHub({
 }: ProfessionalLibraryHubProps) {
   const { t, lang } = useI18n();
   const toast = useToast();
+  const searchParams = useSearchParams();
 
   const [tab, setTab] = useState<HubTab>("mine");
   const [hub, setHub] = useState<HubData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<string>("all");
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<LibraryResourceDto | null>(null);
   const [shareTarget, setShareTarget] = useState<LibraryResourceDto | null>(null);
   const [colleagueShareTarget, setColleagueShareTarget] = useState<LibraryResourceDto | null>(null);
+  const [collectionShareTarget, setCollectionShareTarget] = useState<{ id: string; title: string } | null>(null);
   const [importing, setImporting] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
+  const subtitleKey =
+    recipientMode === "analysand"
+      ? "lib.subtitleAnalyst"
+      : recipientMode === "integrative_client"
+        ? "lib.subtitleIntegrative"
+        : "lib.subtitle";
+  const sharesCountKey =
+    recipientMode === "analysand"
+      ? "lib.sharesCountAnalyst"
+      : recipientMode === "integrative_client"
+        ? "lib.sharesCountIntegrative"
+        : "lib.sharesCount";
+
   const loadHub = useCallback(async () => {
     setLoading(true);
+    setLoadError(false);
     try {
       const res = await fetch(`${apiBase}/library?lang=${lang}`);
       const data = await res.json();
       if (res.ok) setHub(data);
-    } catch { /* ignore */ }
+      else setLoadError(true);
+    } catch {
+      setLoadError(true);
+    }
     setLoading(false);
   }, [apiBase, lang]);
 
   useEffect(() => { void loadHub(); }, [loadHub]);
+
+  useEffect(() => {
+    const resourceId = searchParams.get("resourceId");
+    if (!resourceId || !hub) return;
+    setTab("mine");
+    requestAnimationFrame(() => {
+      document.getElementById(`resource-${resourceId}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+  }, [searchParams, hub]);
 
   const professionKey = hub?.professionKey ?? "doctor";
   const categories = useMemo(() => categoriesForProfession(professionKey), [professionKey]);
@@ -129,7 +160,7 @@ export default function ProfessionalLibraryHub({
         body: JSON.stringify({ packId, lang }),
       });
       if (res.status === 409) {
-        toast.success(t("libHub.imported"));
+        toast.success(t("libHub.alreadyImported"));
       } else if (res.ok) {
         toast.success(t("libHub.importSuccess"));
         await loadHub();
@@ -145,15 +176,16 @@ export default function ProfessionalLibraryHub({
 
   async function deleteResource(id: string) {
     if (!confirm(t("lib.deleteConfirm"))) return;
-    await fetch(`${apiBase}/resources/${id}`, { method: "DELETE" });
+    const res = await fetch(`${apiBase}/resources/${id}`, { method: "DELETE" });
+    if (!res.ok) {
+      toast.error(t("lib.errGeneric"));
+      return;
+    }
     setHub((h) => h ? { ...h, resources: h.resources.filter((r) => r.id !== id) } : h);
   }
 
-  function handlePrint(id: string) {
-    window.open(`${apiBase}/resources/${id}/pdf`, "_blank", "noopener,noreferrer");
-  }
-
   const titleKey = `libHub.profession.${professionKey}`;
+  const highlightResourceId = searchParams.get("resourceId");
 
   return (
     <div className="max-w-5xl mx-auto space-y-6 pb-10">
@@ -164,7 +196,7 @@ export default function ProfessionalLibraryHub({
             <BookOpen className="text-brand-500 shrink-0" size={26} />
             {t(`libHub.profession.${professionKey}` as "libHub.profession.doctor") || t("lib.title")}
           </h1>
-          <p className="text-slate-500 text-sm mt-1">{t("lib.subtitle")}</p>
+          <p className="text-slate-500 text-sm mt-1">{t(subtitleKey as "lib.subtitle")}</p>
         </div>
         <button
           type="button"
@@ -214,6 +246,14 @@ export default function ProfessionalLibraryHub({
         <div className="flex items-center justify-center gap-2 text-slate-400 py-16">
           <Loader2 size={20} className="animate-spin" /> {t("common.loading")}
         </div>
+      ) : loadError ? (
+        <div className="flex flex-col items-center gap-3 py-16 bg-white rounded-2xl border border-amber-200">
+          <AlertCircle size={28} className="text-amber-500" />
+          <p className="text-sm text-slate-600">{t("common.loadError")}</p>
+          <button type="button" onClick={() => void loadHub()} className="text-sm font-semibold text-brand-600">
+            {t("common.retry")}
+          </button>
+        </div>
       ) : tab === "mine" ? (
         <>
           <div className="flex flex-col sm:flex-row gap-3">
@@ -238,6 +278,35 @@ export default function ProfessionalLibraryHub({
             </select>
           </div>
 
+          {(hub?.collections ?? []).length > 0 && (
+            <section className="space-y-2">
+              <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wide flex items-center gap-1.5">
+                <FolderOpen size={14} /> {t("libHub.collections")}
+              </h3>
+              <div className="grid sm:grid-cols-2 gap-2">
+                {(hub?.collections ?? []).map((col) => (
+                  <div key={col.id} className="bg-violet-50/50 border border-violet-100 rounded-xl p-3 flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-slate-800 truncate">{col.title}</p>
+                      <p className="text-[10px] text-slate-500 mt-0.5">
+                        {col.resourceCount} {t("libHub.packItems")} · {col.shareCount} {t(sharesCountKey as "lib.sharesCount")}
+                      </p>
+                    </div>
+                    {recipientMode === "patient" && (
+                      <button
+                        type="button"
+                        onClick={() => setCollectionShareTarget({ id: col.id, title: col.title })}
+                        className="shrink-0 text-xs font-semibold text-brand-600 hover:text-brand-700 inline-flex items-center gap-0.5"
+                      >
+                        <Share2 size={12} /> {t("libHub.shareCollection")}
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
           {filteredResources.length === 0 ? (
             <div className="bg-white rounded-2xl border border-slate-100 py-16 text-center shadow-sm">
               <BookOpen className="mx-auto text-slate-300 mb-3" size={40} />
@@ -259,7 +328,9 @@ export default function ProfessionalLibraryHub({
                   <article
                     key={r.id}
                     id={`resource-${r.id}`}
-                    className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden flex flex-col"
+                    className={`bg-white rounded-2xl border shadow-sm overflow-hidden flex flex-col ${
+                      highlightResourceId === r.id ? "border-brand-400 ring-2 ring-brand-100" : "border-slate-100"
+                    }`}
                   >
                     {thumb && (
                       <div className="aspect-video bg-slate-100 relative">
@@ -295,7 +366,7 @@ export default function ProfessionalLibraryHub({
                               onClick={() => setExpanded((e) => ({ ...e, [r.id]: !e[r.id] }))}
                               className="text-xs text-brand-500 mt-0.5 inline-flex items-center gap-0.5"
                             >
-                              {expanded[r.id] ? <><ChevronUp size={12} /> ver menos</> : <><ChevronDown size={12} /> ver mais</>}
+                              {expanded[r.id] ? <><ChevronUp size={12} /> {t("libHub.seeLess")}</> : <><ChevronDown size={12} /> {t("libHub.seeMore")}</>}
                             </button>
                           )}
                         </div>
@@ -304,7 +375,7 @@ export default function ProfessionalLibraryHub({
                       <div className="mt-2 flex flex-wrap gap-1.5">
                         {r.shareCount > 0 && (
                           <span className="text-[10px] bg-brand-50 text-brand-600 px-2 py-0.5 rounded-full">
-                            {r.shareCount} {t("lib.sharesCount")}
+                            {r.shareCount} {t(sharesCountKey as "lib.sharesCount")}
                           </span>
                         )}
                         {r.viewCount > 0 && (
@@ -347,8 +418,8 @@ export default function ProfessionalLibraryHub({
                             <ExternalLink size={12} />
                           </a>
                         )}
-                        <AiSummarizeButton resourceId={r.id} variant="compact" />
-                        <button type="button" onClick={() => handlePrint(r.id)} className="p-1.5 text-slate-400 hover:text-brand-500 rounded-lg" title={t("lib.print")}>
+                        <AiSummarizeButton resourceId={r.id} apiBase={apiBase} variant="compact" />
+                        <button type="button" onClick={() => window.open(`${apiBase}/resources/${r.id}/pdf`, "_blank", "noopener,noreferrer")} className="p-1.5 text-slate-400 hover:text-brand-500 rounded-lg" title={t("lib.print")}>
                           <Printer size={14} />
                         </button>
                         <button type="button" onClick={() => { setEditing(r); setShowForm(true); }} className="p-1.5 text-slate-400 hover:text-brand-500 rounded-lg" title={t("lib.edit")}>
@@ -376,7 +447,7 @@ export default function ProfessionalLibraryHub({
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-slate-800">{pack.title}</p>
                   <p className="text-xs text-slate-500 mt-0.5">{pack.description}</p>
-                  <p className="text-[10px] text-slate-400 mt-1">{pack.itemCount} itens</p>
+                  <p className="text-[10px] text-slate-400 mt-1">{pack.itemCount} {t("libHub.packItems")}</p>
                 </div>
               </div>
               <button
@@ -446,6 +517,16 @@ export default function ProfessionalLibraryHub({
           apiBase={apiBase}
           resource={colleagueShareTarget}
           onClose={() => setColleagueShareTarget(null)}
+        />
+      )}
+
+      {collectionShareTarget && (
+        <ShareCollectionModal
+          apiBase={apiBase}
+          collectionId={collectionShareTarget.id}
+          collectionTitle={collectionShareTarget.title}
+          onClose={() => setCollectionShareTarget(null)}
+          onShared={() => void loadHub()}
         />
       )}
     </div>

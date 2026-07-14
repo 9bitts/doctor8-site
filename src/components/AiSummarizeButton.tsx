@@ -9,6 +9,7 @@ import { useI18n, useT } from "@/lib/i18n/I18nProvider";
 interface AiSummarizeButtonProps {
   documentId?: string;
   resourceId?: string;
+  apiBase?: string;
   className?: string;
   variant?: "default" | "compact";
   labelKey?: string;
@@ -17,6 +18,7 @@ interface AiSummarizeButtonProps {
 export default function AiSummarizeButton({
   documentId,
   resourceId,
+  apiBase = "/api/professional",
   className = "",
   variant = "default",
   labelKey = "rec.analyzeAI",
@@ -35,7 +37,10 @@ export default function AiSummarizeButton({
     setSummary("");
 
     try {
-      const res = await fetch("/api/professional/ai-summarize", {
+      const endpoint = resourceId
+        ? `${apiBase}/library/ai-summarize`
+        : "/api/professional/ai-summarize";
+      const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "same-origin",

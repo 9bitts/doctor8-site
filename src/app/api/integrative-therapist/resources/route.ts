@@ -3,8 +3,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { encrypt } from "@/lib/encryption";
-import { auth } from "@/lib/auth";
-import { mapResourceRow, safeDecryptResource } from "@/lib/professional-library";
+import { requireIntegrativeTherapist } from "@/lib/integrative-therapist-api";
+import {
+  collectionOwnerWhere,
+  mapResourceRow,
+  resourceShareInclude,
+} from "@/lib/professional-library";
 import { z } from "zod";
 
 const createSchema = z.object({
@@ -17,45 +21,28 @@ const createSchema = z.object({
   collectionId: z.string().optional().or(z.literal("")),
 });
 
-async function requireIntegrative() {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { error: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) };
-  }
-  if (session.user.role !== "INTEGRATIVE_THERAPIST") {
-    return { error: NextResponse.json({ error: "Forbidden" }, { status: 403 }) };
-  }
-  const profile = await db.integrativeTherapistProfile.findUnique({
-    where: { userId: session.user.id },
-  });
-  if (!profile) {
-    return { error: NextResponse.json({ error: "No profile" }, { status: 404 }) };
-  }
-  return { profile };
-}
-
 export async function GET() {
-  const ctx = await requireIntegrative();
+  const ctx = await requireIntegrativeTherapist();
   if ("error" in ctx && ctx.error) return ctx.error;
-  const { profile } = ctx as { profile: { id: string } };
+  const { therapist } = ctx as Exclude<typeof ctx, { error: NextResponse }>;
 
+  const shareInc = resourceShareInclude("integrative");
   const resources = await db.resource.findMany({
-    where: { integrativeTherapistId: profile.id, active: true },
+    where: { integrativeTherapistId: therapist.id, active: true },
     orderBy: { updatedAt: "desc" },
     include: {
       collection: { select: { title: true } },
-      _count: { select: { shares: true } },
-      shares: { select: { viewCount: true } },
+      ...shareInc,
     },
   });
 
-  return NextResponse.json({ resources: resources.map(mapResourceRow) });
+  return NextResponse.json({ resources: resources.map((r) => mapResourceRow(r, "integrative")) });
 }
 
 export async function POST(req: NextRequest) {
-  const ctx = await requireIntegrative();
+  const ctx = await requireIntegrativeTherapist();
   if ("error" in ctx && ctx.error) return ctx.error;
-  const { profile } = ctx as { profile: { id: string } };
+  const { therapist } = ctx as Exclude<typeof ctx, { error: NextResponse }>;
 
   const body = await req.json();
   const parsed = createSchema.safeParse(body);
@@ -64,9 +51,23 @@ export async function POST(req: NextRequest) {
   }
   const d = parsed.data;
 
+  if (d.collectionId) {
+    const col = await db.resourceCollection.findFirst({
+      where: {
+        id: d.collectionId,
+        integrativeTherapistId: therapist.id,
+        active: true,
+      },
+    });
+    if (!col) {
+      return NextResponse.json({ error: "Collection not found" }, { status: 400 });
+    }
+  }
+
+  const shareInc = resourceShareInclude("integrative");
   const resource = await db.resource.create({
     data: {
-      integrativeTherapistId: profile.id,
+      integrativeTherapistId: therapist.id,
       title: encrypt(d.title),
       content: d.content ? encrypt(d.content) : null,
       url: d.url || null,
@@ -77,10 +78,9 @@ export async function POST(req: NextRequest) {
     },
     include: {
       collection: { select: { title: true } },
-      _count: { select: { shares: true } },
-      shares: { select: { viewCount: true } },
+      ...shareInc,
     },
   });
 
-  return NextResponse.json(mapResourceRow(resource), { status: 201 });
+  return NextResponse.json(mapResourceRow(resource, "integrative"), { status: 201 });
 }

@@ -37,12 +37,20 @@ export default function ResourceFormModal({
 
   async function handleSubmit() {
     if (!title.trim()) { setError(t("lib.errTitle")); return; }
+    if (formType === "link" && !url.trim()) {
+      setError(t("lib.errUrlRequired"));
+      return;
+    }
     if (formType === "link" && url.trim() && !/^https?:\/\/.+/i.test(url.trim())) {
       setError(t("lib.errUrl"));
       return;
     }
+    if (formType === "file" && !file && !resource?.hasFile) {
+      setError(t("lib.errFileRequired"));
+      return;
+    }
     if (formType === "text" && !content.trim()) {
-      setError(t("lib.errContent"));
+      setError(t("lib.errTextRequired"));
       return;
     }
 
@@ -111,7 +119,7 @@ export default function ResourceFormModal({
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">{t("libHub.filterAll").replace("Todas as ", "")}</label>
+            <label className="block text-xs font-medium text-slate-600 mb-1">{t("libHub.categoryLabel")}</label>
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value as ResourceCategory)}

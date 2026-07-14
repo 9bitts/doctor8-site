@@ -90,6 +90,7 @@ export function professionalPatientsHref(pathname: string, chartId: string): str
 /** Patients list page for the portal matching the current URL. */
 export function professionalPatientsListHref(pathname: string): string {
   if (pathname.startsWith("/psychologist")) return "/psychologist/patients";
+  if (pathname.startsWith("/psychoanalyst")) return "/psychoanalyst/analysands";
   if (pathname.startsWith("/nutricionista")) return "/nutricionista/patients";
   if (pathname.startsWith("/enfermeiro")) return "/enfermeiro/patients";
   if (pathname.startsWith("/farmaceutico")) return "/farmaceutico/patients";

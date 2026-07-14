@@ -5,4 +5,6 @@ export * from "./reference-links";
 export * from "./auth";
 export * from "./service";
 export * from "./colleague-share";
+export * from "./share-helpers";
+export * from "./resource-pdf";
 export * from "./share-pro-handler";

@@ -320,6 +320,7 @@ export const NUTRITIONIST_NAV_GROUPS: PlatformNavGroup[] = [
     labelKey: "nav.group.patients",
     items: [
       { href: "/nutricionista/patients", labelKey: "nav.patients", roles: ["PROFESSIONAL"], iconKey: "Users" },
+      { href: "/nutricionista/resources", labelKey: "nav.library", roles: ["PROFESSIONAL"], iconKey: "BookOpen" },
       { href: "/nutricionista/shared", labelKey: "nav.sharedWithMe", roles: ["PROFESSIONAL"], iconKey: "Inbox" },
       { href: "/nutricionista/messages", labelKey: "nav.messages", roles: ["PROFESSIONAL"], iconKey: "MessageSquare" },
     ],
@@ -369,6 +370,7 @@ export const NURSE_NAV_GROUPS: PlatformNavGroup[] = [
     labelKey: "nav.group.patients",
     items: [
       { href: "/enfermeiro/patients", labelKey: "nav.patients", roles: ["PROFESSIONAL"], iconKey: "Users" },
+      { href: "/enfermeiro/resources", labelKey: "nav.library", roles: ["PROFESSIONAL"], iconKey: "BookOpen" },
       { href: "/enfermeiro/shared", labelKey: "nav.sharedWithMe", roles: ["PROFESSIONAL"], iconKey: "Inbox" },
       { href: "/enfermeiro/messages", labelKey: "nav.messages", roles: ["PROFESSIONAL"], iconKey: "MessageSquare" },
     ],
@@ -421,6 +423,7 @@ export const PHARMACIST_NAV_GROUPS: PlatformNavGroup[] = [
     labelKey: "nav.group.patients",
     items: [
       { href: "/farmaceutico/patients", labelKey: "nav.patients", roles: ["PROFESSIONAL"], iconKey: "Users" },
+      { href: "/farmaceutico/resources", labelKey: "nav.library", roles: ["PROFESSIONAL"], iconKey: "BookOpen" },
       { href: "/farmaceutico/shared", labelKey: "nav.sharedWithMe", roles: ["PROFESSIONAL"], iconKey: "Inbox" },
       { href: "/farmaceutico/messages", labelKey: "nav.messages", roles: ["PROFESSIONAL"], iconKey: "MessageSquare" },
     ],
@@ -475,6 +478,7 @@ export const DENTIST_NAV_GROUPS: PlatformNavGroup[] = [
     labelKey: "nav.group.patients",
     items: [
       { href: "/odontologo/patients", labelKey: "nav.patients", roles: ["PROFESSIONAL"], iconKey: "Users" },
+      { href: "/odontologo/resources", labelKey: "nav.library", roles: ["PROFESSIONAL"], iconKey: "BookOpen" },
       { href: "/odontologo/shared", labelKey: "nav.sharedWithMe", roles: ["PROFESSIONAL"], iconKey: "Inbox" },
       { href: "/odontologo/messages", labelKey: "nav.messages", roles: ["PROFESSIONAL"], iconKey: "MessageSquare" },
     ],

@@ -40,7 +40,7 @@ export async function GET(req: NextRequest) {
   });
 
   return NextResponse.json({
-    resources: resources.map(mapResourceRow),
+    resources: resources.map((r) => mapResourceRow(r, "health")),
   });
 }
 
@@ -55,6 +55,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
 
   const d = parsed.data;
+
+  if (d.collectionId) {
+    const col = await db.resourceCollection.findFirst({
+      where: { id: d.collectionId, professionalId: ctx.professional.id, active: true },
+    });
+    if (!col) {
+      return NextResponse.json({ error: "Collection not found" }, { status: 400 });
+    }
+  }
 
   const resource = await db.resource.create({
     data: {
@@ -74,5 +83,5 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  return NextResponse.json(mapResourceRow(resource), { status: 201 });
+  return NextResponse.json(mapResourceRow(resource, "health"), { status: 201 });
 }

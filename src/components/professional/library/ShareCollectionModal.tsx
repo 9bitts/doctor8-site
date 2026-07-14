@@ -1,20 +1,14 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import {
-  X, Search, Share2, CheckCircle2, AlertCircle, Loader2, MessageCircle,
-} from "lucide-react";
+import { useEffect, useState } from "react";
+import { X, Search, Share2, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
-import { openWhatsAppShareLink } from "@/components/professional/emissions/whatsapp-share-link";
 import NoPatientChartsEmptyState from "@/components/professional/NoPatientChartsEmptyState";
-import type { LibraryResourceDto } from "@/lib/professional-library/types";
 
-interface ShareResourceModalProps {
+interface ShareCollectionModalProps {
   apiBase: string;
-  resource: LibraryResourceDto;
-  recipientMode: "patient" | "analysand" | "integrative_client";
-  preselectedChartId?: string;
-  preselectedName?: string;
+  collectionId: string;
+  collectionTitle: string;
   onClose: () => void;
   onShared: () => void;
 }
@@ -25,72 +19,39 @@ interface ChartRow {
   lastName: string;
 }
 
-function patientResourcesUrl() {
-  return `${window.location.origin}/patient/resources`;
-}
-
-export default function ShareResourceModal({
+export default function ShareCollectionModal({
   apiBase,
-  resource,
-  recipientMode,
-  preselectedChartId,
-  preselectedName,
+  collectionId,
+  collectionTitle,
   onClose,
   onShared,
-}: ShareResourceModalProps) {
+}: ShareCollectionModalProps) {
   const { t } = useI18n();
   const [charts, setCharts] = useState<ChartRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState(preselectedName ?? "");
+  const [search, setSearch] = useState("");
   const [sharingId, setSharingId] = useState<string | null>(null);
   const [status, setStatus] = useState<Record<string, "ok" | "error">>({});
-
-  const recordsEndpoint = recipientMode === "analysand"
-    ? "/api/psychoanalyst/analysands"
-    : recipientMode === "integrative_client"
-      ? "/api/integrative-therapist/clients"
-      : "/api/professional/records";
-
-  const shareEndpoint = (resourceId: string) => {
-    if (recipientMode === "analysand") return `/api/psychoanalyst/resources/${resourceId}/share`;
-    return `${apiBase}/resources/${resourceId}/share`;
-  };
-
-  const shareBodyKey = recipientMode === "analysand"
-    ? "analysandRecordId"
-    : recipientMode === "integrative_client"
-      ? "integrativeClientRecordId"
-      : "patientRecordId";
 
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch(recordsEndpoint);
+        const res = await fetch("/api/professional/records");
         const data = await res.json();
-        const list = data.records || data.analysands || data.clients || [];
-        setCharts(list);
+        setCharts(data.records || []);
       } catch { /* ignore */ }
       setLoading(false);
     })();
-  }, [recordsEndpoint]);
+  }, []);
 
-  const sortedCharts = useMemo(() => {
-    if (!preselectedChartId) return charts;
-    const pinned = charts.find((c) => c.id === preselectedChartId);
-    const rest = charts.filter((c) => c.id !== preselectedChartId);
-    return pinned ? [pinned, ...rest] : charts;
-  }, [charts, preselectedChartId]);
-
-  async function shareWith(chartId: string, patientName: string) {
+  async function shareWith(chartId: string) {
     setSharingId(chartId);
-    let ok = false;
     try {
-      const res = await fetch(shareEndpoint(resource.id), {
+      const res = await fetch(`${apiBase}/library/collections/${collectionId}/share`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ [shareBodyKey]: chartId }),
+        body: JSON.stringify({ patientRecordId: chartId }),
       });
-      ok = res.ok;
       if (res.ok) {
         setStatus((s) => ({ ...s, [chartId]: "ok" }));
         onShared();
@@ -101,17 +62,9 @@ export default function ShareResourceModal({
       setStatus((s) => ({ ...s, [chartId]: "error" }));
     }
     setSharingId(null);
-
-    if (ok && patientName) {
-      openWhatsAppShareLink({
-        patientName,
-        shareUrl: patientResourcesUrl(),
-        messageTemplate: t("libHub.whatsappTemplate"),
-      });
-    }
   }
 
-  const filtered = sortedCharts.filter((c) =>
+  const filtered = charts.filter((c) =>
     `${c.firstName} ${c.lastName}`.toLowerCase().includes(search.toLowerCase()),
   );
 
@@ -120,15 +73,11 @@ export default function ShareResourceModal({
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[85vh] flex flex-col">
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
           <div>
-            <h2 className="font-bold text-slate-800">{t("libHub.sharePrimary")}</h2>
-            <p className="text-xs text-slate-500 mt-0.5 line-clamp-1">{resource.title}</p>
-            {preselectedName && (
-              <p className="text-[10px] text-brand-600 mt-0.5">{preselectedName}</p>
-            )}
+            <h2 className="font-bold text-slate-800">{t("libHub.shareCollection")}</h2>
+            <p className="text-xs text-slate-500 mt-0.5 line-clamp-1">{collectionTitle}</p>
           </div>
           <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600"><X size={20} /></button>
         </div>
-
         <div className="p-4 flex-1 overflow-y-auto">
           <div className="relative mb-3">
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -139,7 +88,6 @@ export default function ShareResourceModal({
               className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 text-sm outline-none focus:border-brand-400"
             />
           </div>
-
           {loading ? (
             <div className="flex justify-center py-8"><Loader2 size={20} className="animate-spin text-slate-400" /></div>
           ) : filtered.length === 0 ? (
@@ -148,14 +96,8 @@ export default function ShareResourceModal({
             <ul className="space-y-2">
               {filtered.map((c) => {
                 const name = `${c.firstName} ${c.lastName}`.trim();
-                const isPinned = c.id === preselectedChartId;
                 return (
-                  <li
-                    key={c.id}
-                    className={`flex items-center justify-between gap-2 p-3 rounded-xl border ${
-                      isPinned ? "border-brand-300 bg-brand-50/50" : "border-slate-100"
-                    }`}
-                  >
+                  <li key={c.id} className="flex items-center justify-between gap-2 p-3 rounded-xl border border-slate-100">
                     <span className="text-sm font-medium text-slate-800 truncate">{name}</span>
                     <div className="flex items-center gap-1.5 shrink-0">
                       {status[c.id] === "ok" && <CheckCircle2 size={16} className="text-emerald-500" />}
@@ -163,20 +105,11 @@ export default function ShareResourceModal({
                       <button
                         type="button"
                         disabled={sharingId === c.id}
-                        onClick={() => shareWith(c.id, name)}
+                        onClick={() => shareWith(c.id)}
                         className="inline-flex items-center gap-1 text-xs font-semibold text-white bg-brand-500 hover:bg-brand-600 disabled:opacity-50 px-3 py-1.5 rounded-lg"
                       >
                         {sharingId === c.id ? <Loader2 size={12} className="animate-spin" /> : <Share2 size={12} />}
                         {t("libHub.sharePrimary")}
-                      </button>
-                      <button
-                        type="button"
-                        disabled={sharingId === c.id}
-                        onClick={() => shareWith(c.id, name)}
-                        className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-lg"
-                        title={t("libHub.whatsappShare")}
-                      >
-                        <MessageCircle size={14} />
                       </button>
                     </div>
                   </li>

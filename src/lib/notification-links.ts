@@ -156,6 +156,9 @@ export function resolveNotificationHref(
     }
 
     case "DOCUMENT_SHARED": {
+      if (typeof d.shareId === "string" && role === "PATIENT") {
+        return `/patient/resources?shareId=${d.shareId}`;
+      }
       if (typeof d.resourceId === "string") {
         if (role === "PATIENT") {
           return "/patient/resources";

@@ -8,6 +8,62 @@ import {
 } from "./profession";
 import type { LibraryOwnerIds, LibraryProviderKind } from "./types";
 
+/** Prisma include fragment for resource share counts/views by provider kind. */
+export function resourceShareInclude(kind: LibraryProviderKind) {
+  switch (kind) {
+    case "psychoanalyst":
+      return {
+        _count: { select: { analysandShares: true } },
+        analysandShares: { select: { viewCount: true } },
+      };
+    case "integrative":
+      return {
+        _count: { select: { integrativeShares: true } },
+        integrativeShares: { select: { viewCount: true } },
+      };
+    default:
+      return {
+        _count: { select: { shares: true } },
+        shares: { select: { viewCount: true } },
+      };
+  }
+}
+
+export function shareCountFromRow(
+  r: {
+    _count?: { shares?: number; analysandShares?: number; integrativeShares?: number };
+  },
+  kind?: LibraryProviderKind,
+): number {
+  if (kind === "psychoanalyst") return r._count?.analysandShares ?? 0;
+  if (kind === "integrative") return r._count?.integrativeShares ?? 0;
+  if (kind === "health") return r._count?.shares ?? 0;
+  return (
+    (r._count?.shares ?? 0) +
+    (r._count?.analysandShares ?? 0) +
+    (r._count?.integrativeShares ?? 0)
+  );
+}
+
+export function viewCountFromRow(
+  r: {
+    shares?: { viewCount: number }[];
+    analysandShares?: { viewCount: number }[];
+    integrativeShares?: { viewCount: number }[];
+  },
+  kind?: LibraryProviderKind,
+): number {
+  const list =
+    kind === "psychoanalyst"
+      ? r.analysandShares
+      : kind === "integrative"
+        ? r.integrativeShares
+        : kind === "health"
+          ? r.shares
+          : [...(r.shares ?? []), ...(r.analysandShares ?? []), ...(r.integrativeShares ?? [])];
+  return (list ?? []).reduce((sum, s) => sum + (s.viewCount || 0), 0);
+}
+
 export function safeDecryptResource(v: string | null | undefined): string {
   if (!v) return "";
   try {
@@ -149,11 +205,10 @@ export function mapResourceRow(
     analysandShares?: { viewCount: number }[];
     integrativeShares?: { viewCount: number }[];
   },
+  kind?: LibraryProviderKind,
 ) {
-  const shareCount =
-    r._count?.shares ?? r._count?.analysandShares ?? r._count?.integrativeShares ?? 0;
-  const shareList = r.shares ?? r.analysandShares ?? r.integrativeShares ?? [];
-  const viewCount = shareList.reduce((sum, s) => sum + (s.viewCount || 0), 0);
+  const shareCount = shareCountFromRow(r, kind);
+  const viewCount = viewCountFromRow(r, kind);
   return {
     id: r.id,
     title: safeDecryptResource(r.title),

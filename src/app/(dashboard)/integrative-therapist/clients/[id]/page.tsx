@@ -14,7 +14,8 @@ import {
 } from "@/lib/pics/consult-templates";
 import IntegrativeStructuredForm from "@/components/integrative-therapist/IntegrativeStructuredForm";
 import IntegrativeReferenceLibrary from "@/components/integrative-therapist/IntegrativeReferenceLibrary";
-import { Loader2, ArrowLeft, User, FileText, Share2 } from "lucide-react";
+import { Loader2, ArrowLeft, User, FileText, Share2, BookMarked } from "lucide-react";
+import SendEducationModal from "@/components/professional/library/SendEducationModal";
 
 interface ClientData {
   id: string;
@@ -74,6 +75,7 @@ export default function IntegrativeClientDetailPage() {
   const [sharingId, setSharingId] = useState<string | null>(null);
   const [showArchiveModal, setShowArchiveModal] = useState(false);
   const [archiving, setArchiving] = useState(false);
+  const [showEducationModal, setShowEducationModal] = useState(false);
 
   const langCode = lang.startsWith("pt") ? "pt" : lang.startsWith("es") ? "es" : "en";
   const locale = lang.startsWith("pt") ? "pt-BR" : lang.startsWith("es") ? "es-ES" : "en-US";
@@ -325,12 +327,21 @@ export default function IntegrativeClientDetailPage() {
             </span>
           </div>
         </div>
-        <Link
-          href={`/integrative-therapist/clients/${clientId}/consult`}
-          className="inline-flex items-center justify-center gap-2 bg-teal-600 hover:bg-teal-700 text-white font-semibold text-sm px-4 py-2.5 rounded-xl shrink-0"
-        >
-          {t("it.consult.start")}
-        </Link>
+        <div className="flex flex-wrap gap-2 shrink-0">
+          <button
+            type="button"
+            onClick={() => setShowEducationModal(true)}
+            className="inline-flex items-center justify-center gap-2 bg-white border border-teal-200 text-teal-700 hover:bg-teal-50 font-semibold text-sm px-4 py-2.5 rounded-xl"
+          >
+            <BookMarked size={16} /> {t("libHub.sendEducation")}
+          </button>
+          <Link
+            href={`/integrative-therapist/clients/${clientId}/consult`}
+            className="inline-flex items-center justify-center gap-2 bg-teal-600 hover:bg-teal-700 text-white font-semibold text-sm px-4 py-2.5 rounded-xl"
+          >
+            {t("it.consult.start")}
+          </Link>
+        </div>
       </div>
 
       {tab === "summary" && (
@@ -586,6 +597,16 @@ export default function IntegrativeClientDetailPage() {
             )}
           </div>
         </>
+      )}
+
+      {showEducationModal && client && (
+        <SendEducationModal
+          apiBase="/api/integrative-therapist"
+          chartId={clientId}
+          patientName={`${client.firstName} ${client.lastName}`.trim()}
+          recipientMode="integrative_client"
+          onClose={() => setShowEducationModal(false)}
+        />
       )}
     </div>
   );

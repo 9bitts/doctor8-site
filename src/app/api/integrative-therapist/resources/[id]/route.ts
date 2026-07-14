@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { encrypt } from "@/lib/encryption";
-import { auth } from "@/lib/auth";
-import { mapResourceRow } from "@/lib/professional-library";
+import { requireIntegrativeTherapist } from "@/lib/integrative-therapist-api";
+import { mapResourceRow, resourceShareInclude } from "@/lib/professional-library";
 import { z } from "zod";
 
 const updateSchema = z.object({
@@ -14,21 +14,15 @@ const updateSchema = z.object({
   contentType: z.enum(["link", "file", "text"]).optional(),
 });
 
-async function getOwned(userId: string, id: string) {
-  const profile = await db.integrativeTherapistProfile.findUnique({ where: { userId } });
-  if (!profile) return null;
-  const resource = await db.resource.findUnique({ where: { id } });
-  if (!resource || resource.integrativeTherapistId !== profile.id) return null;
-  return { profile, resource };
-}
-
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const ctx = await requireIntegrativeTherapist();
+  if ("error" in ctx && ctx.error) return ctx.error;
+  const { therapist } = ctx as Exclude<typeof ctx, { error: NextResponse }>;
+
+  const resource = await db.resource.findUnique({ where: { id: params.id } });
+  if (!resource || resource.integrativeTherapistId !== therapist.id) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
-  const owned = await getOwned(session.user.id, params.id);
-  if (!owned) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const parsed = updateSchema.safeParse(await req.json());
   if (!parsed.success) {
@@ -36,7 +30,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   }
   const d = parsed.data;
 
-  const resource = await db.resource.update({
+  const shareInc = resourceShareInclude("integrative");
+  const updated = await db.resource.update({
     where: { id: params.id },
     data: {
       title: encrypt(d.title),
@@ -48,21 +43,22 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     },
     include: {
       collection: { select: { title: true } },
-      _count: { select: { shares: true } },
-      shares: { select: { viewCount: true } },
+      ...shareInc,
     },
   });
 
-  return NextResponse.json(mapResourceRow(resource));
+  return NextResponse.json(mapResourceRow(updated, "integrative"));
 }
 
 export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const ctx = await requireIntegrativeTherapist();
+  if ("error" in ctx && ctx.error) return ctx.error;
+  const { therapist } = ctx as Exclude<typeof ctx, { error: NextResponse }>;
+
+  const resource = await db.resource.findUnique({ where: { id: params.id } });
+  if (!resource || resource.integrativeTherapistId !== therapist.id) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
-  const owned = await getOwned(session.user.id, params.id);
-  if (!owned) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   await db.resource.update({ where: { id: params.id }, data: { active: false } });
   return NextResponse.json({ ok: true });

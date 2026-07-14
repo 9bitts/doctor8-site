@@ -5,8 +5,9 @@ import {
   collectionOwnerWhere,
   mapResourceRow,
   requireLibraryAuth,
-  resourceOwnerWhere,
+  resourceShareInclude,
   safeDecryptResource,
+  shareCountFromRow,
 } from "@/lib/professional-library";
 import { z } from "zod";
 
@@ -20,6 +21,9 @@ export async function GET() {
   const ctx = await requireLibraryAuth();
   if (!ctx.ok) return ctx.error;
 
+  const kind = ctx.owner.kind;
+  const shareInc = resourceShareInclude(kind);
+
   const collections = await db.resourceCollection.findMany({
     where: { ...collectionOwnerWhere(ctx.owner), active: true },
     orderBy: { updatedAt: "desc" },
@@ -27,7 +31,7 @@ export async function GET() {
       _count: { select: { resources: true } },
       resources: {
         where: { active: true },
-        include: { _count: { select: { shares: true } }, shares: { select: { viewCount: true } } },
+        include: shareInc,
       },
     },
   });
@@ -39,8 +43,8 @@ export async function GET() {
       description: safeDecryptResource(c.description) || null,
       category: c.category,
       resourceCount: c._count.resources,
-      shareCount: c.resources.reduce((sum, r) => sum + r._count.shares, 0),
-      resources: c.resources.map(mapResourceRow),
+      shareCount: c.resources.reduce((sum, r) => sum + shareCountFromRow(r, kind), 0),
+      resources: c.resources.map((r) => mapResourceRow(r, kind)),
       createdAt: c.createdAt.toISOString(),
     })),
   });
