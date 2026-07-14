@@ -11,6 +11,7 @@ export function resolveFormType(
   if (intent.skillId === "exam_request") return "exam_request";
   if (intent.skillId === "clinical_document") return "clinical_document";
   if (intent.skillId === "sbar_note") return "sbar";
+  if (intent.skillId === "sae_note") return "sae";
   if (intent.skillId === "med_review") return "med_review";
 
   if (intent.skillId === "anamnesis") {
@@ -35,6 +36,8 @@ export function formRouteForType(portalId: VoicePortalId, formType: VoiceFormTyp
   switch (formType) {
     case "sbar":
       return "/enfermeiro/sbar";
+    case "sae":
+      return "/enfermeiro/sae";
     case "care_plan":
       return "/enfermeiro/prescricao";
     case "med_review":

@@ -134,6 +134,47 @@ export async function processVoiceCommand(params: {
     };
   }
 
+  if (intent.skillId === "anamnesis" && skillsPortal === "PSYCHOLOGIST") {
+    const matches = await resolvePatientMatches({
+      providerId: auth.providerId,
+      portalId,
+      patientName: intent.patientName,
+    });
+
+    if (matches.length > 1) {
+      return {
+        action: "clarify",
+        message: msg(lang, "Encontrei mais de um paciente.", "I found more than one patient.", "Encontré más de un paciente."),
+        transcript,
+        question: msg(lang, "Qual paciente?", "Which patient?", "¿Qué paciente?"),
+        options: matches.map((m) => m.displayName),
+      };
+    }
+
+    const patientRecordId = matches[0]?.patientRecordId || params.sessionPatientRecordId;
+    const anamnesisBase =
+      portalId === "PROFESSIONAL"
+        ? "/professional/psychology/anamnesis"
+        : "/psychologist/anamnesis";
+
+    let route = anamnesisBase;
+    if (patientRecordId) {
+      route += `?patientRecordId=${encodeURIComponent(patientRecordId)}`;
+    } else if (intent.patientName) {
+      route += `?q=${encodeURIComponent(intent.patientName)}`;
+    }
+
+    const patientName = matches[0]?.displayName || intent.patientName || undefined;
+    return {
+      action: "navigate",
+      route,
+      message: patientName
+        ? msg(lang, `Abrindo anamnese de ${patientName}.`, `Opening anamnesis for ${patientName}.`, `Abriendo anamnesis de ${patientName}.`)
+        : msg(lang, "Abrindo anamnese psicológica.", "Opening psychological anamnesis.", "Abriendo anamnesis psicológica."),
+      transcript,
+    };
+  }
+
   if (intent.skillId === "prescribe") {
     const prefill = await buildPrescriptionPrefill({
       providerId: auth.providerId,
@@ -178,6 +219,7 @@ export async function processVoiceCommand(params: {
   const formSkills = new Set([
     "clinical_note",
     "sbar_note",
+    "sae_note",
     "med_review",
     "anamnesis",
     "meal_plan",

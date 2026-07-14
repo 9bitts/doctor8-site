@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { psychologistHubHref } from "@/lib/psychologist-portal";
 import {
@@ -19,6 +19,7 @@ interface Invite {
 export default function PsychologyAnamnesisClient() {
   const { t } = useI18n();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const hubHref = psychologistHubHref(pathname);
 
   const [invites, setInvites] = useState<Invite[]>([]);
@@ -45,6 +46,16 @@ export default function PsychologyAnamnesisClient() {
       setLoading(false);
     })();
   }, []);
+
+  useEffect(() => {
+    const q = searchParams.get("q");
+    if (q) setPatientQuery(q);
+
+    const patientRecordId = searchParams.get("patientRecordId");
+    if (!patientRecordId || charts.length === 0) return;
+    const chart = charts.find((c) => c.id === patientRecordId);
+    if (chart) setSelectedPatient(chart);
+  }, [searchParams, charts]);
 
   const filtered = patientQuery.trim()
     ? charts.filter((c) => `${c.firstName} ${c.lastName}`.toLowerCase().includes(patientQuery.toLowerCase()))

@@ -59,7 +59,7 @@ RULES:
 - For prescribe: extract medications array with name, dosage, frequency, duration, instructions when spoken.
 - For exam_request: extract examItems as array of exam names; notes and cid when spoken.
 - For clinical_document: put document body in clinicalText; infer documentType CERTIFICATE, REPORT or OTHER.
-- For clinical_note / sbar_note / med_review / anamnesis / meal_plan: put spoken clinical content in clinicalText.
+- For clinical_note / sbar_note / sae_note / med_review / anamnesis / meal_plan: put spoken clinical content in clinicalText.
 - For navigate: set targetRoute to the best matching href from the navigation list, or null if unclear.
 - For search_patient: set patientName.
 - For schedule: set scheduleHint with date/time text if mentioned.
@@ -68,7 +68,7 @@ RULES:
 
 Return JSON shape:
 {
-  "skillId": "navigate|prescribe|exam_request|clinical_document|clinical_note|search_patient|schedule|sbar_note|med_review|anamnesis|meal_plan",
+  "skillId": "navigate|prescribe|exam_request|clinical_document|clinical_note|search_patient|schedule|sbar_note|sae_note|med_review|anamnesis|meal_plan",
   "confidence": 0.0,
   "patientName": string|null,
   "medications": [{"name":"","dosage":"","frequency":"","duration":"","instructions":""}]|null,

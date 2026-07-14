@@ -14,6 +14,36 @@ const FORM_SCHEMAS: Record<VoiceFormType, string> = {
   "recommendation": "string",
   "recipientNote": "string optional"
 }`,
+  sae: `{
+  "history": {
+    "chiefComplaint": "string",
+    "allergies": "string optional",
+    "medications": "string optional",
+    "pastHistory": "string optional",
+    "familyHistory": "string optional",
+    "socialHistory": "string optional"
+  },
+  "assessment": {
+    "generalAppearance": "string optional",
+    "vitalSigns": "string optional",
+    "skin": "string optional",
+    "respiratory": "string optional",
+    "cardiovascular": "string optional",
+    "neurological": "string optional",
+    "gastrointestinal": "string optional",
+    "notes": "string optional"
+  },
+  "plan": {
+    "goals": "string optional",
+    "interventions": ["one intervention per item"],
+    "notes": "string optional"
+  },
+  "implementation": {
+    "actions": "string optional",
+    "evaluation": "string optional",
+    "notes": "string optional"
+  }
+}`,
   care_plan: `{
   "title": "string",
   "interventionText": "newline-separated interventions",

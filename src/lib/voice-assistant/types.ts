@@ -22,6 +22,7 @@ export type VoiceSkillId =
   | "search_patient"
   | "schedule"
   | "sbar_note"
+  | "sae_note"
   | "med_review"
   | "anamnesis"
   | "meal_plan"
@@ -30,6 +31,7 @@ export type VoiceSkillId =
 
 export type VoiceFormType =
   | "sbar"
+  | "sae"
   | "care_plan"
   | "med_review"
   | "reconciliation"
@@ -48,6 +50,38 @@ export type SbarPrefill = {
   assessment?: string;
   recommendation?: string;
   recipientNote?: string;
+};
+
+export type SaePrefill = {
+  history?: {
+    chiefComplaint?: string;
+    allergies?: string;
+    medications?: string;
+    pastHistory?: string;
+    familyHistory?: string;
+    socialHistory?: string;
+  };
+  assessment?: {
+    generalAppearance?: string;
+    vitalSigns?: string;
+    skin?: string;
+    respiratory?: string;
+    cardiovascular?: string;
+    neurological?: string;
+    gastrointestinal?: string;
+    notes?: string;
+  };
+  diagnoses?: Array<{ id: string; code?: string; label: string }>;
+  plan?: {
+    goals?: string;
+    interventions?: string[];
+    notes?: string;
+  };
+  implementation?: {
+    actions?: string;
+    evaluation?: string;
+    notes?: string;
+  };
 };
 
 export type CarePlanPrefill = {
@@ -129,6 +163,7 @@ export type ClinicalDocumentPrefill = {
 
 export type VoiceFormData =
   | SbarPrefill
+  | SaePrefill
   | CarePlanPrefill
   | MedReviewPrefill
   | ReconciliationPrefill

@@ -6,6 +6,8 @@ import { Loader2, Save } from "lucide-react";
 import { NURSING_DIAGNOSES } from "@/lib/nursing/diagnoses";
 import type { SaeData } from "@/lib/nursing/sae-types";
 import type { NurseChart } from "./NurseChartWorkspace";
+import { useVoiceFormPrefill, VoicePrefillBanner } from "@/components/voice-assistant/useVoiceFormPrefill";
+import type { SaePrefill } from "@/lib/voice-assistant/types";
 
 const STEPS = ["history", "assessment", "diagnoses", "plan", "implementation"] as const;
 
@@ -24,6 +26,29 @@ export default function SaeModule({ chart }: { chart: NurseChart }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+
+  const { voicePrefillActive } = useVoiceFormPrefill({
+    formType: "sae",
+    chartId: chart.id,
+    onApply: (raw) => {
+      const d = raw as SaePrefill;
+      setData((prev) => ({
+        history: { ...prev.history, ...d.history },
+        assessment: { ...prev.assessment, ...d.assessment },
+        diagnoses: d.diagnoses?.length ? d.diagnoses : prev.diagnoses,
+        plan: {
+          ...prev.plan,
+          ...d.plan,
+          interventions: d.plan?.interventions ?? prev.plan.interventions,
+        },
+        implementation: { ...prev.implementation, ...d.implementation },
+      }));
+      if (d.history && Object.values(d.history).some(Boolean)) setStep("history");
+      else if (d.assessment && Object.values(d.assessment).some(Boolean)) setStep("assessment");
+      else if (d.plan && (d.plan.goals || d.plan.interventions?.length)) setStep("plan");
+      else if (d.implementation && Object.values(d.implementation).some(Boolean)) setStep("implementation");
+    },
+  });
 
   useEffect(() => {
     (async () => {
@@ -85,6 +110,7 @@ export default function SaeModule({ chart }: { chart: NurseChart }) {
 
   return (
     <div className="space-y-6">
+      <VoicePrefillBanner active={voicePrefillActive} />
       <div className="flex flex-wrap gap-2">
         {STEPS.map((s, i) => (
           <button

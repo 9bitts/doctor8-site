@@ -100,6 +100,16 @@ const BASE_SKILLS: Partial<Record<VoicePortalId, VoiceSkill[]>> = {
   ],
   NURSE: [
     { id: "sbar_note", labelKey: "voice.skill.sbar", route: "/enfermeiro/sbar", description: "SBAR handoff note", examples: ["SBAR da paciente Ana, saturação 92%"] },
+    {
+      id: "sae_note",
+      labelKey: "voice.skill.sae",
+      route: "/enfermeiro/sae",
+      description: "SAE systematic nursing assessment (history, assessment, plan)",
+      examples: [
+        "SAE da paciente Ana, queixa de dor abdominal, alergia a dipirona",
+        "Avaliação SAE do João, saturação 94%, pele normocorada",
+      ],
+    },
     { id: "clinical_note", labelKey: "voice.skill.carePlan", route: "/enfermeiro/prescricao", description: "Care plan documentation", examples: ["Plano de cuidados para o paciente João"] },
     { id: "navigate", labelKey: "voice.skill.navigate", description: "Open a portal section", examples: ["Abrir SAE", "Abrir checagem"] },
     { id: "search_patient", labelKey: "voice.skill.searchPatient", route: "/enfermeiro/patients", description: "Find a patient", examples: ["Buscar paciente Maria"] },

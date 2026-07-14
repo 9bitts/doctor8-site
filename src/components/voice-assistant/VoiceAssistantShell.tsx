@@ -9,6 +9,7 @@ import { useI18n } from "@/lib/i18n/I18nProvider";
 import { voiceT } from "@/lib/voice-assistant/i18n";
 import { resolveVoicePortalFromPathname, resolveSkillsPortalFromPathname } from "@/lib/voice-assistant/portal-resolver";
 import { getPortalVoiceExamples, formatVoiceHint } from "@/lib/voice-assistant/portal-examples";
+import OwlIcon from "@/components/voice-assistant/OwlIcon";
 import {
   storeVoiceClinicalNote,
   storeVoiceFormPrefill,
@@ -343,21 +344,34 @@ export default function VoiceAssistantShell({ portalId, userId, variant = "fab" 
       <button
         type="button"
         onClick={() => { resetSession(); setOpen(true); }}
-        className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-violet-700 bg-violet-50 hover:bg-violet-100 border border-violet-200 transition"
+        className="hidden sm:flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium transition"
+        style={{
+          color: "#4338ca",
+          background: "linear-gradient(135deg, rgba(224,231,255,0.9) 0%, rgba(237,233,254,0.95) 100%)",
+          border: "1px solid rgba(99, 102, 241, 0.25)",
+        }}
         aria-label={t("headerLabel")}
       >
-        <Mic size={14} />
+        <OwlIcon size={16} />
         <span className="hidden md:inline">{t("headerLabel")}</span>
       </button>
     ) : (
       <button
         type="button"
         onClick={() => { resetSession(); setOpen(true); }}
-        className="fixed z-[45] bottom-[calc(5.5rem+env(safe-area-inset-bottom))] left-4 sm:left-6 w-14 h-14 rounded-full bg-gradient-to-br from-violet-600 to-indigo-700 text-white shadow-lg hover:shadow-xl hover:scale-105 transition-all flex items-center justify-center"
+        className="fixed z-[45] bottom-[calc(5.5rem+env(safe-area-inset-bottom))] left-4 sm:left-6 w-14 h-14 rounded-full flex items-center justify-center transition-all hover:scale-105"
+        style={{
+          background: "linear-gradient(145deg, #0891b2 0%, #6366f1 55%, #7c3aed 100%)",
+          color: "#ffffff",
+          boxShadow: "0 10px 28px rgba(99, 102, 241, 0.45), 0 0 0 1px rgba(255,255,255,0.15) inset",
+        }}
         aria-label={t("openLabel")}
       >
-        <Mic size={22} />
-        <span className="absolute -top-1 -right-1 w-4 h-4 border-2 border-white bg-violet-400 rounded-full" />
+        <span
+          className="absolute inset-0 rounded-full animate-ping opacity-20"
+          style={{ backgroundColor: "#22d3ee" }}
+        />
+        <OwlIcon size={26} variant="light" />
       </button>
     );
 
@@ -371,14 +385,22 @@ export default function VoiceAssistantShell({ portalId, userId, variant = "fab" 
           <div className="relative w-full sm:max-w-lg max-h-[90vh] overflow-y-auto bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl border border-slate-200">
             <div
               className="sticky top-0 px-5 py-4 rounded-t-2xl sm:rounded-t-2xl flex items-start justify-between gap-3"
-              style={{ background: "linear-gradient(90deg, #6d28d9 0%, #4338ca 100%)" }}
+              style={{ background: "linear-gradient(135deg, #0f172a 0%, #312e81 55%, #4338ca 100%)" }}
             >
               <div>
-                <div className="flex items-center gap-2">
-                  <Sparkles size={18} className="text-white" />
+                <div className="flex items-center gap-2.5">
+                  <div
+                    className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
+                    style={{
+                      background: "rgba(255,255,255,0.08)",
+                      border: "1px solid rgba(103, 232, 249, 0.25)",
+                    }}
+                  >
+                    <OwlIcon size={20} variant="light" />
+                  </div>
                   <h2 className="font-bold text-lg text-white">{t("title")}</h2>
                 </div>
-                <p className="text-sm mt-0.5" style={{ color: "#ede9fe" }}>{t("subtitle")}</p>
+                <p className="text-sm mt-1 pl-[2.625rem]" style={{ color: "#cbd5e1" }}>{t("subtitle")}</p>
               </div>
               <button
                 type="button"
