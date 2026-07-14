@@ -7,8 +7,8 @@ export default function EightBetaLink() {
       href={REDE_EIGHT_URL}
       target="_blank"
       rel="noopener noreferrer"
-      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-100 transition"
-      aria-label="Eight beta"
+      className="flex items-center justify-center p-2 rounded-lg text-slate-600 hover:bg-slate-100 transition"
+      aria-label="Rede Eight"
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
@@ -19,7 +19,6 @@ export default function EightBetaLink() {
         className="shrink-0"
         aria-hidden
       />
-      <span>beta</span>
     </Link>
   );
 }

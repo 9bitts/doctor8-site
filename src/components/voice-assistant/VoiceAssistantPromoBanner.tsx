@@ -100,10 +100,6 @@ export default function VoiceAssistantPromoBanner({ userId, portalId }: Props) {
       <div className="relative px-4 lg:px-8 py-4 sm:py-5 flex items-start gap-3 sm:gap-4">
         <div className="relative shrink-0">
           <div
-            className="absolute inset-0 rounded-2xl animate-pulse"
-            style={{ boxShadow: "0 0 24px rgba(34, 211, 238, 0.35)" }}
-          />
-          <div
             className="relative w-12 h-12 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center"
             style={{
               background: "linear-gradient(145deg, rgba(15,23,42,0.9) 0%, rgba(49,46,129,0.85) 100%)",

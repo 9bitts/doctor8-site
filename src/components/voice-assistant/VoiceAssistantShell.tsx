@@ -359,7 +359,7 @@ export default function VoiceAssistantShell({ portalId, userId, variant = "fab" 
       <button
         type="button"
         onClick={() => { resetSession(); setOpen(true); }}
-        className="fixed z-[45] bottom-[calc(5.5rem+env(safe-area-inset-bottom))] left-4 sm:left-6 w-14 h-14 rounded-full flex items-center justify-center transition-all hover:scale-105"
+        className="fixed z-[45] bottom-[calc(5.5rem+env(safe-area-inset-bottom))] right-4 sm:hidden w-14 h-14 rounded-full flex items-center justify-center transition-all hover:scale-105 overflow-hidden"
         style={{
           background: "linear-gradient(145deg, #0891b2 0%, #6366f1 55%, #7c3aed 100%)",
           color: "#ffffff",
@@ -367,10 +367,6 @@ export default function VoiceAssistantShell({ portalId, userId, variant = "fab" 
         }}
         aria-label={t("openLabel")}
       >
-        <span
-          className="absolute inset-0 rounded-full animate-ping opacity-20"
-          style={{ backgroundColor: "#22d3ee" }}
-        />
         <OwlIcon size={26} variant="light" />
       </button>
     );
