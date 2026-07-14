@@ -6,6 +6,8 @@ import { ArrowLeft, Loader2, RefreshCw, Search, User } from "lucide-react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { fetchChartById, readChartDeepLink } from "@/lib/video-chart-nav";
 import NoPatientChartsEmptyState from "@/components/professional/NoPatientChartsEmptyState";
+import { PlatformPatientResults } from "@/components/professional/PlatformPatientResults";
+import { useProfessionalPatientSearch } from "@/hooks/useProfessionalPatientSearch";
 
 export type ProfessionalChart = { id: string; firstName: string; lastName: string };
 
@@ -67,9 +69,9 @@ export default function ProfessionalChartWorkspace({
   const styles = ACCENT_STYLES[accent];
   const [charts, setCharts] = useState<ProfessionalChart[]>([]);
   const [selected, setSelected] = useState<ProfessionalChart | null>(null);
-  const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const platformSearch = useProfessionalPatientSearch({ debounceMs: 300 });
 
   const loadCharts = useCallback(async () => {
     setLoading(true);
@@ -99,14 +101,31 @@ export default function ProfessionalChartWorkspace({
     void loadCharts();
   }, [loadCharts]);
 
-  const trimmedQuery = query.trim();
-  const filtered = trimmedQuery
-    ? charts.filter((c) =>
-        `${c.firstName} ${c.lastName}`.toLowerCase().includes(trimmedQuery.toLowerCase()),
-      )
-    : charts.slice(0, LIST_PREVIEW_LIMIT);
+  const trimmedQuery = platformSearch.query.trim();
+  const showPlatform = trimmedQuery.length >= platformSearch.minPlatformChars;
+  const filtered = showPlatform
+    ? platformSearch.records.map((r) => ({
+        id: r.id,
+        firstName: r.firstName,
+        lastName: r.lastName,
+      }))
+    : trimmedQuery
+      ? charts.filter((c) =>
+          `${c.firstName} ${c.lastName}`.toLowerCase().includes(trimmedQuery.toLowerCase()),
+        )
+      : charts.slice(0, LIST_PREVIEW_LIMIT);
 
   const showListCounter = !trimmedQuery && charts.length > LIST_PREVIEW_LIMIT;
+
+  async function handleImportFromPlatform(item: Parameters<typeof platformSearch.importPatient>[0]) {
+    const chart = await platformSearch.importPatient(item);
+    if (chart) {
+      const next = { id: chart.id, firstName: chart.firstName, lastName: chart.lastName };
+      setCharts((prev) => [next, ...prev.filter((c) => c.id !== chart.id)]);
+      setSelected(next);
+      platformSearch.setQuery("");
+    }
+  }
 
   return (
     <div className={`mx-auto px-4 py-8 space-y-6 ${accent === "fuchsia" ? "max-w-5xl" : "max-w-4xl"}`}>
@@ -147,13 +166,13 @@ export default function ProfessionalChartWorkspace({
               <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
                 type="search"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
+                value={platformSearch.query}
+                onChange={(e) => platformSearch.setQuery(e.target.value)}
                 placeholder={t(`${i18nPrefix}.searchPatient`)}
                 className="w-full rounded-xl border border-slate-200 pl-9 pr-3 py-2.5 text-sm"
               />
             </div>
-            {loading ? (
+            {(loading || platformSearch.loading) ? (
               <div className="flex justify-center py-6">
                 <Loader2 className={`animate-spin ${styles.spinner}`} size={22} />
               </div>
@@ -169,9 +188,11 @@ export default function ProfessionalChartWorkspace({
                   {t(`${i18nPrefix}.charts.retry`)}
                 </button>
               </div>
-            ) : charts.length === 0 ? (
+            ) : charts.length === 0 && !showPlatform ? (
               <NoPatientChartsEmptyState variant={styles.emptyVariant} compact />
-            ) : filtered.length === 0 ? (
+            ) : filtered.length === 0 && !showPlatform ? (
+              <p className="text-sm text-slate-500 py-4 text-center">{t("pat.searchEmpty")}</p>
+            ) : filtered.length === 0 && showPlatform && platformSearch.importable.length === 0 && platformSearch.platformMatches.length === 0 ? (
               <p className="text-sm text-slate-500 py-4 text-center">{t("pat.searchEmpty")}</p>
             ) : (
               <>
@@ -182,6 +203,7 @@ export default function ProfessionalChartWorkspace({
                       .replace("{total}", String(charts.length))}
                   </p>
                 )}
+                {filtered.length > 0 && (
                 <ul className="divide-y divide-slate-100 max-h-48 overflow-y-auto">
                   {filtered.map((c) => (
                     <li key={c.id}>
@@ -195,6 +217,20 @@ export default function ProfessionalChartWorkspace({
                     </li>
                   ))}
                 </ul>
+                )}
+                {showPlatform && (
+                  <div className="border rounded-xl divide-y overflow-hidden">
+                    <PlatformPatientResults
+                      t={t}
+                      importable={platformSearch.importable}
+                      platformMatches={platformSearch.platformMatches}
+                      requestingLinkId={platformSearch.requestingLinkId}
+                      importingPatientId={platformSearch.importingPatientId}
+                      onImportPatient={handleImportFromPlatform}
+                      onRequestLink={platformSearch.requestPatientLink}
+                    />
+                  </div>
+                )}
               </>
             )}
           </>

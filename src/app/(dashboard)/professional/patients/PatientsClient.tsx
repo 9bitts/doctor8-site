@@ -13,6 +13,9 @@ import { useT, useI18n } from "@/lib/i18n/I18nProvider";
 import { Plus, X, ChevronRight, CheckCircle2, AlertCircle, Search, Send, Loader2 } from "lucide-react";
 import { filterPatientCharts } from "@/lib/patient-chart-search";
 import NoPatientChartsEmptyState from "@/components/professional/NoPatientChartsEmptyState";
+import { PlatformPatientResults } from "@/components/professional/PlatformPatientResults";
+import { useProfessionalPatientSearch } from "@/hooks/useProfessionalPatientSearch";
+import type { ImportablePatient } from "@/app/(dashboard)/professional/prescriptions/components/shared";
 
 interface Chart {
   id: string;
@@ -39,13 +42,13 @@ export default function PatientsClient({ initialCharts }: { initialCharts: Chart
   const t = useT();
   const { lang } = useI18n();
   const [charts, setCharts] = useState<Chart[]>(initialCharts);
-  const [search, setSearch] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [invitingId, setInvitingId] = useState<string | null>(null);
   const [inviteFeedback, setInviteFeedback] = useState<Record<string, "sent" | "error">>({});
   const [duplicateMatches, setDuplicateMatches] = useState<DuplicateMatch[] | null>(null);
+  const platformSearch = useProfessionalPatientSearch();
 
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -124,10 +127,41 @@ export default function PatientsClient({ initialCharts }: { initialCharts: Chart
     setSaving(false);
   }
 
-  const filteredCharts = useMemo(
-    () => filterPatientCharts(charts, search, charts.length),
-    [charts, search],
-  );
+  const filteredCharts = useMemo(() => {
+    const q = platformSearch.query.trim();
+    if (q.length >= platformSearch.minPlatformChars) {
+      return platformSearch.records.map((r) => ({
+        id: r.id,
+        firstName: r.firstName,
+        lastName: r.lastName,
+        email: r.email,
+        hasAccount: r.hasAccount,
+        updatedAt: new Date().toISOString(),
+        access: "owner" as const,
+      }));
+    }
+    return filterPatientCharts(charts, q, charts.length);
+  }, [charts, platformSearch.query, platformSearch.minPlatformChars, platformSearch.records]);
+
+  const showPlatformSection = platformSearch.query.trim().length >= platformSearch.minPlatformChars;
+
+  async function handleImportFromSearch(item: ImportablePatient) {
+    const chart = await platformSearch.importPatient(item);
+    if (chart) {
+      setCharts((prev) => [
+        {
+          id: chart.id,
+          firstName: chart.firstName,
+          lastName: chart.lastName,
+          email: chart.email,
+          hasAccount: chart.hasAccount,
+          updatedAt: new Date().toISOString(),
+          access: "owner" as const,
+        },
+        ...prev.filter((c) => c.id !== chart.id),
+      ]);
+    }
+  }
 
   async function sendInvite(chartId: string, e: React.MouseEvent) {
     e.preventDefault();
@@ -171,29 +205,40 @@ export default function PatientsClient({ initialCharts }: { initialCharts: Chart
         </button>
       </div>
 
-      {charts.length > 0 && (
-        <div className="relative">
+      <div className="relative">
           <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
           <input
             type="search"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            value={platformSearch.query}
+            onChange={(e) => platformSearch.setQuery(e.target.value)}
             placeholder={t("pat.searchPlaceholder")}
             className="w-full pl-11 pr-4 py-3 rounded-xl border border-slate-200 bg-white shadow-sm text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-400"
           />
         </div>
-      )}
 
       {/* List */}
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-        {charts.length === 0 ? (
+        {charts.length === 0 && !showPlatformSection ? (
           <div className="py-8 px-4">
             <NoPatientChartsEmptyState onAction={() => { setShowForm(true); resetForm(); }} />
           </div>
-        ) : filteredCharts.length === 0 ? (
+        ) : filteredCharts.length === 0 && !showPlatformSection ? (
           <div className="text-center py-16">
             <Search className="mx-auto text-slate-300 mb-3" size={40} />
             <p className="text-slate-400 text-sm">{t("pat.searchEmpty")}</p>
+          </div>
+        ) : filteredCharts.length === 0 && showPlatformSection && platformSearch.importable.length === 0 && platformSearch.platformMatches.length === 0 ? (
+          <div className="text-center py-16">
+            {platformSearch.loading ? (
+              <div className="flex items-center justify-center gap-2 text-sm text-slate-500">
+                <Loader2 size={18} className="animate-spin" /> {t("common.loading")}
+              </div>
+            ) : (
+              <>
+                <Search className="mx-auto text-slate-300 mb-3" size={40} />
+                <p className="text-slate-400 text-sm">{t("pat.searchEmpty")}</p>
+              </>
+            )}
           </div>
         ) : (
           <div className="divide-y divide-slate-100">
@@ -268,6 +313,20 @@ export default function PatientsClient({ initialCharts }: { initialCharts: Chart
                 <ChevronRight size={18} className="text-slate-300 shrink-0" />
               </Link>
             ))}
+            {showPlatformSection && (
+              <PlatformPatientResults
+                t={t}
+                importable={platformSearch.importable}
+                platformMatches={platformSearch.platformMatches}
+                requestingLinkId={platformSearch.requestingLinkId}
+                importingPatientId={platformSearch.importingPatientId}
+                onImportPatient={handleImportFromSearch}
+                onRequestLink={platformSearch.requestPatientLink}
+              />
+            )}
+            {platformSearch.query.trim().length > 0 && platformSearch.query.trim().length < platformSearch.minPlatformChars && (
+              <p className="px-5 py-4 text-xs text-slate-400">{t("link.searchMinChars")}</p>
+            )}
           </div>
         )}
       </div>

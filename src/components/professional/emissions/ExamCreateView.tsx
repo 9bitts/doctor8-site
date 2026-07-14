@@ -1,18 +1,15 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { useSession } from "next-auth/react";
 import {
-  User, ChevronRight, Trash2, Loader2, ArrowLeft, FileText,
+  Trash2, Loader2, ArrowLeft, FileText,
 } from "lucide-react";
 import type { Chart } from "./types";
 import type { SavedEmission } from "./EmissionPostSaveFlow";
 import ExamSearchInput, { formatExamItem, parseExamItemLine } from "@/components/ExamSearchInput";
 import CidSearchInput, { type CidSelection } from "@/components/CidSearchInput";
-import { filterPatientCharts } from "@/lib/patient-chart-search";
-import { PatientNoAccountPanel } from "./PatientNoAccountPanel";
-import NoPatientChartsEmptyState from "@/components/professional/NoPatientChartsEmptyState";
-import { keepFocusOnPointerDown } from "@/lib/combobox-interaction";
+import { PatientSearchCombobox } from "@/components/professional/PatientSearchCombobox";
 import {
   extendSessionForWrite,
   isAuthFailureStatus,
@@ -41,8 +38,6 @@ export function ExamCreateView({
   onBack, onSaved,
 }: ExamCreateViewProps) {
   const { update: updateSession } = useSession();
-  const [patientQuery, setPatientQuery] = useState("");
-  const [patientPickerOpen, setPatientPickerOpen] = useState(false);
   const [selectedPatient, setSelectedPatient] = useState<Chart | null>(initialPatient);
   const [title, setTitle] = useState(initialTitle || t("rx.examDefaultTitle"));
   const [items, setItems] = useState<string[]>(
@@ -56,11 +51,6 @@ export function ExamCreateView({
   const [error, setError] = useState("");
   const [examSearchOpen, setExamSearchOpen] = useState(false);
   const [cidSearchOpen, setCidSearchOpen] = useState(false);
-
-  const filteredCharts = useMemo(
-    () => filterPatientCharts(charts, patientQuery),
-    [charts, patientQuery],
-  );
 
   function addExam(exam: { code?: string; name: string }) {
     const line = formatExamItem(exam);
@@ -134,53 +124,14 @@ export function ExamCreateView({
         </div>
       )}
 
-      <Card title={t("rx2.selectPatient")} elevated={patientPickerOpen}>
-        {selectedPatient ? (
-          <div className="space-y-3">
-            <PatientChip patient={selectedPatient} t={t} onClear={lockPatient ? undefined : () => setSelectedPatient(null)} />
-            <PatientNoAccountPanel patient={selectedPatient} />
-          </div>
-        ) : lockPatient ? (
-          <p className="text-sm text-slate-500">{t("rx2.noPatientFound")}</p>
-        ) : charts.length === 0 ? (
-          <NoPatientChartsEmptyState variant="brand" compact />
-        ) : (
-          <>
-            <div className="relative">
-              <User size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input value={patientQuery} onChange={(e) => setPatientQuery(e.target.value)}
-                onFocus={() => setPatientPickerOpen(true)}
-                onBlur={() => setTimeout(() => setPatientPickerOpen(false), 150)}
-                placeholder={t("rx2.searchPatient")} className="rx-inp rx-inp-pl-9" />
-            </div>
-            {patientPickerOpen && (
-              <div className="mt-2 border rounded-xl divide-y max-h-48 overflow-y-auto bg-white shadow-sm">
-                {chartsLoading ? (
-                  <div className="p-4 flex items-center justify-center gap-2 text-sm text-slate-500">
-                    <Loader2 size={16} className="animate-spin" /> {t("common.loading")}
-                  </div>
-                ) : filteredCharts.length === 0 ? (
-                  <p className="p-4 text-center text-sm text-slate-500">{t("pat.searchEmpty")}</p>
-                ) : filteredCharts.map((c) => (
-                  <button
-                    key={c.id}
-                    type="button"
-                    onMouseDown={keepFocusOnPointerDown}
-                    onClick={() => { setSelectedPatient(c); setPatientPickerOpen(false); setPatientQuery(""); }}
-                    className="w-full flex items-center gap-3 px-4 py-3 hover:bg-brand-50 text-left"
-                  >
-                    <span className="font-medium text-sm">{c.firstName} {c.lastName}</span>
-                    <span className="text-xs text-slate-400 ml-auto mr-1">
-                      {c.hasAccount ? t("rx2.hasAccountBadge") : t("rx2.noAccountBadge")}
-                    </span>
-                    <ChevronRight size={14} className="text-slate-300 shrink-0" />
-                  </button>
-                ))}
-              </div>
-            )}
-          </>
-        )}
-      </Card>
+      <PatientSearchCombobox
+        t={t}
+        ownCharts={charts}
+        chartsLoading={chartsLoading}
+        selectedPatient={selectedPatient}
+        onSelectPatient={setSelectedPatient}
+        lockPatient={lockPatient}
+      />
 
       <Card title={t("rx2.addItem")} elevated={examSearchOpen}>
         <input value={title} onChange={(e) => setTitle(e.target.value)}

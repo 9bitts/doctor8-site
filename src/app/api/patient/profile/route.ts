@@ -12,6 +12,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requirePatient, isApiError } from "@/lib/api-auth";
 import { db } from "@/lib/db";
 import { encrypt, decrypt } from "@/lib/encryption";
+import { syncPatientProfileSearchText } from "@/lib/patient-profile-search";
 import { z } from "zod";
 
 function safeDecrypt(v: string | null): string {
@@ -111,6 +112,8 @@ export async function PATCH(req: NextRequest) {
     where: { id: profile.id },
     data,
   });
+
+  await syncPatientProfileSearchText(profile.id);
 
   return NextResponse.json({ success: true });
 }

@@ -1,5 +1,6 @@
 import type { Prisma, PatientAcquisitionChannel } from "@prisma/client";
 import { encrypt } from "@/lib/encryption";
+import { buildPatientProfileSearchText } from "@/lib/patient-profile-search";
 import type { OAuthProfessionSlug, SignupRole } from "@/lib/oauth-signup-intent";
 import { isProfessionSignupSlug, PROFESSION_SIGNUP } from "@/lib/profession-signup";
 
@@ -27,6 +28,7 @@ export async function createSignupProfile(
     profession?: OAuthProfessionSlug | null;
     firstName: string;
     lastName: string;
+    email?: string | null;
     avatarUrl?: string | null;
     acquisitionChannel?: PatientAcquisitionChannel | null;
     acquisitionCampaign?: string | null;
@@ -42,6 +44,7 @@ export async function createSignupProfile(
     firstName,
     lastName,
     avatarUrl,
+    email,
     acquisitionChannel,
     acquisitionCampaign,
     acquisitionRecordedAt,
@@ -88,6 +91,7 @@ export async function createSignupProfile(
         userId,
         firstName: encrypt(firstName),
         lastName: encrypt(lastName),
+        searchText: buildPatientProfileSearchText(firstName, lastName, email),
         avatarUrl: avatarUrl ?? null,
         ...(acquisitionChannel
           ? {

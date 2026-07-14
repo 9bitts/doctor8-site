@@ -8,14 +8,12 @@ import { createAuditLog } from "@/lib/audit";
 import { AuditAction } from "@prisma/client";
 import { checkRateLimit, rateLimitResponse } from "@/lib/rate-limit";
 import {
-  formatPatientDisplayName,
-  getAcceptedLinkMap,
   type LinkStatus,
 } from "@/lib/patient-professional-link";
-
-const PLATFORM_MIN_CHARS = 3;
-const PLATFORM_MAX_RESULTS = 10;
-const PLATFORM_SCAN_LIMIT = 300;
+import {
+  PLATFORM_MIN_CHARS,
+  searchPlatformPatients,
+} from "@/lib/platform-patient-search";
 
 function safeDecrypt(v: string | null | undefined): string {
   if (v == null) return "";
@@ -85,31 +83,6 @@ function toImportable(
     hasAccount: true,
     source,
   };
-}
-
-function normText(s: string): string {
-  return s.toLowerCase().normalize("NFD").replace(/\p{M}/gu, "");
-}
-
-function matchesPlatformQuery(
-  q: string,
-  firstName: string,
-  lastName: string,
-  email: string | null,
-  phone: string | null,
-): boolean {
-  const nq = normText(q);
-  const full = normText(`${firstName} ${lastName}`.trim());
-  if (full.includes(nq) || normText(firstName).includes(nq) || normText(lastName).includes(nq)) {
-    return true;
-  }
-  if (email && normText(email).includes(nq)) return true;
-  if (phone) {
-    const digits = phone.replace(/\D/g, "");
-    const qDigits = q.replace(/\D/g, "");
-    if (qDigits.length >= 3 && digits.includes(qDigits)) return true;
-  }
-  return false;
 }
 
 export async function GET(req: NextRequest) {
@@ -210,54 +183,18 @@ export async function GET(req: NextRequest) {
     const rate = await checkRateLimit({
       namespace: "phi-platform-search",
       key: ctx.userId,
-      limit: 30,
+      limit: 60,
       windowMs: 60 * 60 * 1000,
     });
     if (!rate.allowed) {
       return rateLimitResponse(rate.retryAfterSec);
     }
 
-    const profiles = await db.patientProfile.findMany({
-      include: {
-        user: { select: { email: true, role: true } },
-      },
-      take: PLATFORM_SCAN_LIMIT,
-      orderBy: { updatedAt: "desc" },
-    });
-
-    const candidates: {
-      profile: (typeof profiles)[0];
-      firstName: string;
-      lastName: string;
-      email: string | null;
-      phone: string | null;
-    }[] = [];
-
-    for (const p of profiles) {
-      if (p.user?.role !== "PATIENT") continue;
-      if (alreadyHasChart(p)) continue;
-      const firstName = safeDecrypt(p.firstName);
-      const lastName = safeDecrypt(p.lastName);
-      const email = p.user?.email ?? null;
-      const phone = p.phone ? safeDecrypt(p.phone) : null;
-      if (!matchesPlatformQuery(q, firstName, lastName, email, phone)) continue;
-      candidates.push({ profile: p, firstName, lastName, email, phone });
-    }
-
-    const limited = candidates.slice(0, PLATFORM_MAX_RESULTS);
-    const userIds = limited.map((c) => c.profile.userId);
-    const linkMap = await getAcceptedLinkMap(ctx.userId, userIds);
-
-    platformMatches = limited.map(({ profile, firstName, lastName }) => {
-      const linkStatus = linkMap.get(profile.userId) ?? "NONE";
-      return {
-        patientProfileId: profile.id,
-        patientUserId: profile.userId,
-        displayName: formatPatientDisplayName(firstName, lastName),
-        city: profile.city || null,
-        hasLink: linkStatus === "ACCEPTED",
-        linkStatus,
-      };
+    platformMatches = await searchPlatformPatients({
+      q,
+      professionalUserId: ctx.userId,
+      excludeUserIds: linkedUserIds,
+      excludeEmails: linkedEmails,
     });
 
     console.log(

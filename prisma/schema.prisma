@@ -741,6 +741,9 @@ model PatientProfile {
   acquisitionRecordedAt DateTime?
   acquisitionReferrer   String?
 
+  /// Normalized plaintext index for professional platform search (name, email, phone).
+  searchText            String?
+
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -751,6 +754,7 @@ model PatientProfile {
   sharedRecords     SharedRecord[]
 
   @@index([userId])
+  @@index([searchText])
 }
 
 // ─────────────────────────────────────────

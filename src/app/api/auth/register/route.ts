@@ -18,6 +18,7 @@ import { REGISTRATION_REGION_CODES, requiresGdpr, requiresHipaa, requiresLgpd } 
 import { sendEmailVerification } from "@/lib/email";
 import { resolveLoginPathForRegistration } from "@/lib/auth-portals";
 import { registerAckResponse } from "@/lib/register-anti-enum";
+import { buildPatientProfileSearchText } from "@/lib/patient-profile-search";
 import { encrypt } from "@/lib/encryption";
 import { safeDecrypt } from "@/lib/psychoanalyst-api";
 import {
@@ -124,6 +125,7 @@ async function createRegisterProfile(
         userId,
         firstName: encrypt(firstName),
         lastName: encrypt(lastName),
+        searchText: buildPatientProfileSearchText(firstName, lastName, email),
         ...(acquisitionFields ?? {}),
       },
     });
