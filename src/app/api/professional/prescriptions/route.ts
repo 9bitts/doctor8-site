@@ -24,6 +24,8 @@ import { ensurePatientRecord } from "@/lib/ensure-patient-record";
 import { canEditChart, resolveChartAccess } from "@/lib/chart-access";
 import { prescriptionMedicationItemSchema } from "@/lib/prescription-medication-schema";
 import { assertCannabisPrescriptionAllowed } from "@/lib/cannabis-prescription-gate";
+import { medicationListHasCannabis } from "@/lib/integrative-medicine/integrative-prescription-utils";
+import { cannabisTcleAuditLine } from "@/lib/cannabis-medicinal-tcle";
 
 const medicationItemSchema = prescriptionMedicationItemSchema;
 
@@ -35,6 +37,7 @@ const prescriptionSchema = z.object({
   medications: z.array(medicationItemSchema).min(1),
   instructions: z.string().optional(),
   validDays: z.number().min(1).max(365).default(30),
+  cannabisTcleAccepted: z.boolean().optional(),
 }).refine(
   (d) => !!d.patientRecordId || !!d.patientUserId,
   { message: "patientRecordId or patientUserId is required" }
@@ -52,7 +55,7 @@ export async function POST(req: NextRequest) {
   const parsed = prescriptionSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
 
-  const { patientRecordId, patientUserId, appointmentId, medications, instructions, validDays } = parsed.data;
+  const { patientRecordId, patientUserId, appointmentId, medications, instructions, validDays, cannabisTcleAccepted } = parsed.data;
 
   const professional = await db.professionalProfile.findUnique({ where: { userId: ctx.userId } });
   if (!professional) {
@@ -63,6 +66,20 @@ export async function POST(req: NextRequest) {
   if (!cannabisGate.ok) {
     return NextResponse.json({ error: cannabisGate.message }, { status: 403 });
   }
+
+  if (medicationListHasCannabis(medications) && !cannabisTcleAccepted) {
+    return NextResponse.json(
+      { error: "Cannabis medicinal TCLE acceptance is required before prescribing." },
+      { status: 400 },
+    );
+  }
+
+  const resolvedInstructions = (() => {
+    const base = instructions?.trim() || "";
+    if (!medicationListHasCannabis(medications) || !cannabisTcleAccepted) return base;
+    const audit = cannabisTcleAuditLine();
+    return base ? `${base}\n\n${audit}` : audit;
+  })();
 
   const validUntil = new Date(Date.now() + validDays * 24 * 60 * 60 * 1000);
 
@@ -154,7 +171,7 @@ export async function POST(req: NextRequest) {
       documentId: document.id,
       professionalId: ctx.professional.id,
       medications: medications as Prisma.InputJsonValue,
-      instructions: instructions ? encrypt(instructions) : null,
+      instructions: resolvedInstructions ? encrypt(resolvedInstructions) : null,
       validUntil,
     },
   });

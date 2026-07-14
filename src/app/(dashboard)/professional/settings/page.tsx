@@ -35,6 +35,7 @@ import {
   PenLine, CreditCard, MapPin, Sparkles,
 } from "lucide-react";
 import DoctorImageSettings from "@/components/DoctorImageSettings";
+import IntegrativePracticeToggle from "@/components/professional/IntegrativePracticeToggle";
 
 const inputClass =
   "w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/40";
@@ -706,7 +707,10 @@ export default function ProfessionalSettings() {
         onToggle={() => toggleSection("practice")}
         optional
       >
-        <PracticeSettings apiPath="/api/professional/practice" />
+        <div className="space-y-4">
+          <IntegrativePracticeToggle />
+          <PracticeSettings apiPath="/api/professional/practice" />
+        </div>
       </ProfileSettingsSection>
 
       {/* Quick links */}

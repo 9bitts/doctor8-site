@@ -46,6 +46,7 @@ export type PrescriptionFormProps = {
   onValidDaysChange: (value: number) => void;
   onSaveAsRxTemplate: () => void;
   onSubmit: () => void;
+  hasMixedPrescription?: boolean;
 };
 
 export function PrescriptionForm({
@@ -78,6 +79,7 @@ export function PrescriptionForm({
   onValidDaysChange,
   onSaveAsRxTemplate,
   onSubmit,
+  hasMixedPrescription = false,
 }: PrescriptionFormProps) {
   const selectedPatient = patientPickerProps.selectedPatient;
   const todayLabel = patientPickerProps.todayLabel;
@@ -98,6 +100,12 @@ export function PrescriptionForm({
       {templateAppliedHint && (
         <div className="bg-brand-50 border border-brand-200 rounded-2xl p-4 text-sm text-brand-700">
           {t("tmpl.templateAppliedHint")}
+        </div>
+      )}
+
+      {hasMixedPrescription && (
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-sm text-amber-900">
+          {t("rx.mixedPrescriptionHint")}
         </div>
       )}
 

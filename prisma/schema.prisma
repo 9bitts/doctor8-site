@@ -891,6 +891,11 @@ model ProfessionalProfile {
 
   // Payouts — Stripe Connect Express (85% after refund window + rateio bonus from 15% pool)
   stripeConnectAccountId String?
+
+  // Integrative medicine (physician portal)
+  practicesIntegrativeMedicine Boolean  @default(false)
+  integrativeHubSeenAt           DateTime?
+
   consultationPayouts    ConsultationProfessionalPayout[]
 
   createdAt       DateTime @default(now())

@@ -32,7 +32,14 @@ import {
 import {
   checkPhytoDrugInteractions,
   extractMnHerbNames,
+  type PhytoInteractionWarning,
 } from "@/lib/medicina-natural/phyto-interactions";
+import {
+  medicationListHasCannabis,
+  medicationListHasConventionalDrugs,
+  medicationListHasIntegrativeItems,
+} from "@/lib/integrative-medicine/integrative-prescription-utils";
+import { getIntegrativeProtocolPreset } from "@/lib/integrative-medicine/protocol-presets";
 import type { MedicinaNaturalListItem } from "@/lib/medicina-natural-catalog/search-server";
 import { floralProductByValue } from "@/lib/pics/reference-library/floral-products";
 import {
@@ -171,10 +178,16 @@ export function usePrescriptionPage() {
   } | null>(null);
   const [templateAppliedHint, setTemplateAppliedHint] = useState(false);
   const [pendingFloralProductId, setPendingFloralProductId] = useState<string | null>(null);
+  const [pendingProtocolId, setPendingProtocolId] = useState<string | null>(null);
   const [voicePrefillActive, setVoicePrefillActive] = useState(false);
   const [bulkPasteText, setBulkPasteText] = useState("");
   const [freeTextMode, setFreeTextMode] = useState(false);
   const [showBulkPaste, setShowBulkPaste] = useState(false);
+  const [phytoConfirmOpen, setPhytoConfirmOpen] = useState(false);
+  const [phytoWarnings, setPhytoWarnings] = useState<PhytoInteractionWarning[]>([]);
+  const [phytoInteractionConfirmed, setPhytoInteractionConfirmed] = useState(false);
+  const [cannabisTcleOpen, setCannabisTcleOpen] = useState(false);
+  const [cannabisTcleAccepted, setCannabisTcleAccepted] = useState(false);
 
   useEffect(() => {
     if (cfg.prescriptionsOnly && (view === "exam" || view === "document")) {
@@ -247,6 +260,13 @@ export function usePrescriptionPage() {
 
     if (returnUrl) setConsultReturnUrl(returnUrl);
     if (patientRecordId && returnUrl) setLockPatient(true);
+
+    const protocolId = params.get("protocol");
+    if (protocolId && !patientRecordId) {
+      setPendingProtocolId(protocolId);
+      setView("prescription");
+      window.history.replaceState({}, "", window.location.pathname);
+    }
 
     if (patientRecordId) {
       (async () => {
@@ -390,7 +410,7 @@ export function usePrescriptionPage() {
       }
     }
 
-    for (const addKey of ["homeopathy", "aromatherapy", "apitherapy"] as const) {
+    for (const addKey of ["homeopathy", "aromatherapy", "apitherapy", "cannabis"] as const) {
       if (params.get("add") !== addKey) continue;
       setView("prescription");
       setItemSearchMode(addKey);
@@ -595,6 +615,78 @@ export function usePrescriptionPage() {
     setFloralOnlyMode(true);
     setPendingFloralProductId(null);
   }, [pendingFloralProductId, t]);
+
+  useEffect(() => {
+    if (!pendingProtocolId) return;
+    const preset = getIntegrativeProtocolPreset(pendingProtocolId);
+    if (!preset) {
+      setPendingProtocolId(null);
+      return;
+    }
+
+    void (async () => {
+      const meds: MedItem[] = [];
+      for (const item of preset.items) {
+        if (item.kind === "floral") {
+          const product = floralProductByValue(item.floralProductId);
+          meds.push({
+            name: product ? t(product.labelKey) : item.floralProductId,
+            dosage: item.dosage || "",
+            frequency: item.frequency || "",
+            duration: item.duration || "",
+            instructions: "",
+            itemKind: "floral",
+            floralProductId: item.floralProductId,
+          });
+          continue;
+        }
+
+        try {
+          const res = await fetch(apiPath(cfg, `/medicina-natural/${encodeURIComponent(item.mnSlug)}`));
+          const data = await res.json();
+          const mn = data.item as {
+            slug: string;
+            nome: string;
+            posologia: string;
+            indicacoes: string;
+            renisus?: boolean;
+          } | undefined;
+          meds.push({
+            name: mn?.nome || item.mnSlug,
+            dosage: item.dosage || mn?.posologia?.slice(0, 200) || "",
+            frequency: item.frequency || "",
+            duration: item.duration || "",
+            instructions: mn
+              ? [mn.posologia, mn.indicacoes].filter(Boolean).join("\n\n").slice(0, 2000)
+              : "",
+            itemKind: item.itemKind,
+            mnSlug: mn?.slug || item.mnSlug,
+            renisus: mn?.renisus,
+          });
+        } catch {
+          meds.push({
+            name: item.mnSlug,
+            dosage: item.dosage || "",
+            frequency: item.frequency || "",
+            duration: item.duration || "",
+            instructions: "",
+            itemKind: item.itemKind,
+            mnSlug: item.mnSlug,
+          });
+        }
+      }
+
+      setMedications(meds);
+      if (preset.instructions) setInstructions(preset.instructions);
+      if (preset.validDays) setValidDays(preset.validDays);
+      setItemSearchMode(preset.add);
+      setFloralOnlyMode(preset.add === "floral");
+      setFreeTextMode(preset.items.some((i) => i.kind === "mn" && isFreeTextPrescriptionItem(i.itemKind)));
+      setView("prescription");
+      setTemplateAppliedHint(true);
+      setPendingProtocolId(null);
+    })();
+  }, [pendingProtocolId, cfg, t]);
 
   async function loadEmissionPatient(kind: EmissionKind, id: string): Promise<Chart | null> {
     try {
@@ -1172,13 +1264,7 @@ export function usePrescriptionPage() {
     }
   }
 
-  async function handleSubmit() {
-    setFormError("");
-    if (!selectedPatient && !platformTarget) { setFormError(t("rx2.needPatient")); return; }
-    if (!isMedsFormValid(medications)) {
-      flagIncompleteMeds();
-      return;
-    }
+  async function executeSubmit(opts: { cannabisTcleAccepted: boolean }) {
     setHighlightIncompleteMeds(false);
     setSaving(true);
     try {
@@ -1198,19 +1284,21 @@ export function usePrescriptionPage() {
         floralProductId: m.floralProductId || undefined,
       }));
 
-      const herbNames = extractMnHerbNames(cleanMeds);
-      const drugNames = cleanMeds
-        .filter((m) => (m.itemKind || "medication") === "medication")
-        .map((m) => m.name.trim())
-        .filter(Boolean);
-      const phytoWarnings = checkPhytoDrugInteractions(herbNames, drugNames);
-      if (phytoWarnings.length > 0) {
-        toast.error(phytoWarnings.map((w) => w.description).join(" Â· "));
-      }
-
-      const payload = selectedPatient
-        ? { [cfg.patientRecordField]: selectedPatient.id, medications: cleanMeds, instructions, validDays }
-        : { patientUserId: platformTarget!.patientUserId, medications: cleanMeds, instructions, validDays };
+      let finalInstructions = instructions.trim();
+        ? {
+            [cfg.patientRecordField]: selectedPatient.id,
+            medications: cleanMeds,
+            instructions: finalInstructions,
+            validDays,
+            cannabisTcleAccepted: opts.cannabisTcleAccepted || undefined,
+          }
+        : {
+            patientUserId: platformTarget!.patientUserId,
+            medications: cleanMeds,
+            instructions: finalInstructions,
+            validDays,
+            cannabisTcleAccepted: opts.cannabisTcleAccepted || undefined,
+          };
       const res = await fetch(api("/prescriptions"), {
         method: "POST", headers: { "Content-Type": "application/json" },
         credentials: "same-origin",
@@ -1234,8 +1322,10 @@ export function usePrescriptionPage() {
           patient: patientForSave,
           label,
           medications: cleanMeds,
-          instructions: instructions.trim() || undefined,
+          instructions: finalInstructions || undefined,
         });
+        setPhytoInteractionConfirmed(false);
+        setCannabisTcleAccepted(false);
       } else if (isAuthFailureStatus(res.status)) {
         setFormError(t("session.expiredOnSave"));
         redirectToLoginAfterAuthFailure();
@@ -1245,6 +1335,69 @@ export function usePrescriptionPage() {
       }
     } finally { setSaving(false); }
   }
+
+  async function handleSubmit() {
+    setFormError("");
+    if (!selectedPatient && !platformTarget) { setFormError(t("rx2.needPatient")); return; }
+    if (!isMedsFormValid(medications)) {
+      flagIncompleteMeds();
+      return;
+    }
+
+    const cleanMeds = medications.map((m) => ({
+      name: m.name.trim(),
+      dosage: m.dosage || "",
+      frequency: m.frequency || "",
+      duration: m.duration,
+      instructions: m.instructions,
+      presentation: m.presentation || "",
+      pharmaceuticalForm: m.pharmaceuticalForm || "",
+      itemKind: m.itemKind || "medication",
+      mnSlug: m.mnSlug || undefined,
+      renisus: m.renisus || undefined,
+      phytoProductId: m.phytoProductId || undefined,
+      floralProductId: m.floralProductId || undefined,
+    }));
+
+    const herbNames = extractMnHerbNames(cleanMeds);
+    const drugNames = cleanMeds
+      .filter((m) => (m.itemKind || "medication") === "medication")
+      .map((m) => m.name.trim())
+      .filter(Boolean);
+    const warnings = checkPhytoDrugInteractions(herbNames, drugNames);
+    if (warnings.length > 0 && !phytoInteractionConfirmed) {
+      setPhytoWarnings(warnings);
+      setPhytoConfirmOpen(true);
+      return;
+    }
+
+    if (medicationListHasCannabis(cleanMeds) && !cannabisTcleAccepted) {
+      setCannabisTcleOpen(true);
+      return;
+    }
+
+    await executeSubmit({ cannabisTcleAccepted });
+  }
+
+  function confirmPhytoInteraction() {
+    setPhytoConfirmOpen(false);
+    setPhytoInteractionConfirmed(true);
+    if (medicationListHasCannabis(medications) && !cannabisTcleAccepted) {
+      setCannabisTcleOpen(true);
+      return;
+    }
+    void executeSubmit({ cannabisTcleAccepted });
+  }
+
+  function acceptCannabisTcle() {
+    setCannabisTcleAccepted(true);
+    setCannabisTcleOpen(false);
+    void executeSubmit({ cannabisTcleAccepted: true });
+  }
+
+  const hasMixedPrescription =
+    medicationListHasIntegrativeItems(medications) &&
+    medicationListHasConventionalDrugs(medications);
 
   const filtered = prescriptions.filter((p) => {
     if (listFilter === "exam" || listFilter === "document") return false;
@@ -1391,5 +1544,13 @@ export function usePrescriptionPage() {
     signClinicalDoc,
     fetchPrescriptions,
     fetchAll,
+    phytoConfirmOpen,
+    phytoWarnings,
+    setPhytoConfirmOpen,
+    confirmPhytoInteraction,
+    cannabisTcleOpen,
+    setCannabisTcleOpen,
+    acceptCannabisTcle,
+    hasMixedPrescription,
   };
 }

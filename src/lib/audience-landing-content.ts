@@ -14,6 +14,7 @@ import {
   Plug,
   Shield,
   Sparkles,
+  Sprout,
   Stethoscope,
   Store,
   Users,
@@ -369,6 +370,7 @@ const ESPECIALISTAS: AudienceLandingContent = {
     { icon: Shield, tag: "Compliance", title: "Conformidade total", body: "LGPD, trilha de auditoria, assinatura ICP-Brasil e página pública." },
     { icon: Building2, tag: "EAP", title: "Rede corporativa", body: "Acesso a clientes de empresas parceiras com credenciamento formal." },
     { icon: HeartPulse, tag: "Humanitário", title: "AcuraBrasil", body: "Atendimento voluntário para venezuelanos e programas de impacto social." },
+    { icon: Sprout, tag: "Integrativa", title: "Medicina integrativa", body: "Fitoterapia, florais, homeopatia, aromaterapia, apiterapia e cannabis medicinal com catálogo e prescrição integrada." },
   ],
   journeyTitle: "Sua jornada no Doctor8",
   journey: [
@@ -401,6 +403,7 @@ const ESPECIALISTAS: AudienceLandingContent = {
   accessLinks: [
     { label: "Psicólogo", href: "/register/professional/signup?portal=psychologist", description: "Telepsicologia CFP + escalas" },
     { label: "Médico", href: "/register/professional/signup?portal=doctor", description: "Telemedicina + receitas digitais" },
+    { label: "Medicina integrativa", href: "/medicinaintegrativa", description: "Catálogo PICS + prescrição integrada" },
     { label: "Nutricionista", href: "/register/professional/signup?portal=nutritionist", description: "Consultas e planos alimentares" },
   ],
 };

@@ -21,6 +21,9 @@ import {
   type NaturalMedicinePracticeConfig,
   NATURAL_MEDICINE_PRACTICES,
   naturalMedicineBasePath,
+  naturalMedicineHubBannerKey,
+  naturalMedicineHubSubtitleKey,
+  naturalMedicineHubTitleKey,
 } from "@/lib/natural-medicine/config";
 import { canPrescribeCannabisMedicinal } from "@/lib/profession-label";
 import { useSession } from "next-auth/react";
@@ -39,6 +42,8 @@ import {
 import type { MedicinaNaturalListItem } from "@/lib/medicina-natural-catalog/search-server";
 import type { CategoriaPratica } from "@/lib/medicina-natural/item-types";
 import StatusRegulatorioBadge from "@/components/medicina-natural-catalog/StatusRegulatorioBadge";
+import IntegrativeProfessionalHubCockpit from "@/components/integrative-medicine/IntegrativeProfessionalHubCockpit";
+import IntegrativeRecentPrescriptions from "@/components/integrative-medicine/IntegrativeRecentPrescriptions";
 
 const ICONS = {
   Leaf,
@@ -136,6 +141,11 @@ export default function NaturalMedicineMainHub({
     void runGlobalSearch();
   }, [runGlobalSearch]);
 
+  useEffect(() => {
+    if (portal !== "professional") return;
+    void fetch("/api/professional/integrative-hub-seen", { method: "POST" });
+  }, [portal]);
+
   const practiceByCategoria = useMemo(() => {
     const map = new Map<CategoriaPratica, NaturalMedicinePracticeConfig>();
     for (const p of practices) {
@@ -152,14 +162,17 @@ export default function NaturalMedicineMainHub({
           <Sprout size={28} className="text-emerald-600" />
         </div>
         <div>
-          <h1 className="text-2xl lg:text-3xl font-bold text-slate-900">{t("nm.hub.title")}</h1>
-          <p className="text-slate-500 mt-1 max-w-2xl">{t("nm.hub.subtitle")}</p>
+          <h1 className="text-2xl lg:text-3xl font-bold text-slate-900">{t(naturalMedicineHubTitleKey(portal))}</h1>
+          <p className="text-slate-500 mt-1 max-w-2xl">{t(naturalMedicineHubSubtitleKey(portal))}</p>
         </div>
       </div>
 
       <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-5">
-        <p className="text-sm text-emerald-800 leading-relaxed">{t("nm.hub.banner")}</p>
+        <p className="text-sm text-emerald-800 leading-relaxed">{t(naturalMedicineHubBannerKey(portal))}</p>
       </div>
+
+      {portal === "professional" && <IntegrativeProfessionalHubCockpit />}
+      {portal === "professional" && <IntegrativeRecentPrescriptions />}
 
       {practices.length > 0 && (
         <section className="space-y-3">

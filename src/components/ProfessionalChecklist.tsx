@@ -6,10 +6,11 @@ import { usePathname } from "next/navigation";
 import {
   CheckCircle2, Circle, ChevronRight, X, Sparkles,
   User, Calendar, Users, Pill, Radio, BookOpen, PenLine,
-  AlertCircle, RefreshCw, CreditCard,
+  AlertCircle, RefreshCw, CreditCard, Sprout,
 } from "lucide-react";
 import { useT } from "@/lib/i18n/I18nProvider";
 import { mapProfessionalPathToPortal, professionalPortalBase } from "@/lib/psychologist-portal";
+import { PROFESSIONAL_INTEGRATIVE_HUB } from "@/lib/integrative-medicine/professional-routes";
 
 interface ChecklistState {
   hasProfile: boolean;
@@ -21,6 +22,8 @@ interface ChecklistState {
   hasDigitalSign: boolean;
   stripeConnectEnabled?: boolean;
   hasStripeConnect?: boolean;
+  hasExploredIntegrative?: boolean;
+  hasIntegrativeRx?: boolean;
 }
 
 const DISMISS_KEY_PREFIX = "doctor8.pro.checklist.dismissed";
@@ -139,6 +142,16 @@ export default function ProfessionalChecklist() {
     { id: "patient", icon: <Users size={16} />, href: mapPath("/professional/patients"), done: state.hasPatient, label: t("procheck.patient"), hint: t("procheck.patientHint") },
     ...(!psychologyPortal
       ? [{ id: "prescription", icon: <Pill size={16} />, href: mapPath("/professional/prescriptions"), done: state.hasPrescription, label: t("procheck.prescription"), hint: t("procheck.rxHint") }]
+      : []),
+    ...(!psychologyPortal
+      ? [{
+          id: "integrative",
+          icon: <Sprout size={16} />,
+          href: mapPath(PROFESSIONAL_INTEGRATIVE_HUB),
+          done: !!state.hasExploredIntegrative,
+          label: t("procheck.integrative"),
+          hint: t("procheck.integrativeHint"),
+        }]
       : []),
     { id: "jit", icon: <Radio size={16} />, href: mapPath("/professional/jit"), done: state.hasJit, label: t("procheck.jit"), hint: t("procheck.jitHint") },
     { id: "resource", icon: <BookOpen size={16} />, href: mapPath("/professional/resources"), done: state.hasResource, label: t("procheck.resource"), hint: t("procheck.resourceHint") },

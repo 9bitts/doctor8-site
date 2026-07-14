@@ -26,6 +26,7 @@ import {
   type NaturalMedicinePortal,
   type NaturalMedicinePracticeConfig,
   naturalMedicineBasePath,
+  naturalMedicineBackToHubKey,
 } from "@/lib/natural-medicine/config";
 import { prescriptionsPathForPractice } from "@/lib/medicina-natural-catalog/practice-prescriptions";
 
@@ -155,7 +156,7 @@ export default function PicsPracticeHub({ portal, practice }: PicsPracticeHubPro
         className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-emerald-700 transition"
       >
         <ArrowLeft size={16} />
-        {t("nm.practice.backToHub")}
+        {t(naturalMedicineBackToHubKey(portal))}
       </Link>
 
       <div className="flex items-start gap-4">

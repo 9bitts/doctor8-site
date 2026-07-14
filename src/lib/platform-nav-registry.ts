@@ -215,7 +215,7 @@ export const PROFESSIONAL_NAV_GROUPS: PlatformNavGroup[] = [
     labelKey: "nav.group.clinical",
     items: [
       { href: "/professional/prescriptions", labelKey: "nav.prescriptions", roles: ["PROFESSIONAL"], iconKey: "Stethoscope" },
-      { href: "/professional/medicina-natural", labelKey: "nav.naturalMedicine", roles: ["PROFESSIONAL"], iconKey: "Leaf" },
+      { href: "/professional/medicina-natural", labelKey: "nav.integrative", roles: ["PROFESSIONAL"], iconKey: "Leaf" },
       { href: "/professional/chas-medicinais", labelKey: "nav.medicinalTeas", roles: ["PROFESSIONAL"], iconKey: "FlaskConical" },
       { href: "/professional/psychology", labelKey: "nav.psychologyArea", roles: ["PROFESSIONAL"], iconKey: "Brain" },
       { href: "/professional/meeting-rooms", labelKey: "nav.meetingRooms", roles: ["PROFESSIONAL"], iconKey: "Video" },

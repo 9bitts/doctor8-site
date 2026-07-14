@@ -119,6 +119,23 @@ export function naturalMedicineBasePath(portal: NaturalMedicinePortal): string {
     : "/integrative-therapist/medicina-natural";
 }
 
+/** Hub i18n keys — physicians see "Integrativa"; therapists keep "Medicina Natural". */
+export function naturalMedicineHubTitleKey(portal: NaturalMedicinePortal): string {
+  return portal === "professional" ? "nm.pro.hub.title" : "nm.hub.title";
+}
+
+export function naturalMedicineHubSubtitleKey(portal: NaturalMedicinePortal): string {
+  return portal === "professional" ? "nm.pro.hub.subtitle" : "nm.hub.subtitle";
+}
+
+export function naturalMedicineHubBannerKey(portal: NaturalMedicinePortal): string {
+  return portal === "professional" ? "nm.pro.hub.banner" : "nm.hub.banner";
+}
+
+export function naturalMedicineBackToHubKey(portal: NaturalMedicinePortal): string {
+  return portal === "professional" ? "nm.pro.practice.backToHub" : "nm.practice.backToHub";
+}
+
 export function hasAnyNaturalMedicinePractice(
   picsPractices: string[],
 ): boolean {

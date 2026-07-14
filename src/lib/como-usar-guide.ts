@@ -241,12 +241,12 @@ const pt: GuideContent = {
           ],
         },
         {
-          title: "Medicina natural (PICS)",
-          description: "Módulo completo de práticas integrativas: fitoterapia, florais de Bach, homeopatia, aromaterapia e apiterapia.",
+          title: "Integrativa",
+          description: "Módulo de práticas integrativas para médicos: fitoterapia, florais de Bach, homeopatia, aromaterapia, apiterapia e cannabis medicinal (RDC 1.015/2026).",
           bullets: [
             "Catálogo de monografias oficiais.",
+            "Protocolos sugeridos com pré-preenchimento.",
             "Prescrição integrada ao prontuário.",
-            "Templates por prática.",
           ],
         },
         {

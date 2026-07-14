@@ -17,6 +17,7 @@ import { useI18n } from "@/lib/i18n/I18nProvider";
 import {
   type NaturalMedicinePortal,
   type NaturalMedicinePracticeConfig,
+  naturalMedicineBackToHubKey,
 } from "@/lib/natural-medicine/config";
 import {
   MN_PRACTICE_THEME,
@@ -189,7 +190,7 @@ export default function MnPrescriptionTemplates({
         className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-emerald-700 transition"
       >
         <ArrowLeft size={16} />
-        {t("nm.practice.backToHub")}
+        {t(naturalMedicineBackToHubKey(portal))}
       </Link>
 
       <div className="flex items-start gap-4">

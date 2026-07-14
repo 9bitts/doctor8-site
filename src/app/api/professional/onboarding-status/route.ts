@@ -10,6 +10,7 @@ import {
   getStripeConnectStatusForProfile,
   isStripeConnectEnabled,
 } from "@/lib/stripe-connect";
+import { medicationListHasIntegrativeItems } from "@/lib/integrative-medicine/integrative-prescription-utils";
 
 export async function GET() {
   const ctx = await requireProfessionalApi();
@@ -26,6 +27,8 @@ export async function GET() {
       avatarUrl:     true,
       bio:           true,
       digitalSignCpf: true,
+      integrativeHubSeenAt: true,
+      practicesIntegrativeMedicine: true,
     },
   });
 
@@ -69,6 +72,18 @@ export async function GET() {
     ? await getStripeConnectStatusForProfile(professional.id)
     : null;
 
+  const recentRx = await db.prescription.findMany({
+    where: { professionalId: professional.id },
+    select: { medications: true },
+    take: 30,
+  });
+  const hasIntegrativeRx = recentRx.some((p) => medicationListHasIntegrativeItems(p.medications));
+
+  const hasExploredIntegrative =
+    !!professional.integrativeHubSeenAt ||
+    !!professional.practicesIntegrativeMedicine ||
+    hasIntegrativeRx;
+
   return NextResponse.json({
     hasProfile:      hasProfile,
     hasAvailability: availCount > 0,
@@ -79,5 +94,7 @@ export async function GET() {
     hasDigitalSign:  !!professional.digitalSignCpf,
     stripeConnectEnabled: connectEnabled,
     hasStripeConnect: connectStatus === "active",
+    hasExploredIntegrative,
+    hasIntegrativeRx,
   });
 }
