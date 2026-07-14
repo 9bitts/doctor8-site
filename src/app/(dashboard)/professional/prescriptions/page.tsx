@@ -12,6 +12,8 @@ import { PostSaveFlow } from "./components/PostSaveFlow";
 import { PrescriptionForm } from "./components/PrescriptionForm";
 import { PrescriptionsHub } from "./components/PrescriptionsHub";
 import { usePrescriptionPage } from "./components/usePrescriptionPage";
+import CannabisMedicinalTcleModal from "@/components/integrative-medicine/CannabisMedicinalTcleModal";
+import PhytoInteractionConfirmModal from "@/components/integrative-medicine/PhytoInteractionConfirmModal";
 
 export default function PrescriptionsPage() {
   const p = usePrescriptionPage();
@@ -195,6 +197,18 @@ export default function PrescriptionsPage() {
           onValidDaysChange={p.setValidDays}
           onSaveAsRxTemplate={p.saveAsRxTemplate}
           onSubmit={p.handleSubmit}
+          hasMixedPrescription={p.hasMixedPrescription}
+        />
+        <PhytoInteractionConfirmModal
+          open={p.phytoConfirmOpen}
+          warnings={p.phytoWarnings}
+          onClose={() => p.setPhytoConfirmOpen(false)}
+          onConfirm={p.confirmPhytoInteraction}
+        />
+        <CannabisMedicinalTcleModal
+          open={p.cannabisTcleOpen}
+          onClose={() => p.setCannabisTcleOpen(false)}
+          onAccept={p.acceptCannabisTcle}
         />
         <style>{RX_STYLES}</style>
       </>

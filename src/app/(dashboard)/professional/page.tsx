@@ -11,7 +11,7 @@ import { getUserLang } from "@/lib/i18n/server-lang";
 import {
   Calendar, Users, DollarSign, Clock, ChevronRight, Video, Radio,
   Inbox, MessageSquare, Stethoscope, BookOpen, UserCog, Settings,
-  TrendingUp, Activity, Sparkles, FileSignature,
+  TrendingUp, Activity, Sparkles, FileSignature, Sprout,
 } from "lucide-react";
 import Link from "next/link";
 import MarketPricingCard from "@/components/professional/MarketPricingCard";
@@ -25,6 +25,8 @@ import { getProfessionalDashboardInsights } from "@/lib/professional-dashboard-i
 import { decrypt } from "@/lib/encryption";
 import { getProfessionLabel } from "@/lib/professions";
 import { resolveRoleHome } from "@/lib/role-home";
+import { PROFESSIONAL_INTEGRATIVE_HUB } from "@/lib/integrative-medicine/professional-routes";
+import { medicationListHasIntegrativeItems } from "@/lib/integrative-medicine/integrative-prescription-utils";
 import { isWithinAppointmentJoinWindow } from "@/lib/appointment-join-window";
 import { providerDayBounds } from "@/lib/provider-day-bounds";
 import { buildProviderFinanceiroReport } from "@/lib/provider-financeiro";
@@ -83,6 +85,9 @@ export default async function ProfessionalDashboard() {
   const { start: todayStart, end: todayEnd } = providerDayBounds(providerTz);
   const regionForCampaign = userRow?.region ?? session.user.region ?? null;
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+  const monthStart = new Date();
+  monthStart.setDate(1);
+  monthStart.setHours(0, 0, 0, 0);
 
   const [
     completedToday,
@@ -99,6 +104,7 @@ export default async function ProfessionalDashboard() {
     humanitarianVolunteer,
     dashboardInsights,
     monthFinanceReport,
+    monthPrescriptions,
   ] = await Promise.all([
     db.appointment.count({
       where: {
@@ -183,6 +189,13 @@ export default async function ProfessionalDashboard() {
       period: "this_month",
       includeJit: true,
     }),
+    db.prescription.findMany({
+      where: {
+        professionalId: professional.id,
+        createdAt: { gte: monthStart },
+      },
+      select: { medications: true },
+    }),
     audit.viewRecord(userId, "ProfessionalProfile", professional.id),
   ]);
 
@@ -190,6 +203,9 @@ export default async function ProfessionalDashboard() {
     !!subscription && ["active", "trialing"].includes(subscription.status);
 
   const monthEarningsTotal = monthFinanceReport.totalNetCents;
+  const integrativeRxMonthCount = monthPrescriptions.filter((p) =>
+    medicationListHasIntegrativeItems(p.medications),
+  ).length;
   const jitOnline = jitSession?.status === "ONLINE";
   const jitPaused = jitSession?.status === "PAUSED";
   const jitWaiting = jitSession?._count.queue ?? 0;
@@ -238,6 +254,7 @@ export default async function ProfessionalDashboard() {
       title: t("prodash.quick.group.clinical"),
       items: [
         { href: "/professional/prescriptions", labelKey: "nav.prescriptions", icon: <Stethoscope size={20} />, accent: "bg-accent-50 hover:bg-accent-100 text-accent-600 border-accent-100" },
+        { href: PROFESSIONAL_INTEGRATIVE_HUB, labelKey: "nav.integrative", icon: <Sprout size={20} />, accent: "bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-200" },
         { href: "/professional/resources", labelKey: "nav.library", icon: <BookOpen size={20} />, accent: "bg-brand-50 hover:bg-brand-100 text-brand-600 border-brand-200" },
       ],
     },
@@ -336,7 +353,7 @@ export default async function ProfessionalDashboard() {
       <ProfessionalInsightsBanner insights={dashboardInsights} />
 
       {/* Clickable stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         <StatCard
           icon={<Calendar className="text-brand-500" size={20} />}
           label={t("prodash.stat.today")}
@@ -362,6 +379,13 @@ export default async function ProfessionalDashboard() {
           value={patientCount}
           bg="bg-brand-50"
           href="/professional/patients"
+        />
+        <StatCard
+          icon={<Sprout className="text-emerald-600" size={20} />}
+          label={t("prodash.stat.integrativeRx")}
+          value={integrativeRxMonthCount}
+          bg="bg-emerald-50"
+          href={PROFESSIONAL_INTEGRATIVE_HUB}
         />
         <StatCard
           icon={<DollarSign className="text-brand-500" size={20} />}

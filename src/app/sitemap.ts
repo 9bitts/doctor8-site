@@ -22,6 +22,9 @@ const STATIC_PUBLIC_PATHS = [
   "/tcle-telemedicina",
   "/acura-voluntariado",
   "/sos-venezuela",
+  "/medicinaintegrativa",
+  "/pacientes",
+  "/especialistas",
 ] as const;
 
 function buildProgrammaticEntries(now: Date): MetadataRoute.Sitemap {

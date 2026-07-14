@@ -124,6 +124,8 @@ const PUBLIC_ROUTES = [
 function isPublicRoute(pathname: string): boolean {
   if (pathname === "/empresas") return true;
   if (pathname === "/pacientes") return true;
+  if (pathname === "/medicinaintegrativa") return true;
+  if (pathname === "/medicina-integrativa") return true;
   if (pathname === "/parceiros") return true;
   if (pathname === "/especialistas") return true;
   if (pathname === "/farmacias") return true;
