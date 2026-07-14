@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
-import { Microscope, Loader2, AlertTriangle, ExternalLink, Search } from "lucide-react";
+import { Microscope, Loader2, AlertTriangle, ExternalLink, Search, Sparkles, Library } from "lucide-react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import DictationMicButton from "@/components/ui/DictationMicButton";
 
@@ -16,6 +16,8 @@ type ArticleResult = {
 };
 
 type SearchResponse = {
+  clinicalSummary: string;
+  pubmedFailed?: boolean;
   query: string;
   keywords: string[];
   summary: string;
@@ -209,28 +211,51 @@ export default function LiteratureSearchClient() {
 
       {result && (
         <div className="space-y-6">
-          <section className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
-            <p className="text-xs font-medium text-slate-400 uppercase tracking-wide mb-1">
-              {t("research.queryUsed")}
-            </p>
-            <p className="text-sm text-slate-700 font-mono bg-slate-50 rounded-lg px-3 py-2">
-              {result.query}
-            </p>
-            {result.keywords.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 mt-2">
-                {result.keywords.map((kw) => (
-                  <span
-                    key={kw}
-                    className="text-xs bg-brand-50 text-brand-700 px-2 py-0.5 rounded-full"
-                  >
-                    {kw}
-                  </span>
-                ))}
-              </div>
-            )}
+          <section className="bg-white rounded-2xl border border-brand-100 shadow-sm p-6 space-y-3">
+            <div className="flex items-center gap-2">
+              <Sparkles size={20} className="text-brand-500" />
+              <h2 className="font-semibold text-slate-800">{t("research.clinicalSummaryHeading")}</h2>
+            </div>
+            <p className="text-xs text-slate-500">{t("research.clinicalSummaryDisclaimer")}</p>
+            <SummaryMarkdown text={result.clinicalSummary} />
           </section>
 
-          <section className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
+          <section className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-4">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <Library size={20} className="text-slate-500" />
+                <h2 className="font-semibold text-slate-800">{t("research.pubmedSectionHeading")}</h2>
+              </div>
+              <p className="text-xs text-slate-500">{t("research.pubmedSectionSubtitle")}</p>
+            </div>
+
+            <div>
+              <p className="text-xs font-medium text-slate-400 uppercase tracking-wide mb-1">
+                {t("research.queryUsed")}
+              </p>
+              {result.pubmedFailed ? (
+                <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                  {t("research.pubmedFailed")}
+                </p>
+              ) : (
+                <p className="text-sm text-slate-700 font-mono bg-slate-50 rounded-lg px-3 py-2">
+                  {result.query}
+                </p>
+              )}
+              {result.keywords.length > 0 && !result.pubmedFailed && (
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  {result.keywords.map((kw) => (
+                    <span
+                      key={kw}
+                      className="text-xs bg-brand-50 text-brand-700 px-2 py-0.5 rounded-full"
+                    >
+                      {kw}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+
             <SummaryMarkdown text={result.summary} />
           </section>
 
@@ -270,6 +295,10 @@ export default function LiteratureSearchClient() {
                 ))}
               </ul>
             </section>
+          )}
+
+          {result.articles.length === 0 && (
+            <p className="text-sm text-slate-500 text-center py-2">{t("research.pubmedNoArticles")}</p>
           )}
         </div>
       )}

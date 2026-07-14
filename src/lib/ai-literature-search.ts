@@ -6,20 +6,54 @@ import type { PubMedArticleSummary } from "@/lib/pubmed";
 
 const MODEL = "claude-haiku-4-5-20251001";
 
-const REGULATORY_GUARDRAILS = `
+const BASE_GUARDRAILS = `
 REGULATORY GUARDRAILS (mandatory):
 - This is a DECISION SUPPORT tool for licensed healthcare professionals. It is NOT prescriptive and does NOT determine medical conduct.
 - NEVER recommend a specific therapy, dose, or treatment plan for a specific patient.
-- Summarize what the published literature reports; the clinician decides applicability.
 - Strip or ignore any patient identifiers if present in the input.
+- The clinician decides applicability to real patients.
+`.trim();
+
+const PUBMED_GUARDRAILS = `
+${BASE_GUARDRAILS}
+- Summarize ONLY what the provided PubMed articles report.
 - Every factual claim MUST cite a PMID from the provided articles.
 - If evidence is insufficient or conflicting, say so explicitly.
+- Do NOT use general medical knowledge beyond the provided articles.
 `.trim();
+
+const CLINICAL_GUARDRAILS = `
+${BASE_GUARDRAILS}
+- Provide a structured clinical overview grounded in established medical knowledge.
+- Do NOT fabricate PMIDs, citations, or references to specific papers.
+- If evidence is insufficient, uncertain, or evolving, say so explicitly.
+- Frame content as educational context for the described scenario, not individualized medical advice.
+`.trim();
+
+function buildClinicalSystemPrompt(lang: Lang): string {
+  const headings =
+    lang === "pt"
+      ? ["## Contexto clínico", "## Pontos relevantes", "## Considerações"]
+      : lang === "es"
+        ? ["## Contexto clínico", "## Puntos relevantes", "## Consideraciones"]
+        : ["## Clinical context", "## Relevant points", "## Considerations"];
+
+  return `You provide a direct clinical overview for a licensed healthcare professional using Doctor8 literature search.
+
+${CLINICAL_GUARDRAILS}
+
+Write entirely in ${LANG_LABEL[lang]}.
+
+Format as markdown with EXACTLY these three sections:
+1. ${headings[0]} — brief framing of the anonymous scenario (1 short paragraph)
+2. ${headings[1]} — 2–4 short paragraphs on pathophysiology, differential angles, guideline-level management themes, and monitoring. No patient-specific prescriptions.
+3. ${headings[2]} — limitations, controversies, or when to seek subspecialty input (1 short paragraph)`;
+}
 
 function buildQuerySystemPrompt(lang: Lang): string {
   return `You convert anonymous clinical scenario descriptions into PubMed search queries for licensed healthcare professionals using Doctor8.
 
-${REGULATORY_GUARDRAILS}
+${BASE_GUARDRAILS}
 
 Output ONLY valid JSON (no markdown fences) with this shape:
 {"query":"<concise PubMed query, MeSH-friendly when possible>","keywords":["term1","term2",...]}
@@ -32,19 +66,30 @@ Rules for the query:
 }
 
 function buildRankSystemPrompt(lang: Lang): string {
+  const summaryHeading =
+    lang === "pt" ? "## Síntese da literatura" : lang === "es" ? "## Síntesis de la literatura" : "## Literature synthesis";
+  const rankedHeading =
+    lang === "pt" ? "## Artigos ranqueados" : lang === "es" ? "## Artículos ranqueados" : "## Ranked articles";
+
   return `You rank and summarize PubMed articles for a licensed healthcare professional using Doctor8 literature search.
 
-${REGULATORY_GUARDRAILS}
+${PUBMED_GUARDRAILS}
 
 Write entirely in ${LANG_LABEL[lang]}.
 
-Format your response as markdown with EXACTLY two top-level sections using headings in ${LANG_LABEL[lang]}:
-1. An executive summary section (## heading)
-2. A ranked articles section (## heading)
+Format your response as markdown with EXACTLY two top-level sections:
+1. ${summaryHeading} — 2–4 short paragraphs synthesizing what the retrieved literature suggests. Cite PMIDs inline like (PMID: 12345678). Do NOT prescribe for a specific patient.
+2. ${rankedHeading} — for each article (most relevant first, up to 10), use ### subheading with rank and title, then author/journal/year line with PMID, then 1–2 relevance sentences.`;
+}
 
-Executive summary: 2–4 short paragraphs synthesizing what the literature suggests. Cite PMIDs inline like (PMID: 12345678). Do NOT prescribe for a specific patient.
-
-Ranked articles: for each article (most relevant first, up to 10), use ### subheading with rank and title, then author/journal/year line with PMID, then 1–2 relevance sentences. No treatment directives for an individual patient.`;
+export function emptyPubMedSummary(lang: Lang): string {
+  if (lang === "pt") {
+    return "## Síntese da literatura\n\nNenhum artigo foi encontrado no PubMed para esta consulta. Tente ampliar a descrição clínica ou reformular os termos de busca.\n\n## Artigos ranqueados\n\n(nenhum)";
+  }
+  if (lang === "es") {
+    return "## Síntesis de la literatura\n\nNo se encontraron artículos en PubMed para esta consulta. Intente ampliar la descripción clínica o reformular los términos de búsqueda.\n\n## Artículos ranqueados\n\n(ninguno)";
+  }
+  return "## Literature synthesis\n\nNo PubMed articles were retrieved for this query. Consider broadening the clinical description or refining search terms.\n\n## Ranked articles\n\n(none)";
 }
 
 async function callClaude(system: string, user: string, maxTokens: number): Promise<string> {
@@ -88,6 +133,17 @@ function parseQueryJson(raw: string): { query: string; keywords: string[] } {
   return { query, keywords };
 }
 
+export async function generateClinicalSummary(caseText: string, lang: Lang): Promise<string> {
+  const user = [
+    "Clinical scenario (anonymous):",
+    caseText.trim(),
+    "",
+    "Provide the structured clinical overview.",
+  ].join("\n");
+
+  return callClaude(buildClinicalSystemPrompt(lang), user, 1200);
+}
+
 export async function buildQueryFromCase(
   caseText: string,
   lang: Lang,
@@ -128,7 +184,7 @@ export async function rankAndSummarize(params: {
   lang: Lang;
 }): Promise<string> {
   if (params.articles.length === 0) {
-    return "## Executive summary\n\nNo PubMed articles were retrieved for this query. Consider broadening the clinical description or refining search terms.\n\n## Ranked articles\n\n(none)";
+    return emptyPubMedSummary(params.lang);
   }
 
   const user = [

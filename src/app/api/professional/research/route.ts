@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { isApiError } from "@/lib/api-auth";
 import { requireLiteratureSearchApi } from "@/lib/literature-search-auth";
-import { buildQueryFromCase, rankAndSummarize } from "@/lib/ai-literature-search";
+import { buildQueryFromCase, emptyPubMedSummary, generateClinicalSummary, rankAndSummarize } from "@/lib/ai-literature-search";
 import {
   searchPubMed,
   fetchSummaries,
@@ -47,27 +47,49 @@ export async function POST(req: NextRequest) {
     const lang: Lang = normalizeLang(parsed.data.lang || user?.language);
     const caseText = parsed.data.caseText.trim();
 
-    const { query, keywords } = await buildQueryFromCase(caseText, lang);
-    const pmids = await searchPubMed(query, { retmax: 20 });
+    const [clinicalSummary, pubmed] = await Promise.all([
+      generateClinicalSummary(caseText, lang),
+      (async () => {
+        try {
+          const { query, keywords } = await buildQueryFromCase(caseText, lang);
+          const pmids = await searchPubMed(query, { retmax: 20 });
 
-    let articles = await fetchSummaries(pmids);
-    try {
-      const abstractMap = await fetchAbstracts(pmids);
-      articles = articles.map((a) => ({
-        ...a,
-        abstract: abstractMap.get(a.pmid) ?? a.abstract,
-      }));
-    } catch (e) {
-      console.error("[RESEARCH] abstract fetch:", e);
-    }
+          let articles = await fetchSummaries(pmids);
+          try {
+            const abstractMap = await fetchAbstracts(pmids);
+            articles = articles.map((a) => ({
+              ...a,
+              abstract: abstractMap.get(a.pmid) ?? a.abstract,
+            }));
+          } catch (e) {
+            console.error("[RESEARCH] abstract fetch:", e);
+          }
 
-    const summary = await rankAndSummarize({ caseText, articles, lang });
+          const summary = await rankAndSummarize({ caseText, articles, lang });
+          return { query, keywords, summary, articles, pubmedFailed: false as const };
+        } catch (e) {
+          const msg = e instanceof Error ? e.message : String(e);
+          if (msg === "PUBMED_FAILED") {
+            return {
+              query: "",
+              keywords: [] as string[],
+              summary: emptyPubMedSummary(lang),
+              articles: [] as Awaited<ReturnType<typeof fetchSummaries>>,
+              pubmedFailed: true as const,
+            };
+          }
+          throw e;
+        }
+      })(),
+    ]);
 
     return NextResponse.json({
-      query,
-      keywords,
-      summary,
-      articles: articles.map((a) => ({
+      clinicalSummary,
+      pubmedFailed: pubmed.pubmedFailed,
+      query: pubmed.query,
+      keywords: pubmed.keywords,
+      summary: pubmed.summary,
+      articles: pubmed.articles.map((a) => ({
         pmid: a.pmid,
         title: a.title,
         authors: a.authors,
