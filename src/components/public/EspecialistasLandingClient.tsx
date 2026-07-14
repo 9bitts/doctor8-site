@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -14,6 +14,7 @@ import {
   Loader2,
   Menu,
   X,
+  ChevronDown,
   CreditCard,
   Map as MapIcon,
   HeartHandshake,
@@ -62,6 +63,104 @@ function langLabel(l: Lang): string {
   return "PT";
 }
 
+type NavGroup = {
+  id: string;
+  label: string;
+  items: { href: string; label: string }[];
+};
+
+function LandingNavDropdown({
+  group,
+  open,
+  onToggle,
+  onClose,
+}: {
+  group: NavGroup;
+  open: boolean;
+  onToggle: () => void;
+  onClose: () => void;
+}) {
+  const ref = useRef<HTMLLIElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function onClickOutside(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) onClose();
+    }
+    document.addEventListener("mousedown", onClickOutside);
+    return () => document.removeEventListener("mousedown", onClickOutside);
+  }, [open, onClose]);
+
+  return (
+    <li ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={open}
+        className="inline-flex items-center gap-1 rounded-lg px-3 py-2 text-sm font-medium text-white/75 transition hover:bg-white/10 hover:text-white"
+      >
+        {group.label}
+        <ChevronDown size={14} className={`transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open && (
+        <div className="absolute left-0 top-full z-50 mt-1 min-w-[200px] overflow-hidden rounded-xl border border-white/10 bg-d8-dark py-1 shadow-xl">
+          {group.items.map((item) => (
+            <a
+              key={item.href}
+              href={item.href}
+              onClick={onClose}
+              className="block px-4 py-2.5 text-sm text-white/80 transition hover:bg-white/10 hover:text-white"
+            >
+              {item.label}
+            </a>
+          ))}
+        </div>
+      )}
+    </li>
+  );
+}
+
+function LandingMobileNavGroup({
+  group,
+  open,
+  onToggle,
+  onNavigate,
+}: {
+  group: NavGroup;
+  open: boolean;
+  onToggle: () => void;
+  onNavigate: () => void;
+}) {
+  return (
+    <li className="border-b border-white/10 last:border-0">
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={open}
+        className="flex w-full items-center justify-between py-3 text-sm font-semibold text-white"
+      >
+        {group.label}
+        <ChevronDown size={16} className={`transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open && (
+        <ul className="pb-2 pl-1">
+          {group.items.map((item) => (
+            <li key={item.href}>
+              <a
+                href={item.href}
+                onClick={onNavigate}
+                className="block rounded-lg px-3 py-2 text-sm text-white/70 transition hover:bg-white/10 hover:text-white"
+              >
+                {item.label}
+              </a>
+            </li>
+          ))}
+        </ul>
+      )}
+    </li>
+  );
+}
+
 const MODE_TABS: { id: SearchMode; icon?: typeof Stethoscope }[] = [
   { id: "specialty" },
   { id: "symptom", icon: Stethoscope },
@@ -98,6 +197,8 @@ export default function EspecialistasLandingClient() {
   const [citiesLoading, setCitiesLoading] = useState(true);
   const [healthPlans, setHealthPlans] = useState<{ slug: string; name: string }[]>([]);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const [openMobileGroup, setOpenMobileGroup] = useState<string | null>(null);
 
   const loadCatalogs = useCallback(async () => {
     setSpecialtiesLoading(true);
@@ -240,17 +341,40 @@ export default function EspecialistasLandingClient() {
   }
 
   const platformLabel = lang === "pt" ? "Plataforma" : lang === "es" ? "Plataforma" : "Platform";
-  const navLinks = [
-    { href: "#ecosystem", label: lc.nav.ecosystem },
-    { href: "#platform", label: platformLabel },
-    { href: "#urgent", label: lc.nav.urgent },
-    { href: "#how", label: lc.nav.how },
-    { href: "#specialties", label: lc.nav.specialties },
-    { href: "#pharmacy", label: lc.nav.pharmacy },
-    { href: "#club", label: lc.nav.club },
-    { href: "#cannabis", label: lc.nav.cannabis },
-    { href: "#energy", label: lc.nav.energy },
+  const navGroups: NavGroup[] = [
+    {
+      id: "about",
+      label: lc.nav.groupAbout,
+      items: [
+        { href: "#ecosystem", label: lc.nav.ecosystem },
+        { href: "#platform", label: platformLabel },
+        { href: "#how", label: lc.nav.how },
+      ],
+    },
+    {
+      id: "care",
+      label: lc.nav.groupCare,
+      items: [
+        { href: "#urgent", label: lc.nav.urgent },
+        { href: "#specialties", label: lc.nav.specialties },
+      ],
+    },
+    {
+      id: "benefits",
+      label: lc.nav.groupBenefits,
+      items: [
+        { href: "#pharmacy", label: lc.nav.pharmacy },
+        { href: "#club", label: lc.nav.club },
+        { href: "#cannabis", label: lc.nav.cannabis },
+        { href: "#energy", label: lc.nav.energy },
+      ],
+    },
   ];
+
+  function closeMobileNav() {
+    setMobileOpen(false);
+    setOpenMobileGroup(null);
+  }
 
   const disclaimer =
     lang === "en"
@@ -269,22 +393,23 @@ export default function EspecialistasLandingClient() {
       <nav className="sticky top-0 z-50 border-b border-white/10 bg-d8-dark/95 backdrop-blur-md">
         <div className="mx-auto flex h-[68px] max-w-6xl items-center gap-2 sm:gap-4 px-4 sm:px-6 min-w-0">
           <BrandLogoLink href="/" variant="on-dark" size="md" className="shrink-0" />
+
           <ul
-            className={`${mobileOpen ? "flex" : "hidden"} absolute left-0 right-0 top-[68px] z-50 flex-col gap-3 border-b border-white/10 bg-d8-dark px-6 py-4 md:static md:flex md:flex-1 md:flex-row md:items-center md:border-0 md:bg-transparent md:p-0`}
+            className="hidden md:flex flex-1 items-center justify-center gap-2 lg:gap-4"
+            aria-label="Navegação principal"
           >
-            {navLinks.map((l) => (
-              <li key={l.href}>
-                <a
-                  href={l.href}
-                  onClick={() => setMobileOpen(false)}
-                  className="text-sm font-medium text-white/70 transition hover:text-white"
-                >
-                  {l.label}
-                </a>
-              </li>
+            {navGroups.map((group) => (
+              <LandingNavDropdown
+                key={group.id}
+                group={group}
+                open={openDropdown === group.id}
+                onToggle={() => setOpenDropdown((prev) => (prev === group.id ? null : group.id))}
+                onClose={() => setOpenDropdown(null)}
+              />
             ))}
           </ul>
-          <div className="ml-auto flex items-center gap-2">
+
+          <div className="ml-auto flex items-center gap-2 shrink-0">
             <button
               type="button"
               onClick={() => setLang(nextLang(lang))}
@@ -306,7 +431,12 @@ export default function EspecialistasLandingClient() {
             </Link>
             <button
               type="button"
-              onClick={() => setMobileOpen(!mobileOpen)}
+              onClick={() => {
+                setMobileOpen((open) => {
+                  if (open) setOpenMobileGroup(null);
+                  return !open;
+                });
+              }}
               className="text-white md:hidden"
               aria-label="Menu"
             >
@@ -314,6 +444,23 @@ export default function EspecialistasLandingClient() {
             </button>
           </div>
         </div>
+
+        {mobileOpen && (
+          <ul
+            className="border-t border-white/10 bg-d8-dark px-4 py-2 md:hidden"
+            aria-label="Navegação principal"
+          >
+            {navGroups.map((group) => (
+              <LandingMobileNavGroup
+                key={group.id}
+                group={group}
+                open={openMobileGroup === group.id}
+                onToggle={() => setOpenMobileGroup((prev) => (prev === group.id ? null : group.id))}
+                onNavigate={closeMobileNav}
+              />
+            ))}
+          </ul>
+        )}
       </nav>
 
       <section className="relative overflow-x-hidden bg-d8-hero px-4 pb-14 pt-10 sm:px-6">

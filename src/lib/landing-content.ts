@@ -8,6 +8,7 @@ export type LandingContent = {
   nav: {
     how: string; specialties: string; club: string; cannabis: string; energy: string;
     urgent: string; pharmacy: string; ecosystem: string; signIn: string; signUp: string;
+    groupAbout: string; groupCare: string; groupBenefits: string;
   };
   heroCtas: { urgent: string; register: string; corporate: string };
   trust: string[];
@@ -60,6 +61,7 @@ const pt: LandingContent = {
     how: "Como funciona", specialties: "Especialidades", club: "Club Doctor", cannabis: "Cannabis",
     energy: "Doctor Energy", urgent: "Plantão", pharmacy: "Farmácia", ecosystem: "Ecossistema",
     signIn: "Entrar", signUp: "Cadastre-se",
+    groupAbout: "Conheça", groupCare: "Atendimento", groupBenefits: "Benefícios",
   },
   heroCtas: {
     urgent: "Plantão imediato",
@@ -265,6 +267,7 @@ const en: LandingContent = {
     how: "How it works", specialties: "Specialties", club: "Club Doctor", cannabis: "Cannabis",
     energy: "Doctor Energy", urgent: "Urgent care", pharmacy: "Pharmacy", ecosystem: "Ecosystem",
     signIn: "Sign in", signUp: "Sign up",
+    groupAbout: "Discover", groupCare: "Care", groupBenefits: "Benefits",
   },
   heroCtas: {
     urgent: "Immediate care",
@@ -471,6 +474,7 @@ const es: LandingContent = {
     how: "C\u00f3mo funciona", specialties: "Especialidades", club: "Club Doctor", cannabis: "Cannabis",
     energy: "Doctor Energy", urgent: "Urgencias", pharmacy: "Farmacia", ecosystem: "Ecosistema",
     signIn: "Iniciar sesi\u00f3n", signUp: "Registrarse",
+    groupAbout: "Conoce", groupCare: "Atenci\u00f3n", groupBenefits: "Beneficios",
   },
   heroCtas: {
     urgent: "Atenci\u00f3n inmediata",
