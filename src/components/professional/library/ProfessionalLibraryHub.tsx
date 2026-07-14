@@ -129,7 +129,7 @@ export default function ProfessionalLibraryHub({
         body: JSON.stringify({ packId, lang }),
       });
       if (res.status === 409) {
-        toast.info(t("libHub.imported"));
+        toast.success(t("libHub.imported"));
       } else if (res.ok) {
         toast.success(t("libHub.importSuccess"));
         await loadHub();
