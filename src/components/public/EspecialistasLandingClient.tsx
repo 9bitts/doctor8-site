@@ -17,12 +17,10 @@ import {
   ChevronDown,
   CreditCard,
   Map as MapIcon,
-  HeartHandshake,
   Radio,
 } from "lucide-react";
 import { buildPublicSearchConvenioPath } from "@/lib/public-slugs";
 import LandingMarketingSections from "@/components/public/LandingMarketingSections";
-import AcuraVolunteerBadge from "@/components/acura/AcuraVolunteerBadge";
 import CookieBanner from "@/components/public/CookieBanner";
 import LandingOptionPicker from "@/components/public/LandingOptionPicker";
 import SymptomMatchPicker, { type SymptomMatchOption } from "@/components/public/SymptomMatchPicker";
@@ -182,9 +180,7 @@ export default function EspecialistasLandingClient() {
 
   const [mode, setMode] = useState<SearchMode>("specialty");
   const [specialty, setSpecialty] = useState("");
-  const [acuraSpecialty, setAcuraSpecialty] = useState("");
   const [city, setCity] = useState("");
-  const [acuraCity, setAcuraCity] = useState("");
   const [symptom, setSymptom] = useState("");
   const [symptomLoading, setSymptomLoading] = useState(false);
   const [symptomError, setSymptomError] = useState("");
@@ -221,7 +217,6 @@ export default function EspecialistasLandingClient() {
         setSpecialties(rows);
         if (rows.length > 0) {
           setSpecialty((prev) => prev || rows[0].slug);
-          setAcuraSpecialty((prev) => prev || rows[0].slug);
         }
       }
       if (citiesRes.ok) {
@@ -236,7 +231,6 @@ export default function EspecialistasLandingClient() {
         setCities(rows);
         if (rows.length > 0) {
           setCity((prev) => pickDefaultCitySlug(rows, prev));
-          setAcuraCity((prev) => pickDefaultCitySlug(rows, prev));
         }
       }
       if (plansRes.ok) {
@@ -275,20 +269,14 @@ export default function EspecialistasLandingClient() {
     label: p.name,
   }));
 
-  function goSearch(esp: string, citySlug: string, acuraOnly = false) {
+  function goSearch(esp: string, citySlug: string) {
     if (!esp || !citySlug) return;
-    const qs = acuraOnly ? "?acuraVolunteers=1" : "";
-    router.push(`/especialistas/${esp}/${citySlug}${qs}`);
+    router.push(`/especialistas/${esp}/${citySlug}`);
   }
 
   function handleSpecialtySearch(e: React.FormEvent) {
     e.preventDefault();
     goSearch(specialty.trim(), city);
-  }
-
-  function handleAcuraSearch(e: React.FormEvent) {
-    e.preventDefault();
-    goSearch(acuraSpecialty.trim(), acuraCity, true);
   }
 
   function handleConvenioSearch(e: React.FormEvent) {
@@ -662,49 +650,6 @@ export default function EspecialistasLandingClient() {
                 {t("symptom.search")}
               </button>
             </form>
-          )}
-
-          {/* AcuraBrasil volunteer search — separate block */}
-          {mode !== "map" && (
-            <div className="mt-5 rounded-2xl border border-sky-400/35 bg-sky-900/80 p-5 text-white shadow-lg backdrop-blur-sm">
-              <div className="mb-3 flex flex-wrap items-center gap-2">
-                <HeartHandshake size={18} className="shrink-0 text-sky-200" aria-hidden />
-                <h2 className="text-sm font-bold text-white">{t("acura.vol.landingSectionTitle")}</h2>
-                <AcuraVolunteerBadge size="sm" showInfoIcon={false} className="[&_span]:border-sky-300/60 [&_span]:bg-white/95" />
-              </div>
-              <p className="mb-4 text-sm leading-relaxed text-white/90">
-                {t("acura.vol.landingSectionDesc")}
-              </p>
-              <form onSubmit={handleAcuraSearch} className="grid gap-3 sm:grid-cols-[1fr_1fr_auto]">
-                <LandingOptionPicker
-                  value={acuraSpecialty}
-                  onChange={setAcuraSpecialty}
-                  options={specialtyOptions}
-                  label={t("pubSearch.specialty")}
-                  searchable
-                  searchPlaceholder={t("pubSearch.searchSpecialty")}
-                  loading={specialtiesLoading}
-                />
-                <LandingOptionPicker
-                  value={acuraCity}
-                  onChange={setAcuraCity}
-                  options={cityOptions}
-                  label={t("pubSearch.city")}
-                  searchable
-                  searchPlaceholder={t("pubSearch.searchCity")}
-                  emptyMessage={t("pubSearch.noCities")}
-                  loading={citiesLoading}
-                  disabled={cityOptions.length === 0}
-                />
-                <button
-                  type="submit"
-                  disabled={!acuraSpecialty || !acuraCity || specialtiesLoading || citiesLoading}
-                  className="flex items-center justify-center gap-2 rounded-xl bg-sky-500 px-5 py-3 text-sm font-bold text-white transition hover:bg-sky-400 disabled:opacity-50 sm:self-end"
-                >
-                  <Search size={16} /> {t("acura.vol.landingSearch")}
-                </button>
-              </form>
-            </div>
           )}
 
           <p className="mt-4 text-center text-xs text-white/40">* {disclaimer}</p>
