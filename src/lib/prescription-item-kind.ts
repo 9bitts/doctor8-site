@@ -5,7 +5,8 @@ export type PrescriptionItemKind =
   | "floral"
   | "homeopathy"
   | "aromatherapy"
-  | "apitherapy";
+  | "apitherapy"
+  | "cannabis";
 
 const FREE_TEXT_KINDS = new Set<PrescriptionItemKind>([
   "device",
@@ -25,6 +26,6 @@ export function isNaturalMedicineItemKind(
   kind: PrescriptionItemKind | undefined,
 ): boolean {
   return kind
-    ? ["phytotherapy", "floral", "homeopathy", "aromatherapy", "apitherapy"].includes(kind)
+    ? ["phytotherapy", "floral", "homeopathy", "aromatherapy", "apitherapy", "cannabis"].includes(kind)
     : false;
 }

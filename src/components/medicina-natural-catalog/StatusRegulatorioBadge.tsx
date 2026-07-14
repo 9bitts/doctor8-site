@@ -8,6 +8,7 @@ const STATUS_STYLES: Record<StatusRegulatorio, string> = {
   PRODUTO_TRADICIONAL_NOTIFICADO: "bg-teal-100 text-teal-800 border-teal-200",
   USO_TRADICIONAL_SEM_REGISTRO: "bg-amber-100 text-amber-800 border-amber-200",
   PRATICA_INTEGRATIVA_NAO_REGULADA: "bg-slate-100 text-slate-700 border-slate-200",
+  PRODUTO_AUTORIZADO_ANVISA: "bg-lime-100 text-lime-900 border-lime-300",
 };
 
 export default function StatusRegulatorioBadge({

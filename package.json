@@ -55,6 +55,8 @@
     "seed:aromaterapia": "tsx prisma/seeds/aromaterapia.ts",
     "seed:homeopatia": "tsx prisma/seeds/homeopatia.ts",
     "seed:apiterapia": "tsx prisma/seeds/apiterapia.ts",
+    "seed:cannabis": "tsx prisma/seeds/cannabis.ts",
+    "write:cannabis-seed": "tsx scripts/write-cannabis-seed.ts",
     "generate:fitoterapicos-lotes": "node scripts/generate-fitoterapicos-lotes.mjs --validate",
     "generate:florais-seed": "tsx scripts/generate-florais-seed.ts",
     "backfill:search-text": "node scripts/backfill-patient-search-text.mjs",

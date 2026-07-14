@@ -55,6 +55,13 @@ export function isDentistSpecialty(specialty: string | null | undefined): boolea
   return getProfessionInfo(specialty.trim()).typeKey === "dentist";
 }
 
+/** RDC 1.015/2026 — prescrição de cannabis medicinal: médico ou cirurgião-dentista. */
+export function canPrescribeCannabisMedicinal(specialty: string | null | undefined): boolean {
+  if (!specialty?.trim()) return false;
+  const { typeKey } = getProfessionInfo(specialty.trim());
+  return typeKey === "doctor" || typeKey === "dentist";
+}
+
 export function getProfessionInfo(specialty: string): ProfessionInfo {
   const s = (canonicalProfessionValue(specialty) ?? specialty).trim();
   if (PSYCHOLOGY.has(s)) return { typeKey: "psychologist", councilKey: "crp" };

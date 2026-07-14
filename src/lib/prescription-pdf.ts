@@ -42,6 +42,8 @@ export interface PrescriptionPdfData {
   signed?: boolean;
   /** Optional council compliance line (CFO, CFF, etc.) */
   councilComplianceLine?: string | null;
+  /** RDC 327/2019 cannabis regulatory footer when prescription includes cannabis items */
+  cannabisComplianceLine?: string | null;
   /** PNG bytes for pharmacy validation QR (top-left corner) */
   pharmacyQrPng?: Uint8Array;
 }
@@ -338,9 +340,17 @@ export async function buildPrescriptionPdf(
     const cfoW = font.widthOfTextAtSize(cfo, 7);
     text(page, cfo, (A4.w - cfoW) / 2, confY - 11, 7, font, LIGHTGRAY);
   }
+  if (data.cannabisComplianceLine) {
+    const cannabis = sanitize(data.cannabisComplianceLine);
+    const cannabisW = font.widthOfTextAtSize(cannabis, 7);
+    const offset = data.councilComplianceLine ? 22 : 11;
+    text(page, cannabis, (A4.w - cannabisW) / 2, confY - offset, 7, font, LIGHTGRAY);
+  }
+  const footerOffset =
+    (data.councilComplianceLine ? 22 : 0) + (data.cannabisComplianceLine ? 11 : 0);
   const idLine = `ID: ${data.prescriptionId} · Doctor8 · doctor8.org`;
   const idW = font.widthOfTextAtSize(sanitize(idLine), 7);
-  text(page, idLine, (A4.w - idW) / 2, confY - (data.councilComplianceLine ? 22 : 11), 7, font, LIGHTGRAY);
+  text(page, idLine, (A4.w - idW) / 2, confY - (footerOffset || 11), 7, font, LIGHTGRAY);
 
   return await pdf.save();
 }

@@ -1,0 +1,2347 @@
+{
+  "_meta": {
+    "fonte": "Doctor8 — catálogo genérico por composição",
+    "data": "2026-07-14",
+    "observacao": "Catálogo genérico por composição — sem marcas, conforme prática de mercado e RDC 327/2019"
+  },
+  "itens": [
+    {
+      "slug": "cannabis-oleo-cbd-isolado-10-mg-ml",
+      "nome": "Óleo CBD isolado 10 mg/mL",
+      "nomesAlternativos": [
+        "Canabidiol 10 mg/mL",
+        "CBD isolado 10",
+        "CBD 1.0%"
+      ],
+      "nomeCientifico": null,
+      "categoriaPratica": "CANNABIS",
+      "indicacoes": "Dor crônica neuropática e nociceptiva, epilepsia refratária, ansiedade, insônia, TEA, Parkinson, fibromialgia, náusea associada à quimioterapia.",
+      "contraindicacoes": "Hipersensibilidade a canabinoides ou excipientes. Gestação e lactação. Cautela em hepatopatia grave.",
+      "precaucoes": "Iniciar com dose baixa e titular gradualmente (start low, go slow). Monitorar função hepática em uso prolongado ou doses elevadas. Evitar condução de veículos até estabelecer tolerância.",
+      "interacoesMedicamentosas": "Anticonvulsivantes (clobazam, valproato — risco de sedação e elevação de níveis séricos). Varfarina e anticoagulantes (monitorar INR). Inibidores e indutores de CYP3A4 e CYP2C19 (ex.: fluconazol, rifampicina, carbamazepina). Depressores do SNC (opioides, benzodiazepínicos, álcool — potencialização de sedação).",
+      "posologia": "Via oral ou sublingual. Iniciar com 0,1 mL 2x/dia; titular semanalmente conforme resposta clínica (start low, go slow). Frasco 30 mL.",
+      "viaAdministracao": [
+        "oral",
+        "sublingual"
+      ],
+      "statusRegulatorio": "MEDICAMENTO_REGISTRADO",
+      "fontes": [
+        {
+          "fonte": "RDC ANVISA nº 327/2019",
+          "edicao": "2019"
+        },
+        {
+          "fonte": "RDC ANVISA nº 660/2022",
+          "edicao": "2022"
+        },
+        {
+          "fonte": "RDC ANVISA nº 1.015/2026",
+          "edicao": "2026"
+        }
+      ],
+      "alertaGestacaoPediatria": "Contraindicado na gestação e lactação. Uso pediátrico apenas sob supervisão especializada, conforme indicação clínica e normas vigentes.",
+      "renisus": false,
+      "detalhesEspecificos": {
+        "espectro": "isolado",
+        "canabinoideDominante": "CBD",
+        "concentracaoCbdMgMl": 10,
+        "formaFarmaceutica": "oleo",
+        "tipoReceituario": "B",
+        "thcAcimaLimite": false,
+        "volumeEmbalagem": "30 mL"
+      },
+      "searchText": "oleo cbd isolado 10 mg/ml canabidiol 10 mg/ml cbd isolado 10 cbd 1.0% isolado cbd oleo cbd 10 receituario b canabidiol 10 mg/ml cbd isolado 10 cbd 1.0%"
+    },
+    {
+      "slug": "cannabis-oleo-cbd-isolado-20-mg-ml",
+      "nome": "Óleo CBD isolado 20 mg/mL",
+      "nomesAlternativos": [
+        "Canabidiol 20 mg/mL",
+        "CBD isolado 20",
+        "CBD 2.0%"
+      ],
+      "nomeCientifico": null,
+      "categoriaPratica": "CANNABIS",
+      "indicacoes": "Dor crônica neuropática e nociceptiva, epilepsia refratária, ansiedade, insônia, TEA, Parkinson, fibromialgia, náusea associada à quimioterapia.",
+      "contraindicacoes": "Hipersensibilidade a canabinoides ou excipientes. Gestação e lactação. Cautela em hepatopatia grave.",
+      "precaucoes": "Iniciar com dose baixa e titular gradualmente (start low, go slow). Monitorar função hepática em uso prolongado ou doses elevadas. Evitar condução de veículos até estabelecer tolerância.",
+      "interacoesMedicamentosas": "Anticonvulsivantes (clobazam, valproato — risco de sedação e elevação de níveis séricos). Varfarina e anticoagulantes (monitorar INR). Inibidores e indutores de CYP3A4 e CYP2C19 (ex.: fluconazol, rifampicina, carbamazepina). Depressores do SNC (opioides, benzodiazepínicos, álcool — potencialização de sedação).",
+      "posologia": "Via oral ou sublingual. Iniciar com 0,1 mL 2x/dia; titular semanalmente conforme resposta clínica (start low, go slow). Frasco 30 mL.",
+      "viaAdministracao": [
+        "oral",
+        "sublingual"
+      ],
+      "statusRegulatorio": "MEDICAMENTO_REGISTRADO",
+      "fontes": [
+        {
+          "fonte": "RDC ANVISA nº 327/2019",
+          "edicao": "2019"
+        },
+        {
+          "fonte": "RDC ANVISA nº 660/2022",
+          "edicao": "2022"
+        },
+        {
+          "fonte": "RDC ANVISA nº 1.015/2026",
+          "edicao": "2026"
+        }
+      ],
+      "alertaGestacaoPediatria": "Contraindicado na gestação e lactação. Uso pediátrico apenas sob supervisão especializada, conforme indicação clínica e normas vigentes.",
+      "renisus": false,
+      "detalhesEspecificos": {
+        "espectro": "isolado",
+        "canabinoideDominante": "CBD",
+        "concentracaoCbdMgMl": 20,
+        "formaFarmaceutica": "oleo",
+        "tipoReceituario": "B",
+        "thcAcimaLimite": false,
+        "volumeEmbalagem": "30 mL"
+      },
+      "searchText": "oleo cbd isolado 20 mg/ml canabidiol 20 mg/ml cbd isolado 20 cbd 2.0% isolado cbd oleo cbd 20 receituario b canabidiol 20 mg/ml cbd isolado 20 cbd 2.0%"
+    },
+    {
+      "slug": "cannabis-oleo-cbd-isolado-50-mg-ml",
+      "nome": "Óleo CBD isolado 50 mg/mL",
+      "nomesAlternativos": [
+        "Canabidiol 50 mg/mL",
+        "CBD isolado 50",
+        "CBD 5.0%"
+      ],
+      "nomeCientifico": null,
+      "categoriaPratica": "CANNABIS",
+      "indicacoes": "Dor crônica neuropática e nociceptiva, epilepsia refratária, ansiedade, insônia, TEA, Parkinson, fibromialgia, náusea associada à quimioterapia.",
+      "contraindicacoes": "Hipersensibilidade a canabinoides ou excipientes. Gestação e lactação. Cautela em hepatopatia grave.",
+      "precaucoes": "Iniciar com dose baixa e titular gradualmente (start low, go slow). Monitorar função hepática em uso prolongado ou doses elevadas. Evitar condução de veículos até estabelecer tolerância.",
+      "interacoesMedicamentosas": "Anticonvulsivantes (clobazam, valproato — risco de sedação e elevação de níveis séricos). Varfarina e anticoagulantes (monitorar INR). Inibidores e indutores de CYP3A4 e CYP2C19 (ex.: fluconazol, rifampicina, carbamazepina). Depressores do SNC (opioides, benzodiazepínicos, álcool — potencialização de sedação).",
+      "posologia": "Via oral ou sublingual. Iniciar com 0,2 mL 2x/dia; titular semanalmente conforme resposta clínica (start low, go slow). Frasco 30 mL.",
+      "viaAdministracao": [
+        "oral",
+        "sublingual"
+      ],
+      "statusRegulatorio": "MEDICAMENTO_REGISTRADO",
+      "fontes": [
+        {
+          "fonte": "RDC ANVISA nº 327/2019",
+          "edicao": "2019"
+        },
+        {
+          "fonte": "RDC ANVISA nº 660/2022",
+          "edicao": "2022"
+        },
+        {
+          "fonte": "RDC ANVISA nº 1.015/2026",
+          "edicao": "2026"
+        }
+      ],
+      "alertaGestacaoPediatria": "Contraindicado na gestação e lactação. Uso pediátrico apenas sob supervisão especializada, conforme indicação clínica e normas vigentes.",
+      "renisus": false,
+      "detalhesEspecificos": {
+        "espectro": "isolado",
+        "canabinoideDominante": "CBD",
+        "concentracaoCbdMgMl": 50,
+        "formaFarmaceutica": "oleo",
+        "tipoReceituario": "B",
+        "thcAcimaLimite": false,
+        "volumeEmbalagem": "30 mL"
+      },
+      "searchText": "oleo cbd isolado 50 mg/ml canabidiol 50 mg/ml cbd isolado 50 cbd 5.0% isolado cbd oleo cbd 50 receituario b canabidiol 50 mg/ml cbd isolado 50 cbd 5.0%"
+    },
+    {
+      "slug": "cannabis-oleo-cbd-isolado-100-mg-ml",
+      "nome": "Óleo CBD isolado 100 mg/mL",
+      "nomesAlternativos": [
+        "Canabidiol 100 mg/mL",
+        "CBD isolado 100",
+        "CBD 10%"
+      ],
+      "nomeCientifico": null,
+      "categoriaPratica": "CANNABIS",
+      "indicacoes": "Dor crônica neuropática e nociceptiva, epilepsia refratária, ansiedade, insônia, TEA, Parkinson, fibromialgia, náusea associada à quimioterapia.",
+      "contraindicacoes": "Hipersensibilidade a canabinoides ou excipientes. Gestação e lactação. Cautela em hepatopatia grave.",
+      "precaucoes": "Iniciar com dose baixa e titular gradualmente (start low, go slow). Monitorar função hepática em uso prolongado ou doses elevadas. Evitar condução de veículos até estabelecer tolerância.",
+      "interacoesMedicamentosas": "Anticonvulsivantes (clobazam, valproato — risco de sedação e elevação de níveis séricos). Varfarina e anticoagulantes (monitorar INR). Inibidores e indutores de CYP3A4 e CYP2C19 (ex.: fluconazol, rifampicina, carbamazepina). Depressores do SNC (opioides, benzodiazepínicos, álcool — potencialização de sedação).",
+      "posologia": "Via oral ou sublingual. Iniciar com 0,1–0,2 mL 2x/dia; titular semanalmente conforme resposta clínica (start low, go slow). Frasco 30 mL.",
+      "viaAdministracao": [
+        "oral",
+        "sublingual"
+      ],
+      "statusRegulatorio": "MEDICAMENTO_REGISTRADO",
+      "fontes": [
+        {
+          "fonte": "RDC ANVISA nº 327/2019",
+          "edicao": "2019"
+        },
+        {
+          "fonte": "RDC ANVISA nº 660/2022",
+          "edicao": "2022"
+        },
+        {
+          "fonte": "RDC ANVISA nº 1.015/2026",
+          "edicao": "2026"
+        }
+      ],
+      "alertaGestacaoPediatria": "Contraindicado na gestação e lactação. Uso pediátrico apenas sob supervisão especializada, conforme indicação clínica e normas vigentes.",
+      "renisus": false,
+      "detalhesEspecificos": {
+        "espectro": "isolado",
+        "canabinoideDominante": "CBD",
+        "concentracaoCbdMgMl": 100,
+        "formaFarmaceutica": "oleo",
+        "tipoReceituario": "B",
+        "thcAcimaLimite": false,
+        "volumeEmbalagem": "30 mL"
+      },
+      "searchText": "oleo cbd isolado 100 mg/ml canabidiol 100 mg/ml cbd isolado 100 cbd 10% isolado cbd oleo cbd 100 receituario b canabidiol 100 mg/ml cbd isolado 100 cbd 10%"
+    },
+    {
+      "slug": "cannabis-oleo-cbd-isolado-150-mg-ml",
+      "nome": "Óleo CBD isolado 150 mg/mL",
+      "nomesAlternativos": [
+        "Canabidiol 150 mg/mL",
+        "CBD isolado 150",
+        "CBD 15%"
+      ],
+      "nomeCientifico": null,
+      "categoriaPratica": "CANNABIS",
+      "indicacoes": "Dor crônica neuropática e nociceptiva, epilepsia refratária, ansiedade, insônia, TEA, Parkinson, fibromialgia, náusea associada à quimioterapia.",
+      "contraindicacoes": "Hipersensibilidade a canabinoides ou excipientes. Gestação e lactação. Cautela em hepatopatia grave.",
+      "precaucoes": "Iniciar com dose baixa e titular gradualmente (start low, go slow). Monitorar função hepática em uso prolongado ou doses elevadas. Evitar condução de veículos até estabelecer tolerância.",
+      "interacoesMedicamentosas": "Anticonvulsivantes (clobazam, valproato — risco de sedação e elevação de níveis séricos). Varfarina e anticoagulantes (monitorar INR). Inibidores e indutores de CYP3A4 e CYP2C19 (ex.: fluconazol, rifampicina, carbamazepina). Depressores do SNC (opioides, benzodiazepínicos, álcool — potencialização de sedação).",
+      "posologia": "Via oral ou sublingual. Iniciar com 0,1–0,2 mL 2x/dia; titular semanalmente conforme resposta clínica (start low, go slow). Frasco 30 mL.",
+      "viaAdministracao": [
+        "oral",
+        "sublingual"
+      ],
+      "statusRegulatorio": "MEDICAMENTO_REGISTRADO",
+      "fontes": [
+        {
+          "fonte": "RDC ANVISA nº 327/2019",
+          "edicao": "2019"
+        },
+        {
+          "fonte": "RDC ANVISA nº 660/2022",
+          "edicao": "2022"
+        },
+        {
+          "fonte": "RDC ANVISA nº 1.015/2026",
+          "edicao": "2026"
+        }
+      ],
+      "alertaGestacaoPediatria": "Contraindicado na gestação e lactação. Uso pediátrico apenas sob supervisão especializada, conforme indicação clínica e normas vigentes.",
+      "renisus": false,
+      "detalhesEspecificos": {
+        "espectro": "isolado",
+        "canabinoideDominante": "CBD",
+        "concentracaoCbdMgMl": 150,
+        "formaFarmaceutica": "oleo",
+        "tipoReceituario": "B",
+        "thcAcimaLimite": false,
+        "volumeEmbalagem": "30 mL"
+      },
+      "searchText": "oleo cbd isolado 150 mg/ml canabidiol 150 mg/ml cbd isolado 150 cbd 15% isolado cbd oleo cbd 150 receituario b canabidiol 150 mg/ml cbd isolado 150 cbd 15%"
+    },
+    {
+      "slug": "cannabis-oleo-cbd-isolado-200-mg-ml",
+      "nome": "Óleo CBD isolado 200 mg/mL",
+      "nomesAlternativos": [
+        "Canabidiol 200 mg/mL",
+        "CBD isolado 200",
+        "CBD 20%"
+      ],
+      "nomeCientifico": null,
+      "categoriaPratica": "CANNABIS",
+      "indicacoes": "Dor crônica neuropática e nociceptiva, epilepsia refratária, ansiedade, insônia, TEA, Parkinson, fibromialgia, náusea associada à quimioterapia.",
+      "contraindicacoes": "Hipersensibilidade a canabinoides ou excipientes. Gestação e lactação. Cautela em hepatopatia grave.",
+      "precaucoes": "Iniciar com dose baixa e titular gradualmente (start low, go slow). Monitorar função hepática em uso prolongado ou doses elevadas. Evitar condução de veículos até estabelecer tolerância.",
+      "interacoesMedicamentosas": "Anticonvulsivantes (clobazam, valproato — risco de sedação e elevação de níveis séricos). Varfarina e anticoagulantes (monitorar INR). Inibidores e indutores de CYP3A4 e CYP2C19 (ex.: fluconazol, rifampicina, carbamazepina). Depressores do SNC (opioides, benzodiazepínicos, álcool — potencialização de sedação).",
+      "posologia": "Via oral ou sublingual. Iniciar com 0,1–0,2 mL 2x/dia; titular semanalmente conforme resposta clínica (start low, go slow). Frasco 30 mL.",
+      "viaAdministracao": [
+        "oral",
+        "sublingual"
+      ],
+      "statusRegulatorio": "MEDICAMENTO_REGISTRADO",
+      "fontes": [
+        {
+          "fonte": "RDC ANVISA nº 327/2019",
+          "edicao": "2019"
+        },
+        {
+          "fonte": "RDC ANVISA nº 660/2022",
+          "edicao": "2022"
+        },
+        {
+          "fonte": "RDC ANVISA nº 1.015/2026",
+          "edicao": "2026"
+        }
+      ],
+      "alertaGestacaoPediatria": "Contraindicado na gestação e lactação. Uso pediátrico apenas sob supervisão especializada, conforme indicação clínica e normas vigentes.",
+      "renisus": false,
+      "detalhesEspecificos": {
+        "espectro": "isolado",
+        "canabinoideDominante": "CBD",
+        "concentracaoCbdMgMl": 200,
+        "formaFarmaceutica": "oleo",
+        "tipoReceituario": "B",
+        "thcAcimaLimite": false,
+        "volumeEmbalagem": "30 mL"
+      },
+      "searchText": "oleo cbd isolado 200 mg/ml canabidiol 200 mg/ml cbd isolado 200 cbd 20% isolado cbd oleo cbd 200 receituario b canabidiol 200 mg/ml cbd isolado 200 cbd 20%"
+    },
+    {
+      "slug": "cannabis-oleo-cbd-broad-20-mg-ml",
+      "nome": "Óleo CBD broad spectrum 20 mg/mL",
+      "nomesAlternativos": [
+        "CBD broad spectrum 20 mg/mL",
+        "Canabidiol broad 20",
+        "THC não detectável"
+      ],
+      "nomeCientifico": null,
+      "categoriaPratica": "CANNABIS",
+      "indicacoes": "Dor crônica neuropática e nociceptiva, epilepsia refratária, ansiedade, insônia, TEA, Parkinson, fibromialgia, náusea associada à quimioterapia.",
+      "contraindicacoes": "Hipersensibilidade a canabinoides ou excipientes. Gestação e lactação. Cautela em hepatopatia grave.",
+      "precaucoes": "Iniciar com dose baixa e titular gradualmente (start low, go slow). Monitorar função hepática em uso prolongado ou doses elevadas. Evitar condução de veículos até estabelecer tolerância.",
+      "interacoesMedicamentosas": "Anticonvulsivantes (clobazam, valproato — risco de sedação e elevação de níveis séricos). Varfarina e anticoagulantes (monitorar INR). Inibidores e indutores de CYP3A4 e CYP2C19 (ex.: fluconazol, rifampicina, carbamazepina). Depressores do SNC (opioides, benzodiazepínicos, álcool — potencialização de sedação).",
+      "posologia": "Via oral ou sublingual. Iniciar com 0,1 mL 2x/dia; titular semanalmente conforme resposta clínica (start low, go slow). Frasco 30 mL.",
+      "viaAdministracao": [
+        "oral",
+        "sublingual"
+      ],
+      "statusRegulatorio": "PRODUTO_AUTORIZADO_ANVISA",
+      "fontes": [
+        {
+          "fonte": "RDC ANVISA nº 327/2019",
+          "edicao": "2019"
+        },
+        {
+          "fonte": "RDC ANVISA nº 660/2022",
+          "edicao": "2022"
+        },
+        {
+          "fonte": "RDC ANVISA nº 1.015/2026",
+          "edicao": "2026"
+        }
+      ],
+      "alertaGestacaoPediatria": "Contraindicado na gestação e lactação. Uso pediátrico apenas sob supervisão especializada, conforme indicação clínica e normas vigentes.",
+      "renisus": false,
+      "detalhesEspecificos": {
+        "espectro": "broad_spectrum",
+        "canabinoideDominante": "CBD",
+        "concentracaoCbdMgMl": 20,
+        "formaFarmaceutica": "oleo",
+        "tipoReceituario": "B",
+        "thcAcimaLimite": false,
+        "volumeEmbalagem": "30 mL"
+      },
+      "searchText": "oleo cbd broad spectrum 20 mg/ml cbd broad spectrum 20 mg/ml canabidiol broad 20 thc nao detectavel broad spectrum cbd oleo cbd 20 receituario b cbd broad spectrum 20 mg/ml canabidiol broad 20 thc nao detectavel"
+    },
+    {
+      "slug": "cannabis-oleo-cbd-broad-50-mg-ml",
+      "nome": "Óleo CBD broad spectrum 50 mg/mL",
+      "nomesAlternativos": [
+        "CBD broad spectrum 50 mg/mL",
+        "Canabidiol broad 50",
+        "THC não detectável"
+      ],
+      "nomeCientifico": null,
+      "categoriaPratica": "CANNABIS",
+      "indicacoes": "Dor crônica neuropática e nociceptiva, epilepsia refratária, ansiedade, insônia, TEA, Parkinson, fibromialgia, náusea associada à quimioterapia.",
+      "contraindicacoes": "Hipersensibilidade a canabinoides ou excipientes. Gestação e lactação. Cautela em hepatopatia grave.",
+      "precaucoes": "Iniciar com dose baixa e titular gradualmente (start low, go slow). Monitorar função hepática em uso prolongado ou doses elevadas. Evitar condução de veículos até estabelecer tolerância.",
+      "interacoesMedicamentosas": "Anticonvulsivantes (clobazam, valproato — risco de sedação e elevação de níveis séricos). Varfarina e anticoagulantes (monitorar INR). Inibidores e indutores de CYP3A4 e CYP2C19 (ex.: fluconazol, rifampicina, carbamazepina). Depressores do SNC (opioides, benzodiazepínicos, álcool — potencialização de sedação).",
+      "posologia": "Via oral ou sublingual. Iniciar com 0,2 mL 2x/dia; titular semanalmente conforme resposta clínica (start low, go slow). Frasco 30 mL.",
+      "viaAdministracao": [
+        "oral",
+        "sublingual"
+      ],
+      "statusRegulatorio": "PRODUTO_AUTORIZADO_ANVISA",
+      "fontes": [
+        {
+          "fonte": "RDC ANVISA nº 327/2019",
+          "edicao": "2019"
+        },
+        {
+          "fonte": "RDC ANVISA nº 660/2022",
+          "edicao": "2022"
+        },
+        {
+          "fonte": "RDC ANVISA nº 1.015/2026",
+          "edicao": "2026"
+        }
+      ],
+      "alertaGestacaoPediatria": "Contraindicado na gestação e lactação. Uso pediátrico apenas sob supervisão especializada, conforme indicação clínica e normas vigentes.",
+      "renisus": false,
+      "detalhesEspecificos": {
+        "espectro": "broad_spectrum",
+        "canabinoideDominante": "CBD",
+        "concentracaoCbdMgMl": 50,
+        "formaFarmaceutica": "oleo",
+        "tipoReceituario": "B",
+        "thcAcimaLimite": false,
+        "volumeEmbalagem": "30 mL"
+      },
+      "searchText": "oleo cbd broad spectrum 50 mg/ml cbd broad spectrum 50 mg/ml canabidiol broad 50 thc nao detectavel broad spectrum cbd oleo cbd 50 receituario b cbd broad spectrum 50 mg/ml canabidiol broad 50 thc nao detectavel"
+    },
+    {
+      "slug": "cannabis-oleo-cbd-broad-100-mg-ml",
+      "nome": "Óleo CBD broad spectrum 100 mg/mL",
+      "nomesAlternativos": [
+        "CBD broad spectrum 100 mg/mL",
+        "Canabidiol broad 100",
+        "THC não detectável"
+      ],
+      "nomeCientifico": null,
+      "categoriaPratica": "CANNABIS",
+      "indicacoes": "Dor crônica neuropática e nociceptiva, epilepsia refratária, ansiedade, insônia, TEA, Parkinson, fibromialgia, náusea associada à quimioterapia.",
+      "contraindicacoes": "Hipersensibilidade a canabinoides ou excipientes. Gestação e lactação. Cautela em hepatopatia grave.",
+      "precaucoes": "Iniciar com dose baixa e titular gradualmente (start low, go slow). Monitorar função hepática em uso prolongado ou doses elevadas. Evitar condução de veículos até estabelecer tolerância.",
+      "interacoesMedicamentosas": "Anticonvulsivantes (clobazam, valproato — risco de sedação e elevação de níveis séricos). Varfarina e anticoagulantes (monitorar INR). Inibidores e indutores de CYP3A4 e CYP2C19 (ex.: fluconazol, rifampicina, carbamazepina). Depressores do SNC (opioides, benzodiazepínicos, álcool — potencialização de sedação).",
+      "posologia": "Via oral ou sublingual. Iniciar com 0,1–0,2 mL 2x/dia; titular semanalmente conforme resposta clínica (start low, go slow). Frasco 30 mL.",
+      "viaAdministracao": [
+        "oral",
+        "sublingual"
+      ],
+      "statusRegulatorio": "PRODUTO_AUTORIZADO_ANVISA",
+      "fontes": [
+        {
+          "fonte": "RDC ANVISA nº 327/2019",
+          "edicao": "2019"
+        },
+        {
+          "fonte": "RDC ANVISA nº 660/2022",
+          "edicao": "2022"
+        },
+        {
+          "fonte": "RDC ANVISA nº 1.015/2026",
+          "edicao": "2026"
+        }
+      ],
+      "alertaGestacaoPediatria": "Contraindicado na gestação e lactação. Uso pediátrico apenas sob supervisão especializada, conforme indicação clínica e normas vigentes.",
+      "renisus": false,
+      "detalhesEspecificos": {
+        "espectro": "broad_spectrum",
+        "canabinoideDominante": "CBD",
+        "concentracaoCbdMgMl": 100,
+        "formaFarmaceutica": "oleo",
+        "tipoReceituario": "B",
+        "thcAcimaLimite": false,
+        "volumeEmbalagem": "30 mL"
+      },
+      "searchText": "oleo cbd broad spectrum 100 mg/ml cbd broad spectrum 100 mg/ml canabidiol broad 100 thc nao detectavel broad spectrum cbd oleo cbd 100 receituario b cbd broad spectrum 100 mg/ml canabidiol broad 100 thc nao detectavel"
+    },
+    {
+      "slug": "cannabis-oleo-cbd-broad-150-mg-ml",
+      "nome": "Óleo CBD broad spectrum 150 mg/mL",
+      "nomesAlternativos": [
+        "CBD broad spectrum 150 mg/mL",
+        "Canabidiol broad 150",
+        "THC não detectável"
+      ],
+      "nomeCientifico": null,
+      "categoriaPratica": "CANNABIS",
+      "indicacoes": "Dor crônica neuropática e nociceptiva, epilepsia refratária, ansiedade, insônia, TEA, Parkinson, fibromialgia, náusea associada à quimioterapia.",
+      "contraindicacoes": "Hipersensibilidade a canabinoides ou excipientes. Gestação e lactação. Cautela em hepatopatia grave.",
+      "precaucoes": "Iniciar com dose baixa e titular gradualmente (start low, go slow). Monitorar função hepática em uso prolongado ou doses elevadas. Evitar condução de veículos até estabelecer tolerância.",
+      "interacoesMedicamentosas": "Anticonvulsivantes (clobazam, valproato — risco de sedação e elevação de níveis séricos). Varfarina e anticoagulantes (monitorar INR). Inibidores e indutores de CYP3A4 e CYP2C19 (ex.: fluconazol, rifampicina, carbamazepina). Depressores do SNC (opioides, benzodiazepínicos, álcool — potencialização de sedação).",
+      "posologia": "Via oral ou sublingual. Iniciar com 0,1–0,2 mL 2x/dia; titular semanalmente conforme resposta clínica (start low, go slow). Frasco 30 mL.",
+      "viaAdministracao": [
+        "oral",
+        "sublingual"
+      ],
+      "statusRegulatorio": "PRODUTO_AUTORIZADO_ANVISA",
+      "fontes": [
+        {
+          "fonte": "RDC ANVISA nº 327/2019",
+          "edicao": "2019"
+        },
+        {
+          "fonte": "RDC ANVISA nº 660/2022",
+          "edicao": "2022"
+        },
+        {
+          "fonte": "RDC ANVISA nº 1.015/2026",
+          "edicao": "2026"
+        }
+      ],
+      "alertaGestacaoPediatria": "Contraindicado na gestação e lactação. Uso pediátrico apenas sob supervisão especializada, conforme indicação clínica e normas vigentes.",
+      "renisus": false,
+      "detalhesEspecificos": {
+        "espectro": "broad_spectrum",
+        "canabinoideDominante": "CBD",
+        "concentracaoCbdMgMl": 150,
+        "formaFarmaceutica": "oleo",
+        "tipoReceituario": "B",
+        "thcAcimaLimite": false,
+        "volumeEmbalagem": "30 mL"
+      },
+      "searchText": "oleo cbd broad spectrum 150 mg/ml cbd broad spectrum 150 mg/ml canabidiol broad 150 thc nao detectavel broad spectrum cbd oleo cbd 150 receituario b cbd broad spectrum 150 mg/ml canabidiol broad 150 thc nao detectavel"
+    },
+    {
+      "slug": "cannabis-oleo-cbd-broad-200-mg-ml",
+      "nome": "Óleo CBD broad spectrum 200 mg/mL",
+      "nomesAlternativos": [
+        "CBD broad spectrum 200 mg/mL",
+        "Canabidiol broad 200",
+        "THC não detectável"
+      ],
+      "nomeCientifico": null,
+      "categoriaPratica": "CANNABIS",
+      "indicacoes": "Dor crônica neuropática e nociceptiva, epilepsia refratária, ansiedade, insônia, TEA, Parkinson, fibromialgia, náusea associada à quimioterapia.",
+      "contraindicacoes": "Hipersensibilidade a canabinoides ou excipientes. Gestação e lactação. Cautela em hepatopatia grave.",
+      "precaucoes": "Iniciar com dose baixa e titular gradualmente (start low, go slow). Monitorar função hepática em uso prolongado ou doses elevadas. Evitar condução de veículos até estabelecer tolerância.",
+      "interacoesMedicamentosas": "Anticonvulsivantes (clobazam, valproato — risco de sedação e elevação de níveis séricos). Varfarina e anticoagulantes (monitorar INR). Inibidores e indutores de CYP3A4 e CYP2C19 (ex.: fluconazol, rifampicina, carbamazepina). Depressores do SNC (opioides, benzodiazepínicos, álcool — potencialização de sedação).",
+      "posologia": "Via oral ou sublingual. Iniciar com 0,1–0,2 mL 2x/dia; titular semanalmente conforme resposta clínica (start low, go slow). Frasco 30 mL.",
+      "viaAdministracao": [
+        "oral",
+        "sublingual"
+      ],
+      "statusRegulatorio": "PRODUTO_AUTORIZADO_ANVISA",
+      "fontes": [
+        {
+          "fonte": "RDC ANVISA nº 327/2019",
+          "edicao": "2019"
+        },
+        {
+          "fonte": "RDC ANVISA nº 660/2022",
+          "edicao": "2022"
+        },
+        {
+          "fonte": "RDC ANVISA nº 1.015/2026",
+          "edicao": "2026"
+        }
+      ],
+      "alertaGestacaoPediatria": "Contraindicado na gestação e lactação. Uso pediátrico apenas sob supervisão especializada, conforme indicação clínica e normas vigentes.",
+      "renisus": false,
+      "detalhesEspecificos": {
+        "espectro": "broad_spectrum",
+        "canabinoideDominante": "CBD",
+        "concentracaoCbdMgMl": 200,
+        "formaFarmaceutica": "oleo",
+        "tipoReceituario": "B",
+        "thcAcimaLimite": false,
+        "volumeEmbalagem": "30 mL"
+      },
+      "searchText": "oleo cbd broad spectrum 200 mg/ml cbd broad spectrum 200 mg/ml canabidiol broad 200 thc nao detectavel broad spectrum cbd oleo cbd 200 receituario b cbd broad spectrum 200 mg/ml canabidiol broad 200 thc nao detectavel"
+    },
+    {
+      "slug": "cannabis-oleo-cbd-full-6-mg-ml",
+      "nome": "Óleo CBD full spectrum 6 mg/mL",
+      "nomesAlternativos": [
+        "Canabidiol full spectrum 6 mg/mL",
+        "CBD full spectrum 6",
+        "THC ≤ 0,2%"
+      ],
+      "nomeCientifico": null,
+      "categoriaPratica": "CANNABIS",
+      "indicacoes": "Dor crônica neuropática e nociceptiva, epilepsia refratária, ansiedade, insônia, TEA, Parkinson, fibromialgia, náusea associada à quimioterapia.",
+      "contraindicacoes": "Hipersensibilidade a canabinoides ou excipientes. Gestação e lactação. Cautela em hepatopatia grave.",
+      "precaucoes": "Iniciar com dose baixa e titular gradualmente (start low, go slow). Monitorar função hepática em uso prolongado ou doses elevadas. Evitar condução de veículos até estabelecer tolerância.",
+      "interacoesMedicamentosas": "Anticonvulsivantes (clobazam, valproato — risco de sedação e elevação de níveis séricos). Varfarina e anticoagulantes (monitorar INR). Inibidores e indutores de CYP3A4 e CYP2C19 (ex.: fluconazol, rifampicina, carbamazepina). Depressores do SNC (opioides, benzodiazepínicos, álcool — potencialização de sedação).",
+      "posologia": "Via oral ou sublingual. Iniciar com 0,1 mL 2x/dia; titular semanalmente conforme resposta clínica (start low, go slow). Frasco 30 mL.",
+      "viaAdministracao": [
+        "oral",
+        "sublingual"
+      ],
+      "statusRegulatorio": "PRODUTO_AUTORIZADO_ANVISA",
+      "fontes": [
+        {
+          "fonte": "RDC ANVISA nº 327/2019",
+          "edicao": "2019"
+        },
+        {
+          "fonte": "RDC ANVISA nº 660/2022",
+          "edicao": "2022"
+        },
+        {
+          "fonte": "RDC ANVISA nº 1.015/2026",
+          "edicao": "2026"
+        }
+      ],
+      "alertaGestacaoPediatria": "Contraindicado na gestação e lactação. Uso pediátrico apenas sob supervisão especializada, conforme indicação clínica e normas vigentes.",
+      "renisus": false,
+      "detalhesEspecificos": {
+        "espectro": "full_spectrum",
+        "canabinoideDominante": "CBD",
+        "concentracaoCbdMgMl": 6,
+        "concentracaoThcMgMl": 0.1,
+        "proporcaoCbdThc": "≥20:1",
+        "formaFarmaceutica": "oleo",
+        "tipoReceituario": "B",
+        "thcAcimaLimite": false,
+        "volumeEmbalagem": "30 mL"
+      },
+      "searchText": "oleo cbd full spectrum 6 mg/ml canabidiol full spectrum 6 mg/ml cbd full spectrum 6 thc ≤ 0,2% full spectrum cbd oleo ≥20:1 cbd 6 thc 0.1 receituario b canabidiol full spectrum 6 mg/ml cbd full spectrum 6 thc ≤ 0,2%"
+    },
+    {
+      "slug": "cannabis-oleo-cbd-full-17-mg-ml",
+      "nome": "Óleo CBD full spectrum 17 mg/mL",
+      "nomesAlternativos": [
+        "Canabidiol full spectrum 17 mg/mL",
+        "CBD full spectrum 17",
+        "THC ≤ 0,2%"
+      ],
+      "nomeCientifico": null,
+      "categoriaPratica": "CANNABIS",
+      "indicacoes": "Dor crônica neuropática e nociceptiva, epilepsia refratária, ansiedade, insônia, TEA, Parkinson, fibromialgia, náusea associada à quimioterapia.",
+      "contraindicacoes": "Hipersensibilidade a canabinoides ou excipientes. Gestação e lactação. Cautela em hepatopatia grave.",
+      "precaucoes": "Iniciar com dose baixa e titular gradualmente (start low, go slow). Monitorar função hepática em uso prolongado ou doses elevadas. Evitar condução de veículos até estabelecer tolerância.",
+      "interacoesMedicamentosas": "Anticonvulsivantes (clobazam, valproato — risco de sedação e elevação de níveis séricos). Varfarina e anticoagulantes (monitorar INR). Inibidores e indutores de CYP3A4 e CYP2C19 (ex.: fluconazol, rifampicina, carbamazepina). Depressores do SNC (opioides, benzodiazepínicos, álcool — potencialização de sedação).",
+      "posologia": "Via oral ou sublingual. Iniciar com 0,1 mL 2x/dia; titular semanalmente conforme resposta clínica (start low, go slow). Frasco 30 mL.",
+      "viaAdministracao": [
+        "oral",
+        "sublingual"
+      ],
+      "statusRegulatorio": "PRODUTO_AUTORIZADO_ANVISA",
+      "fontes": [
+        {
+          "fonte": "RDC ANVISA nº 327/2019",
+          "edicao": "2019"
+        },
+        {
+          "fonte": "RDC ANVISA nº 660/2022",
+          "edicao": "2022"
+        },
+        {
+          "fonte": "RDC ANVISA nº 1.015/2026",
+          "edicao": "2026"
+        }
+      ],
+      "alertaGestacaoPediatria": "Contraindicado na gestação e lactação. Uso pediátrico apenas sob supervisão especializada, conforme indicação clínica e normas vigentes.",
+      "renisus": false,
+      "detalhesEspecificos": {
+        "espectro": "full_spectrum",
+        "canabinoideDominante": "CBD",
+        "concentracaoCbdMgMl": 17,
+        "concentracaoThcMgMl": 0.1,
+        "proporcaoCbdThc": "≥20:1",
+        "formaFarmaceutica": "oleo",
+        "tipoReceituario": "B",
+        "thcAcimaLimite": false,
+        "volumeEmbalagem": "30 mL"
+      },
+      "searchText": "oleo cbd full spectrum 17 mg/ml canabidiol full spectrum 17 mg/ml cbd full spectrum 17 thc ≤ 0,2% full spectrum cbd oleo ≥20:1 cbd 17 thc 0.1 receituario b canabidiol full spectrum 17 mg/ml cbd full spectrum 17 thc ≤ 0,2%"
+    },
+    {
+      "slug": "cannabis-oleo-cbd-full-23-mg-ml",
+      "nome": "Óleo CBD full spectrum 23 mg/mL",
+      "nomesAlternativos": [
+        "Canabidiol full spectrum 23 mg/mL",
+        "CBD full spectrum 23",
+        "THC ≤ 0,2%"
+      ],
+      "nomeCientifico": null,
+      "categoriaPratica": "CANNABIS",
+      "indicacoes": "Dor crônica neuropática e nociceptiva, epilepsia refratária, ansiedade, insônia, TEA, Parkinson, fibromialgia, náusea associada à quimioterapia.",
+      "contraindicacoes": "Hipersensibilidade a canabinoides ou excipientes. Gestação e lactação. Cautela em hepatopatia grave.",
+      "precaucoes": "Iniciar com dose baixa e titular gradualmente (start low, go slow). Monitorar função hepática em uso prolongado ou doses elevadas. Evitar condução de veículos até estabelecer tolerância.",
+      "interacoesMedicamentosas": "Anticonvulsivantes (clobazam, valproato — risco de sedação e elevação de níveis séricos). Varfarina e anticoagulantes (monitorar INR). Inibidores e indutores de CYP3A4 e CYP2C19 (ex.: fluconazol, rifampicina, carbamazepina). Depressores do SNC (opioides, benzodiazepínicos, álcool — potencialização de sedação).",
+      "posologia": "Via oral ou sublingual. Iniciar com 0,2 mL 2x/dia; titular semanalmente conforme resposta clínica (start low, go slow). Frasco 30 mL.",
+      "viaAdministracao": [
+        "oral",
+        "sublingual"
+      ],
+      "statusRegulatorio": "PRODUTO_AUTORIZADO_ANVISA",
+      "fontes": [
+        {
+          "fonte": "RDC ANVISA nº 327/2019",
+          "edicao": "2019"
+        },
+        {
+          "fonte": "RDC ANVISA nº 660/2022",
+          "edicao": "2022"
+        },
+        {
+          "fonte": "RDC ANVISA nº 1.015/2026",
+          "edicao": "2026"
+        }
+      ],
+      "alertaGestacaoPediatria": "Contraindicado na gestação e lactação. Uso pediátrico apenas sob supervisão especializada, conforme indicação clínica e normas vigentes.",
+      "renisus": false,
+      "detalhesEspecificos": {
+        "espectro": "full_spectrum",
+        "canabinoideDominante": "CBD",
+        "concentracaoCbdMgMl": 23,
+        "concentracaoThcMgMl": 0.1,
+        "proporcaoCbdThc": "≥20:1",
+        "formaFarmaceutica": "oleo",
+        "tipoReceituario": "B",
+        "thcAcimaLimite": false,
+        "volumeEmbalagem": "30 mL"
+      },
+      "searchText": "oleo cbd full spectrum 23 mg/ml canabidiol full spectrum 23 mg/ml cbd full spectrum 23 thc ≤ 0,2% full spectrum cbd oleo ≥20:1 cbd 23 thc 0.1 receituario b canabidiol full spectrum 23 mg/ml cbd full spectrum 23 thc ≤ 0,2%"
+    },
+    {
+      "slug": "cannabis-oleo-cbd-full-36-mg-ml",
+      "nome": "Óleo CBD full spectrum 36 mg/mL",
+      "nomesAlternativos": [
+        "Canabidiol full spectrum 36 mg/mL",
+        "CBD full spectrum 36",
+        "THC ≤ 0,2%"
+      ],
+      "nomeCientifico": null,
+      "categoriaPratica": "CANNABIS",
+      "indicacoes": "Dor crônica neuropática e nociceptiva, epilepsia refratária, ansiedade, insônia, TEA, Parkinson, fibromialgia, náusea associada à quimioterapia.",
+      "contraindicacoes": "Hipersensibilidade a canabinoides ou excipientes. Gestação e lactação. Cautela em hepatopatia grave.",
+      "precaucoes": "Iniciar com dose baixa e titular gradualmente (start low, go slow). Monitorar função hepática em uso prolongado ou doses elevadas. Evitar condução de veículos até estabelecer tolerância.",
+      "interacoesMedicamentosas": "Anticonvulsivantes (clobazam, valproato — risco de sedação e elevação de níveis séricos). Varfarina e anticoagulantes (monitorar INR). Inibidores e indutores de CYP3A4 e CYP2C19 (ex.: fluconazol, rifampicina, carbamazepina). Depressores do SNC (opioides, benzodiazepínicos, álcool — potencialização de sedação).",
+      "posologia": "Via oral ou sublingual. Iniciar com 0,2 mL 2x/dia; titular semanalmente conforme resposta clínica (start low, go slow). Frasco 30 mL.",
+      "viaAdministracao": [
+        "oral",
+        "sublingual"
+      ],
+      "statusRegulatorio": "PRODUTO_AUTORIZADO_ANVISA",
+      "fontes": [
+        {
+          "fonte": "RDC ANVISA nº 327/2019",
+          "edicao": "2019"
+        },
+        {
+          "fonte": "RDC ANVISA nº 660/2022",
+          "edicao": "2022"
+        },
+        {
+          "fonte": "RDC ANVISA nº 1.015/2026",
+          "edicao": "2026"
+        }
+      ],
+      "alertaGestacaoPediatria": "Contraindicado na gestação e lactação. Uso pediátrico apenas sob supervisão especializada, conforme indicação clínica e normas vigentes.",
+      "renisus": false,
+      "detalhesEspecificos": {
+        "espectro": "full_spectrum",
+        "canabinoideDominante": "CBD",
+        "concentracaoCbdMgMl": 36,
+        "concentracaoThcMgMl": 0.14400000000000002,
+        "proporcaoCbdThc": "≥20:1",
+        "formaFarmaceutica": "oleo",
+        "tipoReceituario": "B",
+        "thcAcimaLimite": false,
+        "volumeEmbalagem": "30 mL"
+      },
+      "searchText": "oleo cbd full spectrum 36 mg/ml canabidiol full spectrum 36 mg/ml cbd full spectrum 36 thc ≤ 0,2% full spectrum cbd oleo ≥20:1 cbd 36 thc 0.14400000000000002 receituario b canabidiol full spectrum 36 mg/ml cbd full spectrum 36 thc ≤ 0,2%"
+    },
+    {
+      "slug": "cannabis-oleo-cbd-full-50-mg-ml",
+      "nome": "Óleo CBD full spectrum 50 mg/mL",
+      "nomesAlternativos": [
+        "Canabidiol full spectrum 50 mg/mL",
+        "CBD full spectrum 50",
+        "THC ≤ 0,2%"
+      ],
+      "nomeCientifico": null,
+      "categoriaPratica": "CANNABIS",
+      "indicacoes": "Dor crônica neuropática e nociceptiva, epilepsia refratária, ansiedade, insônia, TEA, Parkinson, fibromialgia, náusea associada à quimioterapia.",
+      "contraindicacoes": "Hipersensibilidade a canabinoides ou excipientes. Gestação e lactação. Cautela em hepatopatia grave.",
+      "precaucoes": "Iniciar com dose baixa e titular gradualmente (start low, go slow). Monitorar função hepática em uso prolongado ou doses elevadas. Evitar condução de veículos até estabelecer tolerância.",
+      "interacoesMedicamentosas": "Anticonvulsivantes (clobazam, valproato — risco de sedação e elevação de níveis séricos). Varfarina e anticoagulantes (monitorar INR). Inibidores e indutores de CYP3A4 e CYP2C19 (ex.: fluconazol, rifampicina, carbamazepina). Depressores do SNC (opioides, benzodiazepínicos, álcool — potencialização de sedação).",
+      "posologia": "Via oral ou sublingual. Iniciar com 0,2 mL 2x/dia; titular semanalmente conforme resposta clínica (start low, go slow). Frasco 30 mL.",
+      "viaAdministracao": [
+        "oral",
+        "sublingual"
+      ],
+      "statusRegulatorio": "PRODUTO_AUTORIZADO_ANVISA",
+      "fontes": [
+        {
+          "fonte": "RDC ANVISA nº 327/2019",
+          "edicao": "2019"
+        },
+        {
+          "fonte": "RDC ANVISA nº 660/2022",
+          "edicao": "2022"
+        },
+        {
+          "fonte": "RDC ANVISA nº 1.015/2026",
+          "edicao": "2026"
+        }
+      ],
+      "alertaGestacaoPediatria": "Contraindicado na gestação e lactação. Uso pediátrico apenas sob supervisão especializada, conforme indicação clínica e normas vigentes.",
+      "renisus": false,
+      "detalhesEspecificos": {
+        "espectro": "full_spectrum",
+        "canabinoideDominante": "CBD",
+        "concentracaoCbdMgMl": 50,
+        "concentracaoThcMgMl": 0.2,
+        "proporcaoCbdThc": "≥20:1",
+        "formaFarmaceutica": "oleo",
+        "tipoReceituario": "B",
+        "thcAcimaLimite": false,
+        "volumeEmbalagem": "30 mL"
+      },
+      "searchText": "oleo cbd full spectrum 50 mg/ml canabidiol full spectrum 50 mg/ml cbd full spectrum 50 thc ≤ 0,2% full spectrum cbd oleo ≥20:1 cbd 50 thc 0.2 receituario b canabidiol full spectrum 50 mg/ml cbd full spectrum 50 thc ≤ 0,2%"
+    },
+    {
+      "slug": "cannabis-oleo-cbd-full-79-mg-ml",
+      "nome": "Óleo CBD full spectrum 79 mg/mL",
+      "nomesAlternativos": [
+        "Canabidiol full spectrum 79 mg/mL",
+        "CBD full spectrum 79",
+        "THC ≤ 0,2%"
+      ],
+      "nomeCientifico": null,
+      "categoriaPratica": "CANNABIS",
+      "indicacoes": "Dor crônica neuropática e nociceptiva, epilepsia refratária, ansiedade, insônia, TEA, Parkinson, fibromialgia, náusea associada à quimioterapia.",
+      "contraindicacoes": "Hipersensibilidade a canabinoides ou excipientes. Gestação e lactação. Cautela em hepatopatia grave.",
+      "precaucoes": "Iniciar com dose baixa e titular gradualmente (start low, go slow). Monitorar função hepática em uso prolongado ou doses elevadas. Evitar condução de veículos até estabelecer tolerância.",
+      "interacoesMedicamentosas": "Anticonvulsivantes (clobazam, valproato — risco de sedação e elevação de níveis séricos). Varfarina e anticoagulantes (monitorar INR). Inibidores e indutores de CYP3A4 e CYP2C19 (ex.: fluconazol, rifampicina, carbamazepina). Depressores do SNC (opioides, benzodiazepínicos, álcool — potencialização de sedação).",
+      "posologia": "Via oral ou sublingual. Iniciar com 0,1–0,2 mL 2x/dia; titular semanalmente conforme resposta clínica (start low, go slow). Frasco 30 mL.",
+      "viaAdministracao": [
+        "oral",
+        "sublingual"
+      ],
+      "statusRegulatorio": "PRODUTO_AUTORIZADO_ANVISA",
+      "fontes": [
+        {
+          "fonte": "RDC ANVISA nº 327/2019",
+          "edicao": "2019"
+        },
+        {
+          "fonte": "RDC ANVISA nº 660/2022",
+          "edicao": "2022"
+        },
+        {
+          "fonte": "RDC ANVISA nº 1.015/2026",
+          "edicao": "2026"
+        }
+      ],
+      "alertaGestacaoPediatria": "Contraindicado na gestação e lactação. Uso pediátrico apenas sob supervisão especializada, conforme indicação clínica e normas vigentes.",
+      "renisus": false,
+      "detalhesEspecificos": {
+        "espectro": "full_spectrum",
+        "canabinoideDominante": "CBD",
+        "concentracaoCbdMgMl": 79,
+        "concentracaoThcMgMl": 0.316,
+        "proporcaoCbdThc": "≥20:1",
+        "formaFarmaceutica": "oleo",
+        "tipoReceituario": "B",
+        "thcAcimaLimite": false,
+        "volumeEmbalagem": "30 mL"
+      },
+      "searchText": "oleo cbd full spectrum 79 mg/ml canabidiol full spectrum 79 mg/ml cbd full spectrum 79 thc ≤ 0,2% full spectrum cbd oleo ≥20:1 cbd 79 thc 0.316 receituario b canabidiol full spectrum 79 mg/ml cbd full spectrum 79 thc ≤ 0,2%"
+    },
+    {
+      "slug": "cannabis-oleo-cbd-full-100-mg-ml",
+      "nome": "Óleo CBD full spectrum 100 mg/mL",
+      "nomesAlternativos": [
+        "Canabidiol full spectrum 100 mg/mL",
+        "CBD full spectrum 100",
+        "THC ≤ 0,2%"
+      ],
+      "nomeCientifico": null,
+      "categoriaPratica": "CANNABIS",
+      "indicacoes": "Dor crônica neuropática e nociceptiva, epilepsia refratária, ansiedade, insônia, TEA, Parkinson, fibromialgia, náusea associada à quimioterapia.",
+      "contraindicacoes": "Hipersensibilidade a canabinoides ou excipientes. Gestação e lactação. Cautela em hepatopatia grave.",
+      "precaucoes": "Iniciar com dose baixa e titular gradualmente (start low, go slow). Monitorar função hepática em uso prolongado ou doses elevadas. Evitar condução de veículos até estabelecer tolerância.",
+      "interacoesMedicamentosas": "Anticonvulsivantes (clobazam, valproato — risco de sedação e elevação de níveis séricos). Varfarina e anticoagulantes (monitorar INR). Inibidores e indutores de CYP3A4 e CYP2C19 (ex.: fluconazol, rifampicina, carbamazepina). Depressores do SNC (opioides, benzodiazepínicos, álcool — potencialização de sedação).",
+      "posologia": "Via oral ou sublingual. Iniciar com 0,1–0,2 mL 2x/dia; titular semanalmente conforme resposta clínica (start low, go slow). Frasco 30 mL.",
+      "viaAdministracao": [
+        "oral",
+        "sublingual"
+      ],
+      "statusRegulatorio": "PRODUTO_AUTORIZADO_ANVISA",
+      "fontes": [
+        {
+          "fonte": "RDC ANVISA nº 327/2019",
+          "edicao": "2019"
+        },
+        {
+          "fonte": "RDC ANVISA nº 660/2022",
+          "edicao": "2022"
+        },
+        {
+          "fonte": "RDC ANVISA nº 1.015/2026",
+          "edicao": "2026"
+        }
+      ],
+      "alertaGestacaoPediatria": "Contraindicado na gestação e lactação. Uso pediátrico apenas sob supervisão especializada, conforme indicação clínica e normas vigentes.",
+      "renisus": false,
+      "detalhesEspecificos": {
+        "espectro": "full_spectrum",
+        "canabinoideDominante": "CBD",
+        "concentracaoCbdMgMl": 100,
+        "concentracaoThcMgMl": 0.4,
+        "proporcaoCbdThc": "≥20:1",
+        "formaFarmaceutica": "oleo",
+        "tipoReceituario": "B",
+        "thcAcimaLimite": false,
+        "volumeEmbalagem": "30 mL"
+      },
+      "searchText": "oleo cbd full spectrum 100 mg/ml canabidiol full spectrum 100 mg/ml cbd full spectrum 100 thc ≤ 0,2% full spectrum cbd oleo ≥20:1 cbd 100 thc 0.4 receituario b canabidiol full spectrum 100 mg/ml cbd full spectrum 100 thc ≤ 0,2%"
+    },
+    {
+      "slug": "cannabis-oleo-cbd-full-150-mg-ml",
+      "nome": "Óleo CBD full spectrum 150 mg/mL",
+      "nomesAlternativos": [
+        "Canabidiol full spectrum 150 mg/mL",
+        "CBD full spectrum 150",
+        "THC ≤ 0,2%"
+      ],
+      "nomeCientifico": null,
+      "categoriaPratica": "CANNABIS",
+      "indicacoes": "Dor crônica neuropática e nociceptiva, epilepsia refratária, ansiedade, insônia, TEA, Parkinson, fibromialgia, náusea associada à quimioterapia.",
+      "contraindicacoes": "Hipersensibilidade a canabinoides ou excipientes. Gestação e lactação. Cautela em hepatopatia grave.",
+      "precaucoes": "Iniciar com dose baixa e titular gradualmente (start low, go slow). Monitorar função hepática em uso prolongado ou doses elevadas. Evitar condução de veículos até estabelecer tolerância.",
+      "interacoesMedicamentosas": "Anticonvulsivantes (clobazam, valproato — risco de sedação e elevação de níveis séricos). Varfarina e anticoagulantes (monitorar INR). Inibidores e indutores de CYP3A4 e CYP2C19 (ex.: fluconazol, rifampicina, carbamazepina). Depressores do SNC (opioides, benzodiazepínicos, álcool — potencialização de sedação).",
+      "posologia": "Via oral ou sublingual. Iniciar com 0,1–0,2 mL 2x/dia; titular semanalmente conforme resposta clínica (start low, go slow). Frasco 30 mL.",
+      "viaAdministracao": [
+        "oral",
+        "sublingual"
+      ],
+      "statusRegulatorio": "PRODUTO_AUTORIZADO_ANVISA",
+      "fontes": [
+        {
+          "fonte": "RDC ANVISA nº 327/2019",
+          "edicao": "2019"
+        },
+        {
+          "fonte": "RDC ANVISA nº 660/2022",
+          "edicao": "2022"
+        },
+        {
+          "fonte": "RDC ANVISA nº 1.015/2026",
+          "edicao": "2026"
+        }
+      ],
+      "alertaGestacaoPediatria": "Contraindicado na gestação e lactação. Uso pediátrico apenas sob supervisão especializada, conforme indicação clínica e normas vigentes.",
+      "renisus": false,
+      "detalhesEspecificos": {
+        "espectro": "full_spectrum",
+        "canabinoideDominante": "CBD",
+        "concentracaoCbdMgMl": 150,
+        "concentracaoThcMgMl": 0.6,
+        "proporcaoCbdThc": "≥20:1",
+        "formaFarmaceutica": "oleo",
+        "tipoReceituario": "B",
+        "thcAcimaLimite": false,
+        "volumeEmbalagem": "30 mL"
+      },
+      "searchText": "oleo cbd full spectrum 150 mg/ml canabidiol full spectrum 150 mg/ml cbd full spectrum 150 thc ≤ 0,2% full spectrum cbd oleo ≥20:1 cbd 150 thc 0.6 receituario b canabidiol full spectrum 150 mg/ml cbd full spectrum 150 thc ≤ 0,2%"
+    },
+    {
+      "slug": "cannabis-oleo-cbd-full-200-mg-ml",
+      "nome": "Óleo CBD full spectrum 200 mg/mL",
+      "nomesAlternativos": [
+        "Canabidiol full spectrum 200 mg/mL",
+        "CBD full spectrum 200",
+        "THC ≤ 0,2%"
+      ],
+      "nomeCientifico": null,
+      "categoriaPratica": "CANNABIS",
+      "indicacoes": "Dor crônica neuropática e nociceptiva, epilepsia refratária, ansiedade, insônia, TEA, Parkinson, fibromialgia, náusea associada à quimioterapia.",
+      "contraindicacoes": "Hipersensibilidade a canabinoides ou excipientes. Gestação e lactação. Cautela em hepatopatia grave.",
+      "precaucoes": "Iniciar com dose baixa e titular gradualmente (start low, go slow). Monitorar função hepática em uso prolongado ou doses elevadas. Evitar condução de veículos até estabelecer tolerância.",
+      "interacoesMedicamentosas": "Anticonvulsivantes (clobazam, valproato — risco de sedação e elevação de níveis séricos). Varfarina e anticoagulantes (monitorar INR). Inibidores e indutores de CYP3A4 e CYP2C19 (ex.: fluconazol, rifampicina, carbamazepina). Depressores do SNC (opioides, benzodiazepínicos, álcool — potencialização de sedação).",
+      "posologia": "Via oral ou sublingual. Iniciar com 0,1–0,2 mL 2x/dia; titular semanalmente conforme resposta clínica (start low, go slow). Frasco 30 mL.",
+      "viaAdministracao": [
+        "oral",
+        "sublingual"
+      ],
+      "statusRegulatorio": "PRODUTO_AUTORIZADO_ANVISA",
+      "fontes": [
+        {
+          "fonte": "RDC ANVISA nº 327/2019",
+          "edicao": "2019"
+        },
+        {
+          "fonte": "RDC ANVISA nº 660/2022",
+          "edicao": "2022"
+        },
+        {
+          "fonte": "RDC ANVISA nº 1.015/2026",
+          "edicao": "2026"
+        }
+      ],
+      "alertaGestacaoPediatria": "Contraindicado na gestação e lactação. Uso pediátrico apenas sob supervisão especializada, conforme indicação clínica e normas vigentes.",
+      "renisus": false,
+      "detalhesEspecificos": {
+        "espectro": "full_spectrum",
+        "canabinoideDominante": "CBD",
+        "concentracaoCbdMgMl": 200,
+        "concentracaoThcMgMl": 0.8,
+        "proporcaoCbdThc": "≥20:1",
+        "formaFarmaceutica": "oleo",
+        "tipoReceituario": "B",
+        "thcAcimaLimite": false,
+        "volumeEmbalagem": "30 mL"
+      },
+      "searchText": "oleo cbd full spectrum 200 mg/ml canabidiol full spectrum 200 mg/ml cbd full spectrum 200 thc ≤ 0,2% full spectrum cbd oleo ≥20:1 cbd 200 thc 0.8 receituario b canabidiol full spectrum 200 mg/ml cbd full spectrum 200 thc ≤ 0,2%"
+    },
+    {
+      "slug": "cannabis-oleo-balanceado-10-10-mg-ml",
+      "nome": "Óleo balanceado CBD:THC 10:10 mg/mL (full spectrum)",
+      "nomesAlternativos": [
+        "CBD 10 + THC 10 mg/mL",
+        "10:10",
+        "1:1",
+        "full spectrum balanceado"
+      ],
+      "nomeCientifico": null,
+      "categoriaPratica": "CANNABIS",
+      "indicacoes": "Dor crônica neuropática e nociceptiva, epilepsia refratária, ansiedade, insônia, TEA, Parkinson, fibromialgia, náusea associada à quimioterapia. DTM (disfunção temporomandibular), bruxismo, dor orofacial, ansiedade pré-operatória odontológica.",
+      "contraindicacoes": "Hipersensibilidade a canabinoides ou excipientes. Gestação e lactação. Cautela em hepatopatia grave.",
+      "precaucoes": "Iniciar com dose baixa e titular gradualmente (start low, go slow). Monitorar função hepática em uso prolongado ou doses elevadas. Evitar condução de veículos até estabelecer tolerância.",
+      "interacoesMedicamentosas": "Anticonvulsivantes (clobazam, valproato — risco de sedação e elevação de níveis séricos). Varfarina e anticoagulantes (monitorar INR). Inibidores e indutores de CYP3A4 e CYP2C19 (ex.: fluconazol, rifampicina, carbamazepina). Depressores do SNC (opioides, benzodiazepínicos, álcool — potencialização de sedação).",
+      "posologia": "Via oral ou sublingual. Iniciar com 0,1 mL 2x/dia; titular semanalmente conforme resposta clínica (start low, go slow). Frasco 30 mL.",
+      "viaAdministracao": [
+        "oral",
+        "sublingual"
+      ],
+      "statusRegulatorio": "PRODUTO_AUTORIZADO_ANVISA",
+      "fontes": [
+        {
+          "fonte": "RDC ANVISA nº 327/2019",
+          "edicao": "2019"
+        },
+        {
+          "fonte": "RDC ANVISA nº 660/2022",
+          "edicao": "2022"
+        },
+        {
+          "fonte": "RDC ANVISA nº 1.015/2026",
+          "edicao": "2026"
+        }
+      ],
+      "alertaGestacaoPediatria": "Contraindicado na gestação e lactação. Uso pediátrico apenas sob supervisão especializada, conforme indicação clínica e normas vigentes.",
+      "renisus": false,
+      "detalhesEspecificos": {
+        "espectro": "full_spectrum",
+        "canabinoideDominante": "balanceado",
+        "concentracaoCbdMgMl": 10,
+        "concentracaoThcMgMl": 10,
+        "proporcaoCbdThc": "1:1",
+        "formaFarmaceutica": "oleo",
+        "tipoReceituario": "A",
+        "thcAcimaLimite": true,
+        "volumeEmbalagem": "30 mL"
+      },
+      "searchText": "oleo balanceado cbd:thc 10:10 mg/ml (full spectrum) cbd 10 + thc 10 mg/ml 10:10 1:1 full spectrum balanceado full spectrum balanceado oleo 1:1 cbd 10 thc 10 receituario a 1:1 full spectrum balanceado cbd 10 + thc 10 mg/ml 10:10 1:1 full spectrum balanceado"
+    },
+    {
+      "slug": "cannabis-oleo-balanceado-15-15-mg-ml",
+      "nome": "Óleo balanceado CBD:THC 15:15 mg/mL (full spectrum)",
+      "nomesAlternativos": [
+        "CBD 15 + THC 15 mg/mL",
+        "15:15",
+        "1:1",
+        "full spectrum balanceado"
+      ],
+      "nomeCientifico": null,
+      "categoriaPratica": "CANNABIS",
+      "indicacoes": "Dor crônica neuropática e nociceptiva, epilepsia refratária, ansiedade, insônia, TEA, Parkinson, fibromialgia, náusea associada à quimioterapia. DTM (disfunção temporomandibular), bruxismo, dor orofacial, ansiedade pré-operatória odontológica.",
+      "contraindicacoes": "Hipersensibilidade a canabinoides ou excipientes. Gestação e lactação. Cautela em hepatopatia grave.",
+      "precaucoes": "Iniciar com dose baixa e titular gradualmente (start low, go slow). Monitorar função hepática em uso prolongado ou doses elevadas. Evitar condução de veículos até estabelecer tolerância.",
+      "interacoesMedicamentosas": "Anticonvulsivantes (clobazam, valproato — risco de sedação e elevação de níveis séricos). Varfarina e anticoagulantes (monitorar INR). Inibidores e indutores de CYP3A4 e CYP2C19 (ex.: fluconazol, rifampicina, carbamazepina). Depressores do SNC (opioides, benzodiazepínicos, álcool — potencialização de sedação).",
+      "posologia": "Via oral ou sublingual. Iniciar com 0,1 mL 2x/dia; titular semanalmente conforme resposta clínica (start low, go slow). Frasco 30 mL.",
+      "viaAdministracao": [
+        "oral",
+        "sublingual"
+      ],
+      "statusRegulatorio": "PRODUTO_AUTORIZADO_ANVISA",
+      "fontes": [
+        {
+          "fonte": "RDC ANVISA nº 327/2019",
+          "edicao": "2019"
+        },
+        {
+          "fonte": "RDC ANVISA nº 660/2022",
+          "edicao": "2022"
+        },
+        {
+          "fonte": "RDC ANVISA nº 1.015/2026",
+          "edicao": "2026"
+        }
+      ],
+      "alertaGestacaoPediatria": "Contraindicado na gestação e lactação. Uso pediátrico apenas sob supervisão especializada, conforme indicação clínica e normas vigentes.",
+      "renisus": false,
+      "detalhesEspecificos": {
+        "espectro": "full_spectrum",
+        "canabinoideDominante": "balanceado",
+        "concentracaoCbdMgMl": 15,
+        "concentracaoThcMgMl": 15,
+        "proporcaoCbdThc": "1:1",
+        "formaFarmaceutica": "oleo",
+        "tipoReceituario": "A",
+        "thcAcimaLimite": true,
+        "volumeEmbalagem": "30 mL"
+      },
+      "searchText": "oleo balanceado cbd:thc 15:15 mg/ml (full spectrum) cbd 15 + thc 15 mg/ml 15:15 1:1 full spectrum balanceado full spectrum balanceado oleo 1:1 cbd 15 thc 15 receituario a 1:1 full spectrum balanceado cbd 15 + thc 15 mg/ml 15:15 1:1 full spectrum balanceado"
+    },
+    {
+      "slug": "cannabis-oleo-balanceado-25-25-mg-ml",
+      "nome": "Óleo balanceado CBD:THC 25:25 mg/mL (full spectrum)",
+      "nomesAlternativos": [
+        "CBD 25 + THC 25 mg/mL",
+        "25:25",
+        "1:1",
+        "full spectrum balanceado"
+      ],
+      "nomeCientifico": null,
+      "categoriaPratica": "CANNABIS",
+      "indicacoes": "Dor crônica neuropática e nociceptiva, epilepsia refratária, ansiedade, insônia, TEA, Parkinson, fibromialgia, náusea associada à quimioterapia. DTM (disfunção temporomandibular), bruxismo, dor orofacial, ansiedade pré-operatória odontológica.",
+      "contraindicacoes": "Hipersensibilidade a canabinoides ou excipientes. Gestação e lactação. Cautela em hepatopatia grave.",
+      "precaucoes": "Iniciar com dose baixa e titular gradualmente (start low, go slow). Monitorar função hepática em uso prolongado ou doses elevadas. Evitar condução de veículos até estabelecer tolerância.",
+      "interacoesMedicamentosas": "Anticonvulsivantes (clobazam, valproato — risco de sedação e elevação de níveis séricos). Varfarina e anticoagulantes (monitorar INR). Inibidores e indutores de CYP3A4 e CYP2C19 (ex.: fluconazol, rifampicina, carbamazepina). Depressores do SNC (opioides, benzodiazepínicos, álcool — potencialização de sedação).",
+      "posologia": "Via oral ou sublingual. Iniciar com 0,2 mL 2x/dia; titular semanalmente conforme resposta clínica (start low, go slow). Frasco 30 mL.",
+      "viaAdministracao": [
+        "oral",
+        "sublingual"
+      ],
+      "statusRegulatorio": "PRODUTO_AUTORIZADO_ANVISA",
+      "fontes": [
+        {
+          "fonte": "RDC ANVISA nº 327/2019",
+          "edicao": "2019"
+        },
+        {
+          "fonte": "RDC ANVISA nº 660/2022",
+          "edicao": "2022"
+        },
+        {
+          "fonte": "RDC ANVISA nº 1.015/2026",
+          "edicao": "2026"
+        }
+      ],
+      "alertaGestacaoPediatria": "Contraindicado na gestação e lactação. Uso pediátrico apenas sob supervisão especializada, conforme indicação clínica e normas vigentes.",
+      "renisus": false,
+      "detalhesEspecificos": {
+        "espectro": "full_spectrum",
+        "canabinoideDominante": "balanceado",
+        "concentracaoCbdMgMl": 25,
+        "concentracaoThcMgMl": 25,
+        "proporcaoCbdThc": "1:1",
+        "formaFarmaceutica": "oleo",
+        "tipoReceituario": "A",
+        "thcAcimaLimite": true,
+        "volumeEmbalagem": "30 mL"
+      },
+      "searchText": "oleo balanceado cbd:thc 25:25 mg/ml (full spectrum) cbd 25 + thc 25 mg/ml 25:25 1:1 full spectrum balanceado full spectrum balanceado oleo 1:1 cbd 25 thc 25 receituario a 1:1 full spectrum balanceado cbd 25 + thc 25 mg/ml 25:25 1:1 full spectrum balanceado"
+    },
+    {
+      "slug": "cannabis-oleo-balanceado-5-5-mg-ml",
+      "nome": "Óleo balanceado CBD:THC 5:5 mg/mL (full spectrum)",
+      "nomesAlternativos": [
+        "CBD 5 + THC 5 mg/mL",
+        "5:5",
+        "1:1",
+        "full spectrum balanceado"
+      ],
+      "nomeCientifico": null,
+      "categoriaPratica": "CANNABIS",
+      "indicacoes": "Dor crônica neuropática e nociceptiva, epilepsia refratária, ansiedade, insônia, TEA, Parkinson, fibromialgia, náusea associada à quimioterapia. DTM (disfunção temporomandibular), bruxismo, dor orofacial, ansiedade pré-operatória odontológica.",
+      "contraindicacoes": "Hipersensibilidade a canabinoides ou excipientes. Gestação e lactação. Cautela em hepatopatia grave.",
+      "precaucoes": "Iniciar com dose baixa e titular gradualmente (start low, go slow). Monitorar função hepática em uso prolongado ou doses elevadas. Evitar condução de veículos até estabelecer tolerância.",
+      "interacoesMedicamentosas": "Anticonvulsivantes (clobazam, valproato — risco de sedação e elevação de níveis séricos). Varfarina e anticoagulantes (monitorar INR). Inibidores e indutores de CYP3A4 e CYP2C19 (ex.: fluconazol, rifampicina, carbamazepina). Depressores do SNC (opioides, benzodiazepínicos, álcool — potencialização de sedação).",
+      "posologia": "Via oral ou sublingual. Iniciar com 0,1 mL 2x/dia; titular semanalmente conforme resposta clínica (start low, go slow). Frasco 30 mL.",
+      "viaAdministracao": [
+        "oral",
+        "sublingual"
+      ],
+      "statusRegulatorio": "PRODUTO_AUTORIZADO_ANVISA",
+      "fontes": [
+        {
+          "fonte": "RDC ANVISA nº 327/2019",
+          "edicao": "2019"
+        },
+        {
+          "fonte": "RDC ANVISA nº 660/2022",
+          "edicao": "2022"
+        },
+        {
+          "fonte": "RDC ANVISA nº 1.015/2026",
+          "edicao": "2026"
+        }
+      ],
+      "alertaGestacaoPediatria": "Contraindicado na gestação e lactação. Uso pediátrico apenas sob supervisão especializada, conforme indicação clínica e normas vigentes.",
+      "renisus": false,
+      "detalhesEspecificos": {
+        "espectro": "full_spectrum",
+        "canabinoideDominante": "balanceado",
+        "concentracaoCbdMgMl": 5,
+        "concentracaoThcMgMl": 5,
+        "proporcaoCbdThc": "1:1",
+        "formaFarmaceutica": "oleo",
+        "tipoReceituario": "A",
+        "thcAcimaLimite": true,
+        "volumeEmbalagem": "30 mL"
+      },
+      "searchText": "oleo balanceado cbd:thc 5:5 mg/ml (full spectrum) cbd 5 + thc 5 mg/ml 5:5 1:1 full spectrum balanceado full spectrum balanceado oleo 1:1 cbd 5 thc 5 receituario a 1:1 full spectrum balanceado cbd 5 + thc 5 mg/ml 5:5 1:1 full spectrum balanceado"
+    },
+    {
+      "slug": "cannabis-oleo-thc-dominante-25-1",
+      "nome": "Óleo THC-dominante full spectrum 25 mg/mL THC : 1 mg/mL CBD",
+      "nomesAlternativos": [
+        "THC 25 mg/mL",
+        "25:1 THC:CBD",
+        "THC dominante"
+      ],
+      "nomeCientifico": null,
+      "categoriaPratica": "CANNABIS",
+      "indicacoes": "Dor crônica neuropática e nociceptiva, epilepsia refratária, ansiedade, insônia, TEA, Parkinson, fibromialgia, náusea associada à quimioterapia.",
+      "contraindicacoes": "Hipersensibilidade a canabinoides ou excipientes. Gestação e lactação. Cautela em hepatopatia grave.",
+      "precaucoes": "Iniciar com dose baixa e titular gradualmente (start low, go slow). Monitorar função hepática em uso prolongado ou doses elevadas. Evitar condução de veículos até estabelecer tolerância.",
+      "interacoesMedicamentosas": "Anticonvulsivantes (clobazam, valproato — risco de sedação e elevação de níveis séricos). Varfarina e anticoagulantes (monitorar INR). Inibidores e indutores de CYP3A4 e CYP2C19 (ex.: fluconazol, rifampicina, carbamazepina). Depressores do SNC (opioides, benzodiazepínicos, álcool — potencialização de sedação).",
+      "posologia": "Via oral ou sublingual. Iniciar com 0,05–0,1 mL à noite; titular conforme resposta (start low, go slow). Frasco 30 mL.",
+      "viaAdministracao": [
+        "oral",
+        "sublingual"
+      ],
+      "statusRegulatorio": "PRODUTO_AUTORIZADO_ANVISA",
+      "fontes": [
+        {
+          "fonte": "RDC ANVISA nº 327/2019",
+          "edicao": "2019"
+        },
+        {
+          "fonte": "RDC ANVISA nº 660/2022",
+          "edicao": "2022"
+        },
+        {
+          "fonte": "RDC ANVISA nº 1.015/2026",
+          "edicao": "2026"
+        }
+      ],
+      "alertaGestacaoPediatria": "Contraindicado na gestação e lactação. Uso pediátrico apenas sob supervisão especializada, conforme indicação clínica e normas vigentes.",
+      "renisus": false,
+      "detalhesEspecificos": {
+        "espectro": "full_spectrum",
+        "canabinoideDominante": "THC",
+        "concentracaoCbdMgMl": 1,
+        "concentracaoThcMgMl": 25,
+        "proporcaoCbdThc": "1:25",
+        "formaFarmaceutica": "oleo",
+        "tipoReceituario": "A",
+        "thcAcimaLimite": true,
+        "volumeEmbalagem": "30 mL"
+      },
+      "searchText": "oleo thc-dominante full spectrum 25 mg/ml thc : 1 mg/ml cbd thc 25 mg/ml 25:1 thc:cbd thc dominante full spectrum thc oleo 1:25 cbd 1 thc 25 receituario a 1:1 full spectrum balanceado thc 25 mg/ml 25:1 thc:cbd thc dominante"
+    },
+    {
+      "slug": "cannabis-oleo-thc-dominante-50-mg-ml",
+      "nome": "Óleo THC-dominante full spectrum 50 mg/mL",
+      "nomesAlternativos": [
+        "THC 50 mg/mL",
+        "THC full spectrum 50"
+      ],
+      "nomeCientifico": null,
+      "categoriaPratica": "CANNABIS",
+      "indicacoes": "Dor crônica neuropática e nociceptiva, epilepsia refratária, ansiedade, insônia, TEA, Parkinson, fibromialgia, náusea associada à quimioterapia.",
+      "contraindicacoes": "Hipersensibilidade a canabinoides ou excipientes. Gestação e lactação. Cautela em hepatopatia grave.",
+      "precaucoes": "Iniciar com dose baixa e titular gradualmente (start low, go slow). Monitorar função hepática em uso prolongado ou doses elevadas. Evitar condução de veículos até estabelecer tolerância.",
+      "interacoesMedicamentosas": "Anticonvulsivantes (clobazam, valproato — risco de sedação e elevação de níveis séricos). Varfarina e anticoagulantes (monitorar INR). Inibidores e indutores de CYP3A4 e CYP2C19 (ex.: fluconazol, rifampicina, carbamazepina). Depressores do SNC (opioides, benzodiazepínicos, álcool — potencialização de sedação).",
+      "posologia": "Via oral ou sublingual. Iniciar com 0,05 mL à noite; titular conforme resposta (start low, go slow). Frasco 30 mL.",
+      "viaAdministracao": [
+        "oral",
+        "sublingual"
+      ],
+      "statusRegulatorio": "PRODUTO_AUTORIZADO_ANVISA",
+      "fontes": [
+        {
+          "fonte": "RDC ANVISA nº 327/2019",
+          "edicao": "2019"
+        },
+        {
+          "fonte": "RDC ANVISA nº 660/2022",
+          "edicao": "2022"
+        },
+        {
+          "fonte": "RDC ANVISA nº 1.015/2026",
+          "edicao": "2026"
+        }
+      ],
+      "alertaGestacaoPediatria": "Contraindicado na gestação e lactação. Uso pediátrico apenas sob supervisão especializada, conforme indicação clínica e normas vigentes.",
+      "renisus": false,
+      "detalhesEspecificos": {
+        "espectro": "full_spectrum",
+        "canabinoideDominante": "THC",
+        "concentracaoThcMgMl": 50,
+        "concentracaoCbdMgMl": 2,
+        "proporcaoCbdThc": "1:25",
+        "formaFarmaceutica": "oleo",
+        "tipoReceituario": "A",
+        "thcAcimaLimite": true,
+        "volumeEmbalagem": "30 mL"
+      },
+      "searchText": "oleo thc-dominante full spectrum 50 mg/ml thc 50 mg/ml thc full spectrum 50 full spectrum thc oleo 1:25 cbd 2 thc 50 receituario a 1:1 full spectrum balanceado thc 50 mg/ml thc full spectrum 50"
+    },
+    {
+      "slug": "cannabis-oleo-thc-10-mg-ml",
+      "nome": "Óleo THC full spectrum 10 mg/mL",
+      "nomesAlternativos": [
+        "THC 10 mg/mL",
+        "Canabinol tetrahidrocanabinol 10"
+      ],
+      "nomeCientifico": null,
+      "categoriaPratica": "CANNABIS",
+      "indicacoes": "Dor crônica neuropática e nociceptiva, epilepsia refratária, ansiedade, insônia, TEA, Parkinson, fibromialgia, náusea associada à quimioterapia.",
+      "contraindicacoes": "Hipersensibilidade a canabinoides ou excipientes. Gestação e lactação. Cautela em hepatopatia grave.",
+      "precaucoes": "Iniciar com dose baixa e titular gradualmente (start low, go slow). Monitorar função hepática em uso prolongado ou doses elevadas. Evitar condução de veículos até estabelecer tolerância.",
+      "interacoesMedicamentosas": "Anticonvulsivantes (clobazam, valproato — risco de sedação e elevação de níveis séricos). Varfarina e anticoagulantes (monitorar INR). Inibidores e indutores de CYP3A4 e CYP2C19 (ex.: fluconazol, rifampicina, carbamazepina). Depressores do SNC (opioides, benzodiazepínicos, álcool — potencialização de sedação).",
+      "posologia": "Via oral ou sublingual. Iniciar com 0,1 mL 2x/dia; titular semanalmente conforme resposta clínica (start low, go slow). Frasco 30 mL.",
+      "viaAdministracao": [
+        "oral",
+        "sublingual"
+      ],
+      "statusRegulatorio": "PRODUTO_AUTORIZADO_ANVISA",
+      "fontes": [
+        {
+          "fonte": "RDC ANVISA nº 327/2019",
+          "edicao": "2019"
+        },
+        {
+          "fonte": "RDC ANVISA nº 660/2022",
+          "edicao": "2022"
+        },
+        {
+          "fonte": "RDC ANVISA nº 1.015/2026",
+          "edicao": "2026"
+        }
+      ],
+      "alertaGestacaoPediatria": "Contraindicado na gestação e lactação. Uso pediátrico apenas sob supervisão especializada, conforme indicação clínica e normas vigentes.",
+      "renisus": false,
+      "detalhesEspecificos": {
+        "espectro": "full_spectrum",
+        "canabinoideDominante": "THC",
+        "concentracaoThcMgMl": 10,
+        "concentracaoCbdMgMl": 1,
+        "formaFarmaceutica": "oleo",
+        "tipoReceituario": "A",
+        "thcAcimaLimite": true,
+        "volumeEmbalagem": "30 mL"
+      },
+      "searchText": "oleo thc full spectrum 10 mg/ml thc 10 mg/ml canabinol tetrahidrocanabinol 10 full spectrum thc oleo cbd 1 thc 10 receituario a 1:1 full spectrum balanceado thc 10 mg/ml canabinol tetrahidrocanabinol 10"
+    },
+    {
+      "slug": "cannabis-oleo-cbg-cbd-20-20-mg-ml",
+      "nome": "Óleo CBG 20 mg/mL + CBD 20 mg/mL (full spectrum)",
+      "nomesAlternativos": [
+        "CBG 20 + CBD 20",
+        "Canabigerol",
+        "CBG dominante"
+      ],
+      "nomeCientifico": null,
+      "categoriaPratica": "CANNABIS",
+      "indicacoes": "Dor crônica neuropática e nociceptiva, epilepsia refratária, ansiedade, insônia, TEA, Parkinson, fibromialgia, náusea associada à quimioterapia.",
+      "contraindicacoes": "Hipersensibilidade a canabinoides ou excipientes. Gestação e lactação. Cautela em hepatopatia grave.",
+      "precaucoes": "Iniciar com dose baixa e titular gradualmente (start low, go slow). Monitorar função hepática em uso prolongado ou doses elevadas. Evitar condução de veículos até estabelecer tolerância.",
+      "interacoesMedicamentosas": "Anticonvulsivantes (clobazam, valproato — risco de sedação e elevação de níveis séricos). Varfarina e anticoagulantes (monitorar INR). Inibidores e indutores de CYP3A4 e CYP2C19 (ex.: fluconazol, rifampicina, carbamazepina). Depressores do SNC (opioides, benzodiazepínicos, álcool — potencialização de sedação).",
+      "posologia": "Via oral ou sublingual. Iniciar com 0,1 mL 2x/dia; titular semanalmente conforme resposta clínica (start low, go slow). Frasco 30 mL.",
+      "viaAdministracao": [
+        "oral",
+        "sublingual"
+      ],
+      "statusRegulatorio": "PRODUTO_AUTORIZADO_ANVISA",
+      "fontes": [
+        {
+          "fonte": "RDC ANVISA nº 327/2019",
+          "edicao": "2019"
+        },
+        {
+          "fonte": "RDC ANVISA nº 660/2022",
+          "edicao": "2022"
+        },
+        {
+          "fonte": "RDC ANVISA nº 1.015/2026",
+          "edicao": "2026"
+        }
+      ],
+      "alertaGestacaoPediatria": "Contraindicado na gestação e lactação. Uso pediátrico apenas sob supervisão especializada, conforme indicação clínica e normas vigentes.",
+      "renisus": false,
+      "detalhesEspecificos": {
+        "espectro": "full_spectrum",
+        "canabinoideDominante": "CBG",
+        "concentracaoCbdMgMl": 20,
+        "concentracaoThcMgMl": 0.4,
+        "outrosCanabinoides": "CBG 20 mg/mL",
+        "proporcaoCbdThc": "50:1",
+        "formaFarmaceutica": "oleo",
+        "tipoReceituario": "B",
+        "thcAcimaLimite": false,
+        "volumeEmbalagem": "30 mL"
+      },
+      "searchText": "oleo cbg 20 mg/ml + cbd 20 mg/ml (full spectrum) cbg 20 + cbd 20 canabigerol cbg dominante full spectrum cbg oleo 50:1 cbd 20 thc 0.4 receituario b cbg 20 + cbd 20 canabigerol cbg dominante"
+    },
+    {
+      "slug": "cannabis-oleo-cbn-cbd-insomnia",
+      "nome": "Óleo CBN 10 mg/mL + CBD 20 mg/mL (insônia)",
+      "nomesAlternativos": [
+        "CBN 10 + CBD 20",
+        "Canabinol insônia",
+        "CBN para sono"
+      ],
+      "nomeCientifico": null,
+      "categoriaPratica": "CANNABIS",
+      "indicacoes": "Dor crônica neuropática e nociceptiva, epilepsia refratária, ansiedade, insônia, TEA, Parkinson, fibromialgia, náusea associada à quimioterapia. Insônia, distúrbios do sono.",
+      "contraindicacoes": "Hipersensibilidade a canabinoides ou excipientes. Gestação e lactação. Cautela em hepatopatia grave.",
+      "precaucoes": "Iniciar com dose baixa e titular gradualmente (start low, go slow). Monitorar função hepática em uso prolongado ou doses elevadas. Evitar condução de veículos até estabelecer tolerância.",
+      "interacoesMedicamentosas": "Anticonvulsivantes (clobazam, valproato — risco de sedação e elevação de níveis séricos). Varfarina e anticoagulantes (monitorar INR). Inibidores e indutores de CYP3A4 e CYP2C19 (ex.: fluconazol, rifampicina, carbamazepina). Depressores do SNC (opioides, benzodiazepínicos, álcool — potencialização de sedação).",
+      "posologia": "Via oral ou sublingual. Iniciar com 0,1 mL 2x/dia; titular semanalmente conforme resposta clínica (start low, go slow). Frasco 30 mL.",
+      "viaAdministracao": [
+        "oral",
+        "sublingual"
+      ],
+      "statusRegulatorio": "PRODUTO_AUTORIZADO_ANVISA",
+      "fontes": [
+        {
+          "fonte": "RDC ANVISA nº 327/2019",
+          "edicao": "2019"
+        },
+        {
+          "fonte": "RDC ANVISA nº 660/2022",
+          "edicao": "2022"
+        },
+        {
+          "fonte": "RDC ANVISA nº 1.015/2026",
+          "edicao": "2026"
+        }
+      ],
+      "alertaGestacaoPediatria": "Contraindicado na gestação e lactação. Uso pediátrico apenas sob supervisão especializada, conforme indicação clínica e normas vigentes.",
+      "renisus": false,
+      "detalhesEspecificos": {
+        "espectro": "full_spectrum",
+        "canabinoideDominante": "CBN",
+        "concentracaoCbdMgMl": 20,
+        "concentracaoThcMgMl": 0.4,
+        "outrosCanabinoides": "CBN 10 mg/mL",
+        "formaFarmaceutica": "oleo",
+        "tipoReceituario": "B",
+        "thcAcimaLimite": false,
+        "volumeEmbalagem": "30 mL"
+      },
+      "searchText": "oleo cbn 10 mg/ml + cbd 20 mg/ml (insonia) cbn 10 + cbd 20 canabinol insonia cbn para sono full spectrum cbn oleo cbd 20 thc 0.4 receituario b cbn 10 + cbd 20 canabinol insonia cbn para sono"
+    },
+    {
+      "slug": "cannabis-oleo-cbd-isolado-300-mg-ml",
+      "nome": "Óleo CBD isolado 300 mg/mL",
+      "nomesAlternativos": [
+        "Canabidiol 300 mg/mL",
+        "CBD 30%"
+      ],
+      "nomeCientifico": null,
+      "categoriaPratica": "CANNABIS",
+      "indicacoes": "Dor crônica neuropática e nociceptiva, epilepsia refratária, ansiedade, insônia, TEA, Parkinson, fibromialgia, náusea associada à quimioterapia.",
+      "contraindicacoes": "Hipersensibilidade a canabinoides ou excipientes. Gestação e lactação. Cautela em hepatopatia grave.",
+      "precaucoes": "Iniciar com dose baixa e titular gradualmente (start low, go slow). Monitorar função hepática em uso prolongado ou doses elevadas. Evitar condução de veículos até estabelecer tolerância.",
+      "interacoesMedicamentosas": "Anticonvulsivantes (clobazam, valproato — risco de sedação e elevação de níveis séricos). Varfarina e anticoagulantes (monitorar INR). Inibidores e indutores de CYP3A4 e CYP2C19 (ex.: fluconazol, rifampicina, carbamazepina). Depressores do SNC (opioides, benzodiazepínicos, álcool — potencialização de sedação).",
+      "posologia": "Via oral ou sublingual. Iniciar com 0,1–0,2 mL 2x/dia; titular semanalmente conforme resposta clínica (start low, go slow). Frasco 30 mL.",
+      "viaAdministracao": [
+        "oral",
+        "sublingual"
+      ],
+      "statusRegulatorio": "PRODUTO_AUTORIZADO_ANVISA",
+      "fontes": [
+        {
+          "fonte": "RDC ANVISA nº 327/2019",
+          "edicao": "2019"
+        },
+        {
+          "fonte": "RDC ANVISA nº 660/2022",
+          "edicao": "2022"
+        },
+        {
+          "fonte": "RDC ANVISA nº 1.015/2026",
+          "edicao": "2026"
+        }
+      ],
+      "alertaGestacaoPediatria": "Contraindicado na gestação e lactação. Uso pediátrico apenas sob supervisão especializada, conforme indicação clínica e normas vigentes.",
+      "renisus": false,
+      "detalhesEspecificos": {
+        "espectro": "isolado",
+        "canabinoideDominante": "CBD",
+        "concentracaoCbdMgMl": 300,
+        "formaFarmaceutica": "oleo",
+        "tipoReceituario": "B",
+        "thcAcimaLimite": false,
+        "volumeEmbalagem": "30 mL"
+      },
+      "searchText": "oleo cbd isolado 300 mg/ml canabidiol 300 mg/ml cbd 30% isolado cbd oleo cbd 300 receituario b canabidiol 300 mg/ml cbd 30%"
+    },
+    {
+      "slug": "cannabis-oleo-cbd-full-300-mg-ml",
+      "nome": "Óleo CBD full spectrum 300 mg/mL",
+      "nomesAlternativos": [
+        "CBD full spectrum 300",
+        "Canabidiol 300 mg/mL full"
+      ],
+      "nomeCientifico": null,
+      "categoriaPratica": "CANNABIS",
+      "indicacoes": "Dor crônica neuropática e nociceptiva, epilepsia refratária, ansiedade, insônia, TEA, Parkinson, fibromialgia, náusea associada à quimioterapia.",
+      "contraindicacoes": "Hipersensibilidade a canabinoides ou excipientes. Gestação e lactação. Cautela em hepatopatia grave.",
+      "precaucoes": "Iniciar com dose baixa e titular gradualmente (start low, go slow). Monitorar função hepática em uso prolongado ou doses elevadas. Evitar condução de veículos até estabelecer tolerância.",
+      "interacoesMedicamentosas": "Anticonvulsivantes (clobazam, valproato — risco de sedação e elevação de níveis séricos). Varfarina e anticoagulantes (monitorar INR). Inibidores e indutores de CYP3A4 e CYP2C19 (ex.: fluconazol, rifampicina, carbamazepina). Depressores do SNC (opioides, benzodiazepínicos, álcool — potencialização de sedação).",
+      "posologia": "Via oral ou sublingual. Iniciar com 0,1–0,2 mL 2x/dia; titular semanalmente conforme resposta clínica (start low, go slow). Frasco 30 mL.",
+      "viaAdministracao": [
+        "oral",
+        "sublingual"
+      ],
+      "statusRegulatorio": "PRODUTO_AUTORIZADO_ANVISA",
+      "fontes": [
+        {
+          "fonte": "RDC ANVISA nº 327/2019",
+          "edicao": "2019"
+        },
+        {
+          "fonte": "RDC ANVISA nº 660/2022",
+          "edicao": "2022"
+        },
+        {
+          "fonte": "RDC ANVISA nº 1.015/2026",
+          "edicao": "2026"
+        }
+      ],
+      "alertaGestacaoPediatria": "Contraindicado na gestação e lactação. Uso pediátrico apenas sob supervisão especializada, conforme indicação clínica e normas vigentes.",
+      "renisus": false,
+      "detalhesEspecificos": {
+        "espectro": "full_spectrum",
+        "canabinoideDominante": "CBD",
+        "concentracaoCbdMgMl": 300,
+        "concentracaoThcMgMl": 0.6,
+        "formaFarmaceutica": "oleo",
+        "tipoReceituario": "B",
+        "thcAcimaLimite": false,
+        "volumeEmbalagem": "30 mL"
+      },
+      "searchText": "oleo cbd full spectrum 300 mg/ml cbd full spectrum 300 canabidiol 300 mg/ml full full spectrum cbd oleo cbd 300 thc 0.6 receituario b cbd full spectrum 300 canabidiol 300 mg/ml full"
+    },
+    {
+      "slug": "cannabis-capsula-cbd-isolado-10-mg",
+      "nome": "Cápsula CBD isolado 10 mg",
+      "nomesAlternativos": [
+        "CBD cápsula 10 mg",
+        "Canabidiol 10 mg cápsula"
+      ],
+      "nomeCientifico": null,
+      "categoriaPratica": "CANNABIS",
+      "indicacoes": "Dor crônica neuropática e nociceptiva, epilepsia refratária, ansiedade, insônia, TEA, Parkinson, fibromialgia, náusea associada à quimioterapia.",
+      "contraindicacoes": "Hipersensibilidade a canabinoides ou excipientes. Gestação e lactação. Cautela em hepatopatia grave.",
+      "precaucoes": "Iniciar com dose baixa e titular gradualmente (start low, go slow). Monitorar função hepática em uso prolongado ou doses elevadas. Evitar condução de veículos até estabelecer tolerância.",
+      "interacoesMedicamentosas": "Anticonvulsivantes (clobazam, valproato — risco de sedação e elevação de níveis séricos). Varfarina e anticoagulantes (monitorar INR). Inibidores e indutores de CYP3A4 e CYP2C19 (ex.: fluconazol, rifampicina, carbamazepina). Depressores do SNC (opioides, benzodiazepínicos, álcool — potencialização de sedação).",
+      "posologia": "Via oral. Iniciar com 1 cápsula à noite; titular conforme resposta (start low, go slow).",
+      "viaAdministracao": [
+        "oral"
+      ],
+      "statusRegulatorio": "PRODUTO_AUTORIZADO_ANVISA",
+      "fontes": [
+        {
+          "fonte": "RDC ANVISA nº 327/2019",
+          "edicao": "2019"
+        },
+        {
+          "fonte": "RDC ANVISA nº 660/2022",
+          "edicao": "2022"
+        },
+        {
+          "fonte": "RDC ANVISA nº 1.015/2026",
+          "edicao": "2026"
+        }
+      ],
+      "alertaGestacaoPediatria": "Contraindicado na gestação e lactação. Uso pediátrico apenas sob supervisão especializada, conforme indicação clínica e normas vigentes.",
+      "renisus": false,
+      "detalhesEspecificos": {
+        "espectro": "isolado",
+        "canabinoideDominante": "CBD",
+        "concentracaoCbdMgMl": 10,
+        "formaFarmaceutica": "capsula",
+        "tipoReceituario": "B",
+        "thcAcimaLimite": false
+      },
+      "searchText": "capsula cbd isolado 10 mg cbd capsula 10 mg canabidiol 10 mg capsula"
+    },
+    {
+      "slug": "cannabis-capsula-cbd-isolado-25-mg",
+      "nome": "Cápsula CBD isolado 25 mg",
+      "nomesAlternativos": [
+        "CBD cápsula 25 mg",
+        "Canabidiol 25 mg cápsula"
+      ],
+      "nomeCientifico": null,
+      "categoriaPratica": "CANNABIS",
+      "indicacoes": "Dor crônica neuropática e nociceptiva, epilepsia refratária, ansiedade, insônia, TEA, Parkinson, fibromialgia, náusea associada à quimioterapia.",
+      "contraindicacoes": "Hipersensibilidade a canabinoides ou excipientes. Gestação e lactação. Cautela em hepatopatia grave.",
+      "precaucoes": "Iniciar com dose baixa e titular gradualmente (start low, go slow). Monitorar função hepática em uso prolongado ou doses elevadas. Evitar condução de veículos até estabelecer tolerância.",
+      "interacoesMedicamentosas": "Anticonvulsivantes (clobazam, valproato — risco de sedação e elevação de níveis séricos). Varfarina e anticoagulantes (monitorar INR). Inibidores e indutores de CYP3A4 e CYP2C19 (ex.: fluconazol, rifampicina, carbamazepina). Depressores do SNC (opioides, benzodiazepínicos, álcool — potencialização de sedação).",
+      "posologia": "Via oral. Iniciar com 1 cápsula à noite; titular conforme resposta (start low, go slow).",
+      "viaAdministracao": [
+        "oral"
+      ],
+      "statusRegulatorio": "PRODUTO_AUTORIZADO_ANVISA",
+      "fontes": [
+        {
+          "fonte": "RDC ANVISA nº 327/2019",
+          "edicao": "2019"
+        },
+        {
+          "fonte": "RDC ANVISA nº 660/2022",
+          "edicao": "2022"
+        },
+        {
+          "fonte": "RDC ANVISA nº 1.015/2026",
+          "edicao": "2026"
+        }
+      ],
+      "alertaGestacaoPediatria": "Contraindicado na gestação e lactação. Uso pediátrico apenas sob supervisão especializada, conforme indicação clínica e normas vigentes.",
+      "renisus": false,
+      "detalhesEspecificos": {
+        "espectro": "isolado",
+        "canabinoideDominante": "CBD",
+        "concentracaoCbdMgMl": 25,
+        "formaFarmaceutica": "capsula",
+        "tipoReceituario": "B",
+        "thcAcimaLimite": false
+      },
+      "searchText": "capsula cbd isolado 25 mg cbd capsula 25 mg canabidiol 25 mg capsula"
+    },
+    {
+      "slug": "cannabis-capsula-cbd-isolado-50-mg",
+      "nome": "Cápsula CBD isolado 50 mg",
+      "nomesAlternativos": [
+        "CBD cápsula 50 mg",
+        "Canabidiol 50 mg cápsula"
+      ],
+      "nomeCientifico": null,
+      "categoriaPratica": "CANNABIS",
+      "indicacoes": "Dor crônica neuropática e nociceptiva, epilepsia refratária, ansiedade, insônia, TEA, Parkinson, fibromialgia, náusea associada à quimioterapia.",
+      "contraindicacoes": "Hipersensibilidade a canabinoides ou excipientes. Gestação e lactação. Cautela em hepatopatia grave.",
+      "precaucoes": "Iniciar com dose baixa e titular gradualmente (start low, go slow). Monitorar função hepática em uso prolongado ou doses elevadas. Evitar condução de veículos até estabelecer tolerância.",
+      "interacoesMedicamentosas": "Anticonvulsivantes (clobazam, valproato — risco de sedação e elevação de níveis séricos). Varfarina e anticoagulantes (monitorar INR). Inibidores e indutores de CYP3A4 e CYP2C19 (ex.: fluconazol, rifampicina, carbamazepina). Depressores do SNC (opioides, benzodiazepínicos, álcool — potencialização de sedação).",
+      "posologia": "Via oral. Iniciar com 1 cápsula à noite; titular conforme resposta (start low, go slow).",
+      "viaAdministracao": [
+        "oral"
+      ],
+      "statusRegulatorio": "PRODUTO_AUTORIZADO_ANVISA",
+      "fontes": [
+        {
+          "fonte": "RDC ANVISA nº 327/2019",
+          "edicao": "2019"
+        },
+        {
+          "fonte": "RDC ANVISA nº 660/2022",
+          "edicao": "2022"
+        },
+        {
+          "fonte": "RDC ANVISA nº 1.015/2026",
+          "edicao": "2026"
+        }
+      ],
+      "alertaGestacaoPediatria": "Contraindicado na gestação e lactação. Uso pediátrico apenas sob supervisão especializada, conforme indicação clínica e normas vigentes.",
+      "renisus": false,
+      "detalhesEspecificos": {
+        "espectro": "isolado",
+        "canabinoideDominante": "CBD",
+        "concentracaoCbdMgMl": 50,
+        "formaFarmaceutica": "capsula",
+        "tipoReceituario": "B",
+        "thcAcimaLimite": false
+      },
+      "searchText": "capsula cbd isolado 50 mg cbd capsula 50 mg canabidiol 50 mg capsula"
+    },
+    {
+      "slug": "cannabis-capsula-cbd-broad-10-mg",
+      "nome": "Cápsula CBD broad spectrum 10 mg",
+      "nomesAlternativos": [
+        "CBD cápsula 10 mg",
+        "Canabidiol 10 mg cápsula"
+      ],
+      "nomeCientifico": null,
+      "categoriaPratica": "CANNABIS",
+      "indicacoes": "Dor crônica neuropática e nociceptiva, epilepsia refratária, ansiedade, insônia, TEA, Parkinson, fibromialgia, náusea associada à quimioterapia.",
+      "contraindicacoes": "Hipersensibilidade a canabinoides ou excipientes. Gestação e lactação. Cautela em hepatopatia grave.",
+      "precaucoes": "Iniciar com dose baixa e titular gradualmente (start low, go slow). Monitorar função hepática em uso prolongado ou doses elevadas. Evitar condução de veículos até estabelecer tolerância.",
+      "interacoesMedicamentosas": "Anticonvulsivantes (clobazam, valproato — risco de sedação e elevação de níveis séricos). Varfarina e anticoagulantes (monitorar INR). Inibidores e indutores de CYP3A4 e CYP2C19 (ex.: fluconazol, rifampicina, carbamazepina). Depressores do SNC (opioides, benzodiazepínicos, álcool — potencialização de sedação).",
+      "posologia": "Via oral. Iniciar com 1 cápsula à noite; titular conforme resposta (start low, go slow).",
+      "viaAdministracao": [
+        "oral"
+      ],
+      "statusRegulatorio": "PRODUTO_AUTORIZADO_ANVISA",
+      "fontes": [
+        {
+          "fonte": "RDC ANVISA nº 327/2019",
+          "edicao": "2019"
+        },
+        {
+          "fonte": "RDC ANVISA nº 660/2022",
+          "edicao": "2022"
+        },
+        {
+          "fonte": "RDC ANVISA nº 1.015/2026",
+          "edicao": "2026"
+        }
+      ],
+      "alertaGestacaoPediatria": "Contraindicado na gestação e lactação. Uso pediátrico apenas sob supervisão especializada, conforme indicação clínica e normas vigentes.",
+      "renisus": false,
+      "detalhesEspecificos": {
+        "espectro": "broad_spectrum",
+        "canabinoideDominante": "CBD",
+        "concentracaoCbdMgMl": 10,
+        "formaFarmaceutica": "capsula",
+        "tipoReceituario": "B",
+        "thcAcimaLimite": false
+      },
+      "searchText": "capsula cbd broad spectrum 10 mg cbd capsula 10 mg canabidiol 10 mg capsula"
+    },
+    {
+      "slug": "cannabis-capsula-cbd-broad-25-mg",
+      "nome": "Cápsula CBD broad spectrum 25 mg",
+      "nomesAlternativos": [
+        "CBD cápsula 25 mg",
+        "Canabidiol 25 mg cápsula"
+      ],
+      "nomeCientifico": null,
+      "categoriaPratica": "CANNABIS",
+      "indicacoes": "Dor crônica neuropática e nociceptiva, epilepsia refratária, ansiedade, insônia, TEA, Parkinson, fibromialgia, náusea associada à quimioterapia.",
+      "contraindicacoes": "Hipersensibilidade a canabinoides ou excipientes. Gestação e lactação. Cautela em hepatopatia grave.",
+      "precaucoes": "Iniciar com dose baixa e titular gradualmente (start low, go slow). Monitorar função hepática em uso prolongado ou doses elevadas. Evitar condução de veículos até estabelecer tolerância.",
+      "interacoesMedicamentosas": "Anticonvulsivantes (clobazam, valproato — risco de sedação e elevação de níveis séricos). Varfarina e anticoagulantes (monitorar INR). Inibidores e indutores de CYP3A4 e CYP2C19 (ex.: fluconazol, rifampicina, carbamazepina). Depressores do SNC (opioides, benzodiazepínicos, álcool — potencialização de sedação).",
+      "posologia": "Via oral. Iniciar com 1 cápsula à noite; titular conforme resposta (start low, go slow).",
+      "viaAdministracao": [
+        "oral"
+      ],
+      "statusRegulatorio": "PRODUTO_AUTORIZADO_ANVISA",
+      "fontes": [
+        {
+          "fonte": "RDC ANVISA nº 327/2019",
+          "edicao": "2019"
+        },
+        {
+          "fonte": "RDC ANVISA nº 660/2022",
+          "edicao": "2022"
+        },
+        {
+          "fonte": "RDC ANVISA nº 1.015/2026",
+          "edicao": "2026"
+        }
+      ],
+      "alertaGestacaoPediatria": "Contraindicado na gestação e lactação. Uso pediátrico apenas sob supervisão especializada, conforme indicação clínica e normas vigentes.",
+      "renisus": false,
+      "detalhesEspecificos": {
+        "espectro": "broad_spectrum",
+        "canabinoideDominante": "CBD",
+        "concentracaoCbdMgMl": 25,
+        "formaFarmaceutica": "capsula",
+        "tipoReceituario": "B",
+        "thcAcimaLimite": false
+      },
+      "searchText": "capsula cbd broad spectrum 25 mg cbd capsula 25 mg canabidiol 25 mg capsula"
+    },
+    {
+      "slug": "cannabis-capsula-cbd-broad-50-mg",
+      "nome": "Cápsula CBD broad spectrum 50 mg",
+      "nomesAlternativos": [
+        "CBD cápsula 50 mg",
+        "Canabidiol 50 mg cápsula"
+      ],
+      "nomeCientifico": null,
+      "categoriaPratica": "CANNABIS",
+      "indicacoes": "Dor crônica neuropática e nociceptiva, epilepsia refratária, ansiedade, insônia, TEA, Parkinson, fibromialgia, náusea associada à quimioterapia.",
+      "contraindicacoes": "Hipersensibilidade a canabinoides ou excipientes. Gestação e lactação. Cautela em hepatopatia grave.",
+      "precaucoes": "Iniciar com dose baixa e titular gradualmente (start low, go slow). Monitorar função hepática em uso prolongado ou doses elevadas. Evitar condução de veículos até estabelecer tolerância.",
+      "interacoesMedicamentosas": "Anticonvulsivantes (clobazam, valproato — risco de sedação e elevação de níveis séricos). Varfarina e anticoagulantes (monitorar INR). Inibidores e indutores de CYP3A4 e CYP2C19 (ex.: fluconazol, rifampicina, carbamazepina). Depressores do SNC (opioides, benzodiazepínicos, álcool — potencialização de sedação).",
+      "posologia": "Via oral. Iniciar com 1 cápsula à noite; titular conforme resposta (start low, go slow).",
+      "viaAdministracao": [
+        "oral"
+      ],
+      "statusRegulatorio": "PRODUTO_AUTORIZADO_ANVISA",
+      "fontes": [
+        {
+          "fonte": "RDC ANVISA nº 327/2019",
+          "edicao": "2019"
+        },
+        {
+          "fonte": "RDC ANVISA nº 660/2022",
+          "edicao": "2022"
+        },
+        {
+          "fonte": "RDC ANVISA nº 1.015/2026",
+          "edicao": "2026"
+        }
+      ],
+      "alertaGestacaoPediatria": "Contraindicado na gestação e lactação. Uso pediátrico apenas sob supervisão especializada, conforme indicação clínica e normas vigentes.",
+      "renisus": false,
+      "detalhesEspecificos": {
+        "espectro": "broad_spectrum",
+        "canabinoideDominante": "CBD",
+        "concentracaoCbdMgMl": 50,
+        "formaFarmaceutica": "capsula",
+        "tipoReceituario": "B",
+        "thcAcimaLimite": false
+      },
+      "searchText": "capsula cbd broad spectrum 50 mg cbd capsula 50 mg canabidiol 50 mg capsula"
+    },
+    {
+      "slug": "cannabis-capsula-cbd-full-25-mg",
+      "nome": "Cápsula CBD full spectrum 25 mg",
+      "nomesAlternativos": [
+        "CBD cápsula 25 mg",
+        "Canabidiol 25 mg cápsula"
+      ],
+      "nomeCientifico": null,
+      "categoriaPratica": "CANNABIS",
+      "indicacoes": "Dor crônica neuropática e nociceptiva, epilepsia refratária, ansiedade, insônia, TEA, Parkinson, fibromialgia, náusea associada à quimioterapia. DTM (disfunção temporomandibular), bruxismo, dor orofacial, ansiedade pré-operatória odontológica.",
+      "contraindicacoes": "Hipersensibilidade a canabinoides ou excipientes. Gestação e lactação. Cautela em hepatopatia grave.",
+      "precaucoes": "Iniciar com dose baixa e titular gradualmente (start low, go slow). Monitorar função hepática em uso prolongado ou doses elevadas. Evitar condução de veículos até estabelecer tolerância.",
+      "interacoesMedicamentosas": "Anticonvulsivantes (clobazam, valproato — risco de sedação e elevação de níveis séricos). Varfarina e anticoagulantes (monitorar INR). Inibidores e indutores de CYP3A4 e CYP2C19 (ex.: fluconazol, rifampicina, carbamazepina). Depressores do SNC (opioides, benzodiazepínicos, álcool — potencialização de sedação).",
+      "posologia": "Via oral. Iniciar com 1 cápsula à noite; titular conforme resposta (start low, go slow).",
+      "viaAdministracao": [
+        "oral"
+      ],
+      "statusRegulatorio": "PRODUTO_AUTORIZADO_ANVISA",
+      "fontes": [
+        {
+          "fonte": "RDC ANVISA nº 327/2019",
+          "edicao": "2019"
+        },
+        {
+          "fonte": "RDC ANVISA nº 660/2022",
+          "edicao": "2022"
+        },
+        {
+          "fonte": "RDC ANVISA nº 1.015/2026",
+          "edicao": "2026"
+        }
+      ],
+      "alertaGestacaoPediatria": "Contraindicado na gestação e lactação. Uso pediátrico apenas sob supervisão especializada, conforme indicação clínica e normas vigentes.",
+      "renisus": false,
+      "detalhesEspecificos": {
+        "espectro": "full_spectrum",
+        "canabinoideDominante": "CBD",
+        "concentracaoCbdMgMl": 25,
+        "formaFarmaceutica": "capsula",
+        "tipoReceituario": "B",
+        "thcAcimaLimite": false
+      },
+      "searchText": "capsula cbd full spectrum 25 mg cbd capsula 25 mg canabidiol 25 mg capsula"
+    },
+    {
+      "slug": "cannabis-capsula-balanceada-10-10-mg",
+      "nome": "Cápsula balanceada CBD 10 mg + THC 10 mg",
+      "nomesAlternativos": [
+        "CBD 10 + THC 10 cápsula",
+        "1:1 cápsula"
+      ],
+      "nomeCientifico": null,
+      "categoriaPratica": "CANNABIS",
+      "indicacoes": "Dor crônica neuropática e nociceptiva, epilepsia refratária, ansiedade, insônia, TEA, Parkinson, fibromialgia, náusea associada à quimioterapia. DTM (disfunção temporomandibular), bruxismo, dor orofacial, ansiedade pré-operatória odontológica.",
+      "contraindicacoes": "Hipersensibilidade a canabinoides ou excipientes. Gestação e lactação. Cautela em hepatopatia grave.",
+      "precaucoes": "Iniciar com dose baixa e titular gradualmente (start low, go slow). Monitorar função hepática em uso prolongado ou doses elevadas. Evitar condução de veículos até estabelecer tolerância.",
+      "interacoesMedicamentosas": "Anticonvulsivantes (clobazam, valproato — risco de sedação e elevação de níveis séricos). Varfarina e anticoagulantes (monitorar INR). Inibidores e indutores de CYP3A4 e CYP2C19 (ex.: fluconazol, rifampicina, carbamazepina). Depressores do SNC (opioides, benzodiazepínicos, álcool — potencialização de sedação).",
+      "posologia": "Via oral. Iniciar com 1 cápsula à noite; titular conforme resposta (start low, go slow).",
+      "viaAdministracao": [
+        "oral"
+      ],
+      "statusRegulatorio": "PRODUTO_AUTORIZADO_ANVISA",
+      "fontes": [
+        {
+          "fonte": "RDC ANVISA nº 327/2019",
+          "edicao": "2019"
+        },
+        {
+          "fonte": "RDC ANVISA nº 660/2022",
+          "edicao": "2022"
+        },
+        {
+          "fonte": "RDC ANVISA nº 1.015/2026",
+          "edicao": "2026"
+        }
+      ],
+      "alertaGestacaoPediatria": "Contraindicado na gestação e lactação. Uso pediátrico apenas sob supervisão especializada, conforme indicação clínica e normas vigentes.",
+      "renisus": false,
+      "detalhesEspecificos": {
+        "espectro": "full_spectrum",
+        "canabinoideDominante": "balanceado",
+        "concentracaoCbdMgMl": 10,
+        "concentracaoThcMgMl": 10,
+        "proporcaoCbdThc": "1:1",
+        "formaFarmaceutica": "capsula",
+        "tipoReceituario": "A",
+        "thcAcimaLimite": true
+      },
+      "searchText": "capsula balanceada cbd 10 mg + thc 10 mg cbd 10 + thc 10 capsula 1:1 capsula"
+    },
+    {
+      "slug": "cannabis-goma-cbd-10-mg",
+      "nome": "Goma CBD 10 mg",
+      "nomesAlternativos": [
+        "CBD goma 10 mg",
+        "Canabidiol goma 10"
+      ],
+      "nomeCientifico": null,
+      "categoriaPratica": "CANNABIS",
+      "indicacoes": "Dor crônica neuropática e nociceptiva, epilepsia refratária, ansiedade, insônia, TEA, Parkinson, fibromialgia, náusea associada à quimioterapia.",
+      "contraindicacoes": "Hipersensibilidade a canabinoides ou excipientes. Gestação e lactação. Cautela em hepatopatia grave.",
+      "precaucoes": "Iniciar com dose baixa e titular gradualmente (start low, go slow). Monitorar função hepática em uso prolongado ou doses elevadas. Evitar condução de veículos até estabelecer tolerância.",
+      "interacoesMedicamentosas": "Anticonvulsivantes (clobazam, valproato — risco de sedação e elevação de níveis séricos). Varfarina e anticoagulantes (monitorar INR). Inibidores e indutores de CYP3A4 e CYP2C19 (ex.: fluconazol, rifampicina, carbamazepina). Depressores do SNC (opioides, benzodiazepínicos, álcool — potencialização de sedação).",
+      "posologia": "Via oral. Iniciar com 1 goma (10 mg CBD) à noite; titular conforme resposta.",
+      "viaAdministracao": [
+        "oral"
+      ],
+      "statusRegulatorio": "PRODUTO_AUTORIZADO_ANVISA",
+      "fontes": [
+        {
+          "fonte": "RDC ANVISA nº 327/2019",
+          "edicao": "2019"
+        },
+        {
+          "fonte": "RDC ANVISA nº 660/2022",
+          "edicao": "2022"
+        },
+        {
+          "fonte": "RDC ANVISA nº 1.015/2026",
+          "edicao": "2026"
+        }
+      ],
+      "alertaGestacaoPediatria": "Contraindicado na gestação e lactação. Uso pediátrico apenas sob supervisão especializada, conforme indicação clínica e normas vigentes.",
+      "renisus": false,
+      "detalhesEspecificos": {
+        "espectro": "isolado",
+        "canabinoideDominante": "CBD",
+        "concentracaoCbdMgMl": 10,
+        "formaFarmaceutica": "goma",
+        "tipoReceituario": "B",
+        "thcAcimaLimite": false
+      },
+      "searchText": "goma cbd 10 mg cbd goma 10 mg canabidiol goma 10"
+    },
+    {
+      "slug": "cannabis-pastilha-cbd-10-mg",
+      "nome": "Pastilha sublingual CBD 10 mg",
+      "nomesAlternativos": [
+        "CBD pastilha 10 mg",
+        "Canabidiol pastilha 10"
+      ],
+      "nomeCientifico": null,
+      "categoriaPratica": "CANNABIS",
+      "indicacoes": "Dor crônica neuropática e nociceptiva, epilepsia refratária, ansiedade, insônia, TEA, Parkinson, fibromialgia, náusea associada à quimioterapia.",
+      "contraindicacoes": "Hipersensibilidade a canabinoides ou excipientes. Gestação e lactação. Cautela em hepatopatia grave.",
+      "precaucoes": "Iniciar com dose baixa e titular gradualmente (start low, go slow). Monitorar função hepática em uso prolongado ou doses elevadas. Evitar condução de veículos até estabelecer tolerância.",
+      "interacoesMedicamentosas": "Anticonvulsivantes (clobazam, valproato — risco de sedação e elevação de níveis séricos). Varfarina e anticoagulantes (monitorar INR). Inibidores e indutores de CYP3A4 e CYP2C19 (ex.: fluconazol, rifampicina, carbamazepina). Depressores do SNC (opioides, benzodiazepínicos, álcool — potencialização de sedação).",
+      "posologia": "Via sublingual. 1 pastilha (10 mg CBD) 1–2x/dia; titular conforme resposta.",
+      "viaAdministracao": [
+        "sublingual"
+      ],
+      "statusRegulatorio": "PRODUTO_AUTORIZADO_ANVISA",
+      "fontes": [
+        {
+          "fonte": "RDC ANVISA nº 327/2019",
+          "edicao": "2019"
+        },
+        {
+          "fonte": "RDC ANVISA nº 660/2022",
+          "edicao": "2022"
+        },
+        {
+          "fonte": "RDC ANVISA nº 1.015/2026",
+          "edicao": "2026"
+        }
+      ],
+      "alertaGestacaoPediatria": "Contraindicado na gestação e lactação. Uso pediátrico apenas sob supervisão especializada, conforme indicação clínica e normas vigentes.",
+      "renisus": false,
+      "detalhesEspecificos": {
+        "espectro": "isolado",
+        "canabinoideDominante": "CBD",
+        "concentracaoCbdMgMl": 10,
+        "formaFarmaceutica": "goma",
+        "tipoReceituario": "B",
+        "thcAcimaLimite": false
+      },
+      "searchText": "pastilha sublingual cbd 10 mg cbd pastilha 10 mg canabidiol pastilha 10"
+    },
+    {
+      "slug": "cannabis-goma-cbd-25-mg",
+      "nome": "Goma CBD 25 mg",
+      "nomesAlternativos": [
+        "CBD goma 25 mg",
+        "Canabidiol goma 25"
+      ],
+      "nomeCientifico": null,
+      "categoriaPratica": "CANNABIS",
+      "indicacoes": "Dor crônica neuropática e nociceptiva, epilepsia refratária, ansiedade, insônia, TEA, Parkinson, fibromialgia, náusea associada à quimioterapia.",
+      "contraindicacoes": "Hipersensibilidade a canabinoides ou excipientes. Gestação e lactação. Cautela em hepatopatia grave.",
+      "precaucoes": "Iniciar com dose baixa e titular gradualmente (start low, go slow). Monitorar função hepática em uso prolongado ou doses elevadas. Evitar condução de veículos até estabelecer tolerância.",
+      "interacoesMedicamentosas": "Anticonvulsivantes (clobazam, valproato — risco de sedação e elevação de níveis séricos). Varfarina e anticoagulantes (monitorar INR). Inibidores e indutores de CYP3A4 e CYP2C19 (ex.: fluconazol, rifampicina, carbamazepina). Depressores do SNC (opioides, benzodiazepínicos, álcool — potencialização de sedação).",
+      "posologia": "Via oral. Iniciar com 1 goma (25 mg CBD) à noite; titular conforme resposta.",
+      "viaAdministracao": [
+        "oral"
+      ],
+      "statusRegulatorio": "PRODUTO_AUTORIZADO_ANVISA",
+      "fontes": [
+        {
+          "fonte": "RDC ANVISA nº 327/2019",
+          "edicao": "2019"
+        },
+        {
+          "fonte": "RDC ANVISA nº 660/2022",
+          "edicao": "2022"
+        },
+        {
+          "fonte": "RDC ANVISA nº 1.015/2026",
+          "edicao": "2026"
+        }
+      ],
+      "alertaGestacaoPediatria": "Contraindicado na gestação e lactação. Uso pediátrico apenas sob supervisão especializada, conforme indicação clínica e normas vigentes.",
+      "renisus": false,
+      "detalhesEspecificos": {
+        "espectro": "isolado",
+        "canabinoideDominante": "CBD",
+        "concentracaoCbdMgMl": 25,
+        "formaFarmaceutica": "goma",
+        "tipoReceituario": "B",
+        "thcAcimaLimite": false
+      },
+      "searchText": "goma cbd 25 mg cbd goma 25 mg canabidiol goma 25"
+    },
+    {
+      "slug": "cannabis-pastilha-cbd-25-mg",
+      "nome": "Pastilha sublingual CBD 25 mg",
+      "nomesAlternativos": [
+        "CBD pastilha 25 mg",
+        "Canabidiol pastilha 25"
+      ],
+      "nomeCientifico": null,
+      "categoriaPratica": "CANNABIS",
+      "indicacoes": "Dor crônica neuropática e nociceptiva, epilepsia refratária, ansiedade, insônia, TEA, Parkinson, fibromialgia, náusea associada à quimioterapia.",
+      "contraindicacoes": "Hipersensibilidade a canabinoides ou excipientes. Gestação e lactação. Cautela em hepatopatia grave.",
+      "precaucoes": "Iniciar com dose baixa e titular gradualmente (start low, go slow). Monitorar função hepática em uso prolongado ou doses elevadas. Evitar condução de veículos até estabelecer tolerância.",
+      "interacoesMedicamentosas": "Anticonvulsivantes (clobazam, valproato — risco de sedação e elevação de níveis séricos). Varfarina e anticoagulantes (monitorar INR). Inibidores e indutores de CYP3A4 e CYP2C19 (ex.: fluconazol, rifampicina, carbamazepina). Depressores do SNC (opioides, benzodiazepínicos, álcool — potencialização de sedação).",
+      "posologia": "Via sublingual. 1 pastilha (25 mg CBD) 1–2x/dia; titular conforme resposta.",
+      "viaAdministracao": [
+        "sublingual"
+      ],
+      "statusRegulatorio": "PRODUTO_AUTORIZADO_ANVISA",
+      "fontes": [
+        {
+          "fonte": "RDC ANVISA nº 327/2019",
+          "edicao": "2019"
+        },
+        {
+          "fonte": "RDC ANVISA nº 660/2022",
+          "edicao": "2022"
+        },
+        {
+          "fonte": "RDC ANVISA nº 1.015/2026",
+          "edicao": "2026"
+        }
+      ],
+      "alertaGestacaoPediatria": "Contraindicado na gestação e lactação. Uso pediátrico apenas sob supervisão especializada, conforme indicação clínica e normas vigentes.",
+      "renisus": false,
+      "detalhesEspecificos": {
+        "espectro": "isolado",
+        "canabinoideDominante": "CBD",
+        "concentracaoCbdMgMl": 25,
+        "formaFarmaceutica": "goma",
+        "tipoReceituario": "B",
+        "thcAcimaLimite": false
+      },
+      "searchText": "pastilha sublingual cbd 25 mg cbd pastilha 25 mg canabidiol pastilha 25"
+    },
+    {
+      "slug": "cannabis-goma-cbd-broad-10-mg",
+      "nome": "Goma CBD broad spectrum 10 mg",
+      "nomesAlternativos": [
+        "CBD broad goma 10",
+        "THC não detectável goma"
+      ],
+      "nomeCientifico": null,
+      "categoriaPratica": "CANNABIS",
+      "indicacoes": "Dor crônica neuropática e nociceptiva, epilepsia refratária, ansiedade, insônia, TEA, Parkinson, fibromialgia, náusea associada à quimioterapia.",
+      "contraindicacoes": "Hipersensibilidade a canabinoides ou excipientes. Gestação e lactação. Cautela em hepatopatia grave.",
+      "precaucoes": "Iniciar com dose baixa e titular gradualmente (start low, go slow). Monitorar função hepática em uso prolongado ou doses elevadas. Evitar condução de veículos até estabelecer tolerância.",
+      "interacoesMedicamentosas": "Anticonvulsivantes (clobazam, valproato — risco de sedação e elevação de níveis séricos). Varfarina e anticoagulantes (monitorar INR). Inibidores e indutores de CYP3A4 e CYP2C19 (ex.: fluconazol, rifampicina, carbamazepina). Depressores do SNC (opioides, benzodiazepínicos, álcool — potencialização de sedação).",
+      "posologia": "Via oral. 1 goma (10 mg CBD) à noite; titular conforme resposta.",
+      "viaAdministracao": [
+        "oral"
+      ],
+      "statusRegulatorio": "PRODUTO_AUTORIZADO_ANVISA",
+      "fontes": [
+        {
+          "fonte": "RDC ANVISA nº 327/2019",
+          "edicao": "2019"
+        },
+        {
+          "fonte": "RDC ANVISA nº 660/2022",
+          "edicao": "2022"
+        },
+        {
+          "fonte": "RDC ANVISA nº 1.015/2026",
+          "edicao": "2026"
+        }
+      ],
+      "alertaGestacaoPediatria": "Contraindicado na gestação e lactação. Uso pediátrico apenas sob supervisão especializada, conforme indicação clínica e normas vigentes.",
+      "renisus": false,
+      "detalhesEspecificos": {
+        "espectro": "broad_spectrum",
+        "canabinoideDominante": "CBD",
+        "concentracaoCbdMgMl": 10,
+        "formaFarmaceutica": "goma",
+        "tipoReceituario": "B",
+        "thcAcimaLimite": false
+      },
+      "searchText": "goma cbd broad spectrum 10 mg cbd broad goma 10 thc nao detectavel goma"
+    },
+    {
+      "slug": "cannabis-creme-cbd-100-mg",
+      "nome": "Creme/pomada CBD 100 mg/embalagem",
+      "nomesAlternativos": [
+        "CBD tópico 100 mg",
+        "Canabidiol creme 100"
+      ],
+      "nomeCientifico": null,
+      "categoriaPratica": "CANNABIS",
+      "indicacoes": "Dor localizada, inflamação cutânea adjuvante, artrite periférica tópica. DTM (disfunção temporomandibular), bruxismo, dor orofacial, ansiedade pré-operatória odontológica.",
+      "contraindicacoes": "Hipersensibilidade a canabinoides ou excipientes. Gestação e lactação. Cautela em hepatopatia grave.",
+      "precaucoes": "Uso dermatológico externo. Evitar mucosas e olhos.",
+      "interacoesMedicamentosas": null,
+      "posologia": "Aplicar camada fina na área afetada 2–3x/dia (100 mg CBD por embalagem).",
+      "viaAdministracao": [
+        "topica"
+      ],
+      "statusRegulatorio": "PRODUTO_AUTORIZADO_ANVISA",
+      "fontes": [
+        {
+          "fonte": "RDC ANVISA nº 327/2019",
+          "edicao": "2019"
+        },
+        {
+          "fonte": "RDC ANVISA nº 660/2022",
+          "edicao": "2022"
+        },
+        {
+          "fonte": "RDC ANVISA nº 1.015/2026",
+          "edicao": "2026"
+        }
+      ],
+      "alertaGestacaoPediatria": "Contraindicado na gestação e lactação. Uso pediátrico apenas sob supervisão especializada, conforme indicação clínica e normas vigentes.",
+      "renisus": false,
+      "detalhesEspecificos": {
+        "espectro": "isolado",
+        "canabinoideDominante": "CBD",
+        "concentracaoCbdMgMl": 100,
+        "formaFarmaceutica": "topico",
+        "volumeEmbalagem": "30 g",
+        "tipoReceituario": "B",
+        "thcAcimaLimite": false
+      },
+      "searchText": "creme/pomada cbd 100 mg/embalagem cbd topico 100 mg canabidiol creme 100"
+    },
+    {
+      "slug": "cannabis-creme-cbd-250-mg",
+      "nome": "Creme/pomada CBD 250 mg/embalagem",
+      "nomesAlternativos": [
+        "CBD tópico 250 mg",
+        "Canabidiol creme 250"
+      ],
+      "nomeCientifico": null,
+      "categoriaPratica": "CANNABIS",
+      "indicacoes": "Dor localizada, inflamação cutânea adjuvante, artrite periférica tópica. DTM (disfunção temporomandibular), bruxismo, dor orofacial, ansiedade pré-operatória odontológica.",
+      "contraindicacoes": "Hipersensibilidade a canabinoides ou excipientes. Gestação e lactação. Cautela em hepatopatia grave.",
+      "precaucoes": "Uso dermatológico externo. Evitar mucosas e olhos.",
+      "interacoesMedicamentosas": null,
+      "posologia": "Aplicar camada fina na área afetada 2–3x/dia (250 mg CBD por embalagem).",
+      "viaAdministracao": [
+        "topica"
+      ],
+      "statusRegulatorio": "PRODUTO_AUTORIZADO_ANVISA",
+      "fontes": [
+        {
+          "fonte": "RDC ANVISA nº 327/2019",
+          "edicao": "2019"
+        },
+        {
+          "fonte": "RDC ANVISA nº 660/2022",
+          "edicao": "2022"
+        },
+        {
+          "fonte": "RDC ANVISA nº 1.015/2026",
+          "edicao": "2026"
+        }
+      ],
+      "alertaGestacaoPediatria": "Contraindicado na gestação e lactação. Uso pediátrico apenas sob supervisão especializada, conforme indicação clínica e normas vigentes.",
+      "renisus": false,
+      "detalhesEspecificos": {
+        "espectro": "isolado",
+        "canabinoideDominante": "CBD",
+        "concentracaoCbdMgMl": 250,
+        "formaFarmaceutica": "topico",
+        "volumeEmbalagem": "30 g",
+        "tipoReceituario": "B",
+        "thcAcimaLimite": false
+      },
+      "searchText": "creme/pomada cbd 250 mg/embalagem cbd topico 250 mg canabidiol creme 250"
+    },
+    {
+      "slug": "cannabis-creme-cbd-500-mg",
+      "nome": "Creme/pomada CBD 500 mg/embalagem",
+      "nomesAlternativos": [
+        "CBD tópico 500 mg",
+        "Canabidiol creme 500"
+      ],
+      "nomeCientifico": null,
+      "categoriaPratica": "CANNABIS",
+      "indicacoes": "Dor localizada, inflamação cutânea adjuvante, artrite periférica tópica. DTM (disfunção temporomandibular), bruxismo, dor orofacial, ansiedade pré-operatória odontológica.",
+      "contraindicacoes": "Hipersensibilidade a canabinoides ou excipientes. Gestação e lactação. Cautela em hepatopatia grave.",
+      "precaucoes": "Uso dermatológico externo. Evitar mucosas e olhos.",
+      "interacoesMedicamentosas": null,
+      "posologia": "Aplicar camada fina na área afetada 2–3x/dia (500 mg CBD por embalagem).",
+      "viaAdministracao": [
+        "topica"
+      ],
+      "statusRegulatorio": "PRODUTO_AUTORIZADO_ANVISA",
+      "fontes": [
+        {
+          "fonte": "RDC ANVISA nº 327/2019",
+          "edicao": "2019"
+        },
+        {
+          "fonte": "RDC ANVISA nº 660/2022",
+          "edicao": "2022"
+        },
+        {
+          "fonte": "RDC ANVISA nº 1.015/2026",
+          "edicao": "2026"
+        }
+      ],
+      "alertaGestacaoPediatria": "Contraindicado na gestação e lactação. Uso pediátrico apenas sob supervisão especializada, conforme indicação clínica e normas vigentes.",
+      "renisus": false,
+      "detalhesEspecificos": {
+        "espectro": "isolado",
+        "canabinoideDominante": "CBD",
+        "concentracaoCbdMgMl": 500,
+        "formaFarmaceutica": "topico",
+        "volumeEmbalagem": "30 g",
+        "tipoReceituario": "B",
+        "thcAcimaLimite": false
+      },
+      "searchText": "creme/pomada cbd 500 mg/embalagem cbd topico 500 mg canabidiol creme 500"
+    },
+    {
+      "slug": "cannabis-pomada-cbg-150-mg",
+      "nome": "Pomada CBG 150 mg/embalagem",
+      "nomesAlternativos": [
+        "CBG tópico",
+        "Canabigerol pomada"
+      ],
+      "nomeCientifico": null,
+      "categoriaPratica": "CANNABIS",
+      "indicacoes": "Dor musculoesquelética localizada, inflamação cutânea adjuvante.",
+      "contraindicacoes": "Hipersensibilidade a canabinoides ou excipientes. Gestação e lactação. Cautela em hepatopatia grave.",
+      "precaucoes": "Uso dermatológico externo.",
+      "interacoesMedicamentosas": null,
+      "posologia": "Aplicar camada fina 2x/dia na área afetada.",
+      "viaAdministracao": [
+        "topica"
+      ],
+      "statusRegulatorio": "PRODUTO_AUTORIZADO_ANVISA",
+      "fontes": [
+        {
+          "fonte": "RDC ANVISA nº 327/2019",
+          "edicao": "2019"
+        },
+        {
+          "fonte": "RDC ANVISA nº 660/2022",
+          "edicao": "2022"
+        },
+        {
+          "fonte": "RDC ANVISA nº 1.015/2026",
+          "edicao": "2026"
+        }
+      ],
+      "alertaGestacaoPediatria": "Contraindicado na gestação e lactação. Uso pediátrico apenas sob supervisão especializada, conforme indicação clínica e normas vigentes.",
+      "renisus": false,
+      "detalhesEspecificos": {
+        "espectro": "full_spectrum",
+        "canabinoideDominante": "CBG",
+        "outrosCanabinoides": "CBG 150 mg/embalagem",
+        "formaFarmaceutica": "topico",
+        "volumeEmbalagem": "30 g",
+        "tipoReceituario": "B",
+        "thcAcimaLimite": false
+      },
+      "searchText": "pomada cbg 150 mg/embalagem cbg topico canabigerol pomada"
+    },
+    {
+      "slug": "cannabis-spray-sublingual-cbd-25-mg-ml",
+      "nome": "Spray sublingual CBD 25 mg/mL",
+      "nomesAlternativos": [
+        "CBD spray 25",
+        "Canabidiol spray sublingual"
+      ],
+      "nomeCientifico": null,
+      "categoriaPratica": "CANNABIS",
+      "indicacoes": "Dor crônica neuropática e nociceptiva, epilepsia refratária, ansiedade, insônia, TEA, Parkinson, fibromialgia, náusea associada à quimioterapia.",
+      "contraindicacoes": "Hipersensibilidade a canabinoides ou excipientes. Gestação e lactação. Cautela em hepatopatia grave.",
+      "precaucoes": "Iniciar com dose baixa e titular gradualmente (start low, go slow). Monitorar função hepática em uso prolongado ou doses elevadas. Evitar condução de veículos até estabelecer tolerância.",
+      "interacoesMedicamentosas": "Anticonvulsivantes (clobazam, valproato — risco de sedação e elevação de níveis séricos). Varfarina e anticoagulantes (monitorar INR). Inibidores e indutores de CYP3A4 e CYP2C19 (ex.: fluconazol, rifampicina, carbamazepina). Depressores do SNC (opioides, benzodiazepínicos, álcool — potencialização de sedação).",
+      "posologia": "Via sublingual. 1 jato (≈0,1 mL = 2,5 mg CBD) 2x/dia; titular conforme resposta.",
+      "viaAdministracao": [
+        "sublingual"
+      ],
+      "statusRegulatorio": "PRODUTO_AUTORIZADO_ANVISA",
+      "fontes": [
+        {
+          "fonte": "RDC ANVISA nº 327/2019",
+          "edicao": "2019"
+        },
+        {
+          "fonte": "RDC ANVISA nº 660/2022",
+          "edicao": "2022"
+        },
+        {
+          "fonte": "RDC ANVISA nº 1.015/2026",
+          "edicao": "2026"
+        }
+      ],
+      "alertaGestacaoPediatria": "Contraindicado na gestação e lactação. Uso pediátrico apenas sob supervisão especializada, conforme indicação clínica e normas vigentes.",
+      "renisus": false,
+      "detalhesEspecificos": {
+        "espectro": "isolado",
+        "canabinoideDominante": "CBD",
+        "concentracaoCbdMgMl": 25,
+        "formaFarmaceutica": "spray_sublingual",
+        "volumeEmbalagem": "15 mL",
+        "tipoReceituario": "B",
+        "thcAcimaLimite": false
+      },
+      "searchText": "spray sublingual cbd 25 mg/ml cbd spray 25 canabidiol spray sublingual"
+    },
+    {
+      "slug": "cannabis-spray-sublingual-cbd-broad-25-mg-ml",
+      "nome": "Spray sublingual CBD broad spectrum 25 mg/mL",
+      "nomesAlternativos": [
+        "CBD broad spray 25",
+        "THC não detectável spray"
+      ],
+      "nomeCientifico": null,
+      "categoriaPratica": "CANNABIS",
+      "indicacoes": "Dor crônica neuropática e nociceptiva, epilepsia refratária, ansiedade, insônia, TEA, Parkinson, fibromialgia, náusea associada à quimioterapia.",
+      "contraindicacoes": "Hipersensibilidade a canabinoides ou excipientes. Gestação e lactação. Cautela em hepatopatia grave.",
+      "precaucoes": "Iniciar com dose baixa e titular gradualmente (start low, go slow). Monitorar função hepática em uso prolongado ou doses elevadas. Evitar condução de veículos até estabelecer tolerância.",
+      "interacoesMedicamentosas": "Anticonvulsivantes (clobazam, valproato — risco de sedação e elevação de níveis séricos). Varfarina e anticoagulantes (monitorar INR). Inibidores e indutores de CYP3A4 e CYP2C19 (ex.: fluconazol, rifampicina, carbamazepina). Depressores do SNC (opioides, benzodiazepínicos, álcool — potencialização de sedação).",
+      "posologia": "Via sublingual. 1 jato 2x/dia; titular conforme resposta.",
+      "viaAdministracao": [
+        "sublingual"
+      ],
+      "statusRegulatorio": "PRODUTO_AUTORIZADO_ANVISA",
+      "fontes": [
+        {
+          "fonte": "RDC ANVISA nº 327/2019",
+          "edicao": "2019"
+        },
+        {
+          "fonte": "RDC ANVISA nº 660/2022",
+          "edicao": "2022"
+        },
+        {
+          "fonte": "RDC ANVISA nº 1.015/2026",
+          "edicao": "2026"
+        }
+      ],
+      "alertaGestacaoPediatria": "Contraindicado na gestação e lactação. Uso pediátrico apenas sob supervisão especializada, conforme indicação clínica e normas vigentes.",
+      "renisus": false,
+      "detalhesEspecificos": {
+        "espectro": "broad_spectrum",
+        "canabinoideDominante": "CBD",
+        "concentracaoCbdMgMl": 25,
+        "formaFarmaceutica": "spray_sublingual",
+        "volumeEmbalagem": "15 mL",
+        "tipoReceituario": "B",
+        "thcAcimaLimite": false
+      },
+      "searchText": "spray sublingual cbd broad spectrum 25 mg/ml cbd broad spray 25 thc nao detectavel spray"
+    }
+  ]
+}

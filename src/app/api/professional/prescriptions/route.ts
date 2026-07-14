@@ -23,6 +23,7 @@ import { hasAcceptedLink } from "@/lib/patient-professional-link";
 import { ensurePatientRecord } from "@/lib/ensure-patient-record";
 import { canEditChart, resolveChartAccess } from "@/lib/chart-access";
 import { prescriptionMedicationItemSchema } from "@/lib/prescription-medication-schema";
+import { assertCannabisPrescriptionAllowed } from "@/lib/cannabis-prescription-gate";
 
 const medicationItemSchema = prescriptionMedicationItemSchema;
 
@@ -56,6 +57,11 @@ export async function POST(req: NextRequest) {
   const professional = await db.professionalProfile.findUnique({ where: { userId: ctx.userId } });
   if (!professional) {
     return NextResponse.json({ error: "Professional not found" }, { status: 404 });
+  }
+
+  const cannabisGate = assertCannabisPrescriptionAllowed(professional.specialty, medications);
+  if (!cannabisGate.ok) {
+    return NextResponse.json({ error: cannabisGate.message }, { status: 403 });
   }
 
   const validUntil = new Date(Date.now() + validDays * 24 * 60 * 60 * 1000);

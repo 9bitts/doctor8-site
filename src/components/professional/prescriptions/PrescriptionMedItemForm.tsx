@@ -5,7 +5,7 @@ import {
   floralProductByValue,
   type FloralProductCategory,
 } from "@/lib/pics/reference-library/floral-products";
-import { isFreeTextPrescriptionItem } from "@/lib/prescription-item-kind";
+import { isFreeTextPrescriptionItem, type PrescriptionItemKind } from "@/lib/prescription-item-kind";
 import { mnFreeTextPlaceholderI18nKey } from "@/lib/medicina-natural-catalog/prescription-search";
 
 export type PrescriptionMedItem = {
@@ -18,7 +18,7 @@ export type PrescriptionMedItem = {
   pharmaceuticalForm?: string;
   controlled?: boolean;
   prescriptionType?: string | null;
-  itemKind?: "medication" | "device" | "phytotherapy" | "floral" | "homeopathy" | "aromatherapy" | "apitherapy";
+  itemKind?: PrescriptionItemKind;
   phytoProductId?: string;
   mnSlug?: string;
   renisus?: boolean;

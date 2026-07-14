@@ -132,6 +132,7 @@ export default function PrescriptionsPage() {
           medicationSearchProps={{
             t: p.t,
             cfg: p.cfg,
+            canPrescribeCannabis: p.canPrescribeCannabis,
             drugQuery: p.drugQuery,
             drugResults: p.drugResults,
             drugSearching: p.drugSearching,

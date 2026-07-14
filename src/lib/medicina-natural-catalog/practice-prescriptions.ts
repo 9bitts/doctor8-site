@@ -7,6 +7,7 @@ export const PRACTICE_RX_ADD_PARAM: Record<NaturalMedicinePracticeId, string> = 
   homeopatia: "homeopathy",
   aromaterapia: "aromatherapy",
   apiterapia: "apitherapy",
+  cannabis: "cannabis",
 };
 
 export function prescriptionsPathForPractice(

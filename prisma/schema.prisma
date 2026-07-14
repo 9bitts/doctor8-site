@@ -5837,6 +5837,7 @@ enum CategoriaPraticaMedicinaNatural {
   AROMATERAPIA
   HOMEOPATIA
   APITERAPIA
+  CANNABIS
 }
 
 enum StatusRegulatorioMedicinaNatural {
@@ -5844,6 +5845,7 @@ enum StatusRegulatorioMedicinaNatural {
   PRODUTO_TRADICIONAL_NOTIFICADO
   USO_TRADICIONAL_SEM_REGISTRO
   PRATICA_INTEGRATIVA_NAO_REGULADA
+  PRODUTO_AUTORIZADO_ANVISA
 }
 
 model MedicinaNaturalItem {
