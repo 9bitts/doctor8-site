@@ -61,6 +61,8 @@
     "generate:florais-seed": "tsx scripts/generate-florais-seed.ts",
     "backfill:search-text": "node scripts/backfill-patient-search-text.mjs",
     "backfill:search-text:dry": "node scripts/backfill-patient-search-text.mjs --dry-run",
+    "backfill:patient-profile-search-text": "node scripts/backfill-patient-profile-search-text.mjs",
+    "backfill:patient-profile-search-text:dry": "node scripts/backfill-patient-profile-search-text.mjs --dry-run",
     "set:integrative-therapist": "node scripts/set-integrative-therapist.mjs",
     "set:angel": "node scripts/set-angel.mjs"
   },

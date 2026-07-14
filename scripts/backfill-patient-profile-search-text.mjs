@@ -50,17 +50,37 @@ function buildSearchText(firstName, lastName, email, phone) {
 }
 
 async function main() {
-  let cursor = undefined;
   let updated = 0;
   let skipped = 0;
   let errors = 0;
 
-  console.log(dryRun ? "DRY RUN — no writes" : "Backfilling PatientProfile.searchText...");
+  let pending = 0;
+  try {
+    pending = await prisma.patientProfile.count({ where: { searchText: null } });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (msg.includes("searchText") || msg.includes("does not exist")) {
+      console.log("PatientProfile.searchText not available yet — run prisma migrate deploy first.");
+      return;
+    }
+    throw err;
+  }
+
+  if (pending === 0) {
+    console.log("PatientProfile.searchText already backfilled.");
+    return;
+  }
+
+  console.log(
+    dryRun
+      ? `DRY RUN — would backfill ${pending} PatientProfile row(s)`
+      : `Backfilling PatientProfile.searchText for ${pending} row(s)...`,
+  );
 
   for (;;) {
     const batch = await prisma.patientProfile.findMany({
+      where: { searchText: null },
       take: batchSize,
-      ...(cursor ? { skip: 1, cursor: { id: cursor } } : {}),
       orderBy: { id: "asc" },
       select: {
         id: true,
@@ -72,7 +92,6 @@ async function main() {
       },
     });
     if (batch.length === 0) break;
-    cursor = batch[batch.length - 1].id;
 
     for (const p of batch) {
       try {

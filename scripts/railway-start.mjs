@@ -3,6 +3,8 @@
  * Railway start: migrate deploy with automatic recovery for failed Prisma migrations.
  */
 import { spawnSync } from "node:child_process";
+import { existsSync } from "node:fs";
+import { join } from "node:path";
 
 const port = process.env.PORT || "3000";
 
@@ -92,6 +94,15 @@ while (code !== 0 && attempt < 3) {
 if (code !== 0) {
   console.error("[start] Database migrations failed after recovery attempts.");
   process.exit(code);
+}
+
+const profileSearchBackfill = join(process.cwd(), "scripts/backfill-patient-profile-search-text.mjs");
+if (existsSync(profileSearchBackfill)) {
+  console.log("[start] Running PatientProfile searchText backfill (if needed)...");
+  const backfillCode = run("node", [profileSearchBackfill]).code;
+  if (backfillCode !== 0) {
+    console.warn("[start] PatientProfile searchText backfill failed (non-fatal).");
+  }
 }
 
 console.log(`[start] Starting Next.js on port ${port}...`);
