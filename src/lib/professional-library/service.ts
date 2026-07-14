@@ -35,9 +35,10 @@ export async function getLibraryHub(ctx: LibraryAuthContext & { ok: true }, lang
         resources: {
           where: { active: true },
           include: {
-            _count: { select: { shares: true, analysandShares: true } },
+            _count: { select: { shares: true, analysandShares: true, integrativeShares: true } },
             shares: { select: { viewCount: true } },
             analysandShares: { select: { viewCount: true } },
+            integrativeShares: { select: { viewCount: true } },
           },
         },
       },
