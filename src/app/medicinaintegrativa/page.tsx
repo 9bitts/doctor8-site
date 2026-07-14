@@ -71,16 +71,22 @@ export default function MedicinaIntegrativaLandingPage() {
   const registerHref = doctorIntegrativeRegisterHref();
 
   return (
-    <div className="min-h-screen bg-stone-100">
+    <div
+      className="min-h-screen"
+      style={{
+        background:
+          "linear-gradient(180deg, #ffffff 0%, #f9fcfb 22%, #f2f8f5 55%, #eaf3ee 100%)",
+      }}
+    >
       {/* Hero — tons naturais com texto escuro para legibilidade */}
-      <header className="relative overflow-hidden border-b border-emerald-200/60 bg-gradient-to-br from-emerald-50 via-stone-50 to-lime-50">
+      <header className="relative overflow-hidden border-b border-emerald-200/60">
         <div
           aria-hidden
           className="pointer-events-none absolute -top-24 -right-24 h-72 w-72 rounded-full bg-emerald-200/30 blur-3xl"
         />
         <div
           aria-hidden
-          className="pointer-events-none absolute -bottom-16 -left-16 h-56 w-56 rounded-full bg-lime-200/25 blur-3xl"
+          className="pointer-events-none absolute -bottom-16 -left-16 h-56 w-56 rounded-full bg-emerald-200/25 blur-3xl"
         />
         <div
           aria-hidden
@@ -106,13 +112,13 @@ export default function MedicinaIntegrativaLandingPage() {
           <div className="mt-8 flex flex-wrap gap-3">
             <Link
               href={loginHref}
-              className="inline-flex items-center gap-2 rounded-xl bg-emerald-700 px-6 py-3 font-semibold text-white shadow-lg shadow-emerald-900/15 transition hover:bg-emerald-800"
+              className="inline-flex items-center gap-2 rounded-xl border-2 border-emerald-600 bg-emerald-100 px-6 py-3 font-semibold text-slate-900 shadow-sm transition hover:bg-emerald-200"
             >
               Entrar como médico <ArrowRight size={18} />
             </Link>
             <Link
               href={registerHref}
-              className="inline-flex items-center gap-2 rounded-xl border-2 border-emerald-700/30 bg-white px-6 py-3 font-semibold text-emerald-900 transition hover:border-emerald-700/50 hover:bg-emerald-50"
+              className="inline-flex items-center gap-2 rounded-xl border-2 border-emerald-600 bg-white px-6 py-3 font-semibold text-slate-800 transition hover:bg-emerald-50"
             >
               Criar conta médica
             </Link>
@@ -138,13 +144,13 @@ export default function MedicinaIntegrativaLandingPage() {
         <div className="relative max-w-5xl mx-auto px-4 py-14 sm:py-16">
           <div className="grid lg:grid-cols-2 gap-10 items-center">
             <div>
-              <div className="inline-flex items-center gap-2 rounded-full bg-lime-400/20 border border-lime-300/30 px-3 py-1 text-xs font-bold uppercase tracking-wider text-lime-200 mb-4">
+              <div className="inline-flex items-center gap-2 rounded-full bg-emerald-400/20 border border-emerald-300/30 px-3 py-1 text-xs font-bold uppercase tracking-wider text-emerald-200 mb-4">
                 <Zap size={14} />
                 Destaque exclusivo
               </div>
               <div className="flex items-center gap-3 mb-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-lime-400/20 border border-lime-300/30">
-                  <Sprout size={26} className="text-lime-300" />
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-400/20 border border-emerald-300/30">
+                  <Sprout size={26} className="text-emerald-300" />
                 </div>
                 <h2 className="text-2xl sm:text-3xl font-bold text-white">Cannabis Medicinal</h2>
               </div>
@@ -155,21 +161,21 @@ export default function MedicinaIntegrativaLandingPage() {
               <ul className="mt-6 space-y-3">
                 {CANNABIS_BULLETS.map((item) => (
                   <li key={item} className="flex items-start gap-2.5 text-sm sm:text-base text-emerald-50">
-                    <CheckCircle2 size={18} className="text-lime-300 shrink-0 mt-0.5" />
+                    <CheckCircle2 size={18} className="text-emerald-300 shrink-0 mt-0.5" />
                     {item}
                   </li>
                 ))}
               </ul>
               <Link
                 href={loginHref}
-                className="mt-8 inline-flex items-center gap-2 rounded-xl bg-lime-400 px-6 py-3 font-semibold text-emerald-950 shadow-lg shadow-black/20 transition hover:bg-lime-300"
+                className="mt-8 inline-flex items-center gap-2 rounded-xl bg-emerald-400 px-6 py-3 font-semibold text-slate-900 shadow-lg shadow-black/20 transition hover:bg-emerald-200"
               >
                 Acessar módulo de cannabis <ArrowRight size={18} />
               </Link>
             </div>
 
-            <div className="rounded-2xl border border-lime-300/20 bg-white/10 backdrop-blur-sm p-6 sm:p-8">
-              <p className="text-xs font-bold uppercase tracking-wider text-lime-200 mb-4">
+            <div className="rounded-2xl border border-emerald-300/20 bg-white/10 backdrop-blur-sm p-6 sm:p-8">
+              <p className="text-xs font-bold uppercase tracking-wider text-emerald-200 mb-4">
                 O que você encontra no catálogo
               </p>
               <div className="grid grid-cols-2 gap-4">
@@ -183,7 +189,7 @@ export default function MedicinaIntegrativaLandingPage() {
                     key={item.label}
                     className="rounded-xl bg-white/10 border border-white/10 px-4 py-3 text-center"
                   >
-                    <p className="text-2xl font-bold text-lime-300">{item.count}</p>
+                    <p className="text-2xl font-bold text-emerald-200">{item.count}</p>
                     <p className="text-xs text-emerald-100 mt-1 leading-snug">{item.label}</p>
                   </div>
                 ))}
@@ -197,7 +203,17 @@ export default function MedicinaIntegrativaLandingPage() {
         </div>
       </section>
 
-      <main className="max-w-5xl mx-auto px-4 py-14 space-y-16">
+      <div className="relative">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 opacity-60"
+          style={{
+            backgroundImage:
+              "radial-gradient(ellipse 80% 50% at 50% 0%, rgba(209,250,229,0.35) 0%, transparent 70%)",
+          }}
+        />
+
+      <main className="relative max-w-5xl mx-auto px-4 py-14 space-y-8">
         <section>
           <p className="text-sm font-semibold uppercase tracking-wide text-emerald-800 mb-2">
             Recursos operacionais
@@ -207,7 +223,7 @@ export default function MedicinaIntegrativaLandingPage() {
             Recursos já operacionais no Doctor8 para o médico que pratica medicina integrativa e medicina
             natural regulada.
           </p>
-          <div className="grid sm:grid-cols-2 gap-4">
+          <div className="grid sm:grid-cols-2 gap-4 mb-2">
             {FEATURES.map((f) => (
               <div
                 key={f.title}
@@ -223,7 +239,7 @@ export default function MedicinaIntegrativaLandingPage() {
           </div>
         </section>
 
-        <section>
+        <section className="pt-10 mt-4">
           <h2 className="text-2xl sm:text-3xl font-bold text-stone-900 mb-2">6 práticas no catálogo</h2>
           <p className="text-stone-700 mb-6">Cobertura completa das principais modalidades da medicina natural.</p>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -233,9 +249,9 @@ export default function MedicinaIntegrativaLandingPage() {
                   key={p.label}
                   className="rounded-xl border-2 border-emerald-600 bg-d8-cannabis px-4 py-4 text-center shadow-md col-span-2 sm:col-span-1"
                 >
-                  <p className="text-2xl font-bold text-lime-300">{p.count}</p>
+                  <p className="text-2xl font-bold text-emerald-200">{p.count}</p>
                   <p className="text-sm font-semibold text-emerald-50 mt-1">{p.label}</p>
-                  <span className="mt-2 inline-block rounded-full bg-lime-400/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-lime-200">
+                  <span className="mt-2 inline-block rounded-full bg-emerald-400/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-emerald-200">
                     Exclusivo
                   </span>
                 </div>
@@ -271,13 +287,13 @@ export default function MedicinaIntegrativaLandingPage() {
           <div className="mt-6 flex flex-wrap gap-3">
             <Link
               href={loginHref}
-              className="inline-flex items-center gap-2 rounded-xl bg-emerald-700 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-800 transition"
+              className="inline-flex items-center gap-2 rounded-xl border-2 border-emerald-600 bg-emerald-100 px-5 py-2.5 text-sm font-semibold text-slate-900 hover:bg-emerald-200 transition"
             >
               Ir para o login médico <ArrowRight size={16} />
             </Link>
             <Link
               href={PROFESSIONAL_INTEGRATIVE_HUB}
-              className="inline-flex items-center gap-2 rounded-xl border-2 border-emerald-700/30 bg-white px-5 py-2.5 text-sm font-semibold text-emerald-900 hover:bg-emerald-50 transition"
+              className="inline-flex items-center gap-2 rounded-xl border-2 border-emerald-600 bg-white px-5 py-2.5 text-sm font-semibold text-slate-800 hover:bg-emerald-50 transition"
             >
               Ver área Integrativa (requer login)
             </Link>
@@ -285,7 +301,7 @@ export default function MedicinaIntegrativaLandingPage() {
         </section>
       </main>
 
-      <footer className="border-t border-stone-200 bg-white py-8 text-center text-sm text-stone-600">
+      <footer className="relative border-t border-emerald-200 py-8 text-center text-sm text-slate-600">
         <Link href="/privacy" className="font-medium text-emerald-800 underline hover:text-emerald-900">
           Privacidade
         </Link>
@@ -298,6 +314,7 @@ export default function MedicinaIntegrativaLandingPage() {
           Especialistas
         </Link>
       </footer>
+      </div>
     </div>
   );
 }
