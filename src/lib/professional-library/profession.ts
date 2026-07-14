@@ -5,7 +5,7 @@ export function professionKeyFromSpecialty(
   specialty: string | null | undefined,
 ): Exclude<LibraryProfessionKey, "psychoanalyst" | "integrative_therapist"> {
   const { typeKey } = getProfessionInfo(specialty || "General Practice");
-  if (typeKey === "professional") return "doctor";
+  if (typeKey === "professional" || typeKey === "physiotherapist") return "doctor";
   return typeKey;
 }
 
