@@ -67,7 +67,7 @@ export default function PrescriptionsPage() {
           initialPatient={p.reusePatient}
           lockPatient={p.lockPatient}
           initialBody={p.docTemplatePrefill?.body || p.reuseClinical?.content || ""}
-          initialType={p.reuseClinical?.type || "CERTIFICATE"}
+          initialType={p.docTemplatePrefill?.documentType || p.reuseClinical?.type || "CERTIFICATE"}
           initialTemplateId={p.docTemplatePrefill?.templateId || null}
           onBack={p.closeCreate}
           onSaved={p.handleEmissionSaved}

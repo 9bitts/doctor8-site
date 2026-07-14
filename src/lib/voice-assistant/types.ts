@@ -24,7 +24,9 @@ export type VoiceSkillId =
   | "sbar_note"
   | "med_review"
   | "anamnesis"
-  | "meal_plan";
+  | "meal_plan"
+  | "exam_request"
+  | "clinical_document";
 
 export type VoiceFormType =
   | "sbar"
@@ -35,7 +37,10 @@ export type VoiceFormType =
   | "nutrition_anamnesis"
   | "dental_anamnesis"
   | "treatment_plan"
-  | "chart_evolution";
+  | "chart_evolution"
+  | "meal_plan"
+  | "exam_request"
+  | "clinical_document";
 
 export type SbarPrefill = {
   situation?: string;
@@ -102,6 +107,26 @@ export type ChartEvolutionPrefill = {
   title?: string;
 };
 
+export type MealPlanPrefill = {
+  title?: string;
+  dailyKcalTarget?: number;
+  meals?: Array<{ name: string; items?: Array<{ foodName: string; portionG?: number }> }>;
+  notes?: string;
+};
+
+export type ExamRequestPrefill = {
+  title?: string;
+  examItems?: string[];
+  notes?: string;
+  cid?: string;
+};
+
+export type ClinicalDocumentPrefill = {
+  documentType?: "CERTIFICATE" | "REPORT" | "OTHER";
+  title?: string;
+  body?: string;
+};
+
 export type VoiceFormData =
   | SbarPrefill
   | CarePlanPrefill
@@ -111,7 +136,10 @@ export type VoiceFormData =
   | NutritionAnamnesisPrefill
   | DentalAnamnesisPrefill
   | TreatmentPlanPrefill
-  | ChartEvolutionPrefill;
+  | ChartEvolutionPrefill
+  | MealPlanPrefill
+  | ExamRequestPrefill
+  | ClinicalDocumentPrefill;
 
 export type VoiceSkill = {
   id: VoiceSkillId;
@@ -140,6 +168,8 @@ export type ParsedVoiceIntent = {
   validDays?: number | null;
   scheduleHint?: string | null;
   rawSummary?: string | null;
+  examItems?: string[] | null;
+  documentType?: string | null;
 };
 
 export type PatientMatch = {

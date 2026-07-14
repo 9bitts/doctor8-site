@@ -50,6 +50,7 @@ import {
   RecordTimelineDot,
 } from "@/components/professional/PatientRecordTimeline";
 import { consumeVoiceFormPrefill } from "@/lib/voice-assistant/prefill-storage";
+import { VOICE_FORM_PREFILL_EVENT } from "@/lib/voice-assistant/types";
 import { VoicePrefillBanner } from "@/components/voice-assistant/useVoiceFormPrefill";
 import type { ChartEvolutionPrefill } from "@/lib/voice-assistant/types";
 import { RecordFileThumbnail } from "@/components/professional/RecordFileThumbnail";
@@ -407,15 +408,20 @@ export default function RecordDetailClient({
   const contentRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
-    const payload = consumeVoiceFormPrefill("chart_evolution", chart.id);
-    if (!payload) return;
-    const d = payload.data as ChartEvolutionPrefill;
-    setTitle(d.title || (lang === "es" ? "Evolución — asistente de voz" : lang === "en" ? "Evolution — voice assistant" : "Evolução — assistente de voz"));
-    setContent(d.draft);
-    setRecordKind("EVOLUTION");
-    setChartTab("evolution");
-    setShowForm(true);
-    setVoicePrefillActive(true);
+    const applyChartVoicePrefill = () => {
+      const payload = consumeVoiceFormPrefill("chart_evolution", chart.id);
+      if (!payload) return;
+      const d = payload.data as ChartEvolutionPrefill;
+      setTitle(d.title || (lang === "es" ? "Evolución — asistente de voz" : lang === "en" ? "Evolution — voice assistant" : "Evolução — assistente de voz"));
+      setContent(d.draft);
+      setRecordKind("EVOLUTION");
+      setChartTab("evolution");
+      setShowForm(true);
+      setVoicePrefillActive(true);
+    };
+    applyChartVoicePrefill();
+    window.addEventListener(VOICE_FORM_PREFILL_EVENT, applyChartVoicePrefill);
+    return () => window.removeEventListener(VOICE_FORM_PREFILL_EVENT, applyChartVoicePrefill);
   }, [chart.id, lang]);
 
   useEffect(() => {

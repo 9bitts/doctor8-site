@@ -17,8 +17,28 @@ const BASE_SKILLS: Partial<Record<VoicePortalId, VoiceSkill[]>> = {
       route: "/professional/prescriptions",
       description: "Create or prefill a prescription for a patient",
       examples: [
-        "Receita para Maria Silva, dipirona 500 mg de 8 em 8 horas por 5 dias",
-        "Prescrever losartana 50 mg pela manhã para João",
+        "Receita para Maria Silva, losartana 50 mg pela manhã",
+        "Prescrever amoxicilina 500 mg de 8 em 8 horas por 7 dias para João",
+      ],
+    },
+    {
+      id: "exam_request",
+      labelKey: "voice.skill.examRequest",
+      route: "/professional/prescriptions",
+      description: "Create or prefill a lab/imaging exam request",
+      examples: [
+        "Pedido de exame para Maria Silva, hemograma e glicemia",
+        "Solicitar ressonância de joelho para o paciente Carlos",
+      ],
+    },
+    {
+      id: "clinical_document",
+      labelKey: "voice.skill.clinicalDocument",
+      route: "/professional/prescriptions",
+      description: "Create or prefill a medical certificate, report or document",
+      examples: [
+        "Atestado para João, afastamento de 3 dias por gripe",
+        "Laudo médico para Ana com resumo da consulta de hoje",
       ],
     },
     {
@@ -72,7 +92,7 @@ const BASE_SKILLS: Partial<Record<VoicePortalId, VoiceSkill[]>> = {
   ],
   NUTRITIONIST: [
     { id: "anamnesis", labelKey: "voice.skill.anamnesis", route: "/nutricionista/anamnese", description: "Nutrition anamnesis", examples: ["Anamnese nutricional da paciente Ana"] },
-    { id: "meal_plan", labelKey: "voice.skill.mealPlan", route: "/nutricionista/planos", description: "Meal plan", examples: ["Abrir plano alimentar do João"] },
+    { id: "meal_plan", labelKey: "voice.skill.mealPlan", route: "/nutricionista/planos", description: "Create or prefill a meal plan", examples: ["Plano alimentar do João, 1800 kcal, café da manhã com ovos e fruta", "Dieta hipoproteica para Ana, almoço com frango e arroz"] },
     { id: "navigate", labelKey: "voice.skill.navigate", description: "Open a portal section", examples: ["Abrir antropometria"] },
     { id: "search_patient", labelKey: "voice.skill.searchPatient", route: "/nutricionista/patients", description: "Find a patient", examples: ["Buscar paciente Carlos"] },
     { id: "schedule", labelKey: "voice.skill.schedule", route: "/nutricionista/appointments", description: "Open appointments", examples: ["Abrir agenda"] },

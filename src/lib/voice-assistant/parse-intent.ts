@@ -26,27 +26,32 @@ function navPromptBlock(portalId: VoicePortalId): string {
 export async function parseVoiceIntent(params: {
   lang: Lang;
   portalId: VoicePortalId;
+  skillsPortalId?: VoicePortalId;
   transcript: string;
 }): Promise<ParsedVoiceIntent> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) throw new Error("AI_NOT_CONFIGURED");
 
+  const skillsPortal = params.skillsPortalId || params.portalId;
+
   const system = `You are the Doctor8 voice assistant intent parser for a licensed clinical professional portal.
 
 Your job: read a spoken command (transcript) and return STRICT JSON only — no markdown, no commentary.
 
-Portal: ${params.portalId}
+Portal: ${skillsPortal}
 Available skills:
-${skillsPromptBlock(params.portalId)}
+${skillsPromptBlock(skillsPortal)}
 
 Navigation routes (use targetRoute when navigating):
-${navPromptBlock(params.portalId)}
+${navPromptBlock(skillsPortal)}
 
 RULES:
 - Choose exactly ONE skillId from the available skills list.
 - confidence: 0.0 to 1.0
 - Extract patientName when mentioned (full name preferred).
 - For prescribe: extract medications array with name, dosage, frequency, duration, instructions when spoken.
+- For exam_request: extract examItems as array of exam names; notes and cid when spoken.
+- For clinical_document: put document body in clinicalText; infer documentType CERTIFICATE, REPORT or OTHER.
 - For clinical_note / sbar_note / med_review / anamnesis / meal_plan: put spoken clinical content in clinicalText.
 - For navigate: set targetRoute to the best matching href from the navigation list, or null if unclear.
 - For search_patient: set patientName.
@@ -56,7 +61,7 @@ RULES:
 
 Return JSON shape:
 {
-  "skillId": "navigate|prescribe|clinical_note|search_patient|schedule|sbar_note|med_review|anamnesis|meal_plan",
+  "skillId": "navigate|prescribe|exam_request|clinical_document|clinical_note|search_patient|schedule|sbar_note|med_review|anamnesis|meal_plan",
   "confidence": 0.0,
   "patientName": string|null,
   "medications": [{"name":"","dosage":"","frequency":"","duration":"","instructions":""}]|null,
@@ -66,6 +71,8 @@ Return JSON shape:
   "instructions": string|null,
   "validDays": number|null,
   "scheduleHint": string|null,
+  "examItems": ["string"]|null,
+  "documentType": "CERTIFICATE|REPORT|OTHER"|null,
   "rawSummary": string|null
 }`;
 

@@ -32,9 +32,9 @@ const T: Record<string, Record<Lang, string>> = {
     es: "Marque el consentimiento para continuar.",
   },
   speakHint: {
-    pt: "Ex.: “Receita para Maria Silva, dipirona 500 mg de 8 em 8 horas”",
-    en: "E.g.: “Prescription for Maria Silva, dipirona 500 mg every 8 hours”",
-    es: "Ej.: “Receta para Maria Silva, dipirona 500 mg cada 8 horas”",
+    pt: "Fale um comando clínico do seu portal",
+    en: "Speak a clinical command for your portal",
+    es: "Diga un comando clínico de su portal",
   },
   startRecording: {
     pt: "Toque para falar",
@@ -175,6 +175,11 @@ const T: Record<string, Record<Lang, string>> = {
     pt: "Experimentar agora",
     en: "Try it now",
     es: "Probar ahora",
+  },
+  "promoBanner.examplePrefix": {
+    pt: "Exemplo para sua área:",
+    en: "Example for your area:",
+    es: "Ejemplo para su área:",
   },
 };
 

@@ -7,6 +7,7 @@ import {
   patientChartRouteForPortal,
   patientsRouteForPortal,
   prescriptionsRouteForPortal,
+  resolveSkillsPortalFromPathname,
 } from "./portal-resolver";
 import { parseVoiceIntent } from "./parse-intent";
 import { buildPrescriptionPrefill, resolvePatientById, resolvePatientMatches } from "./resolve-entities";
@@ -33,11 +34,21 @@ export async function processVoiceCommand(params: {
   auth: VoiceAssistantAuth;
   lang: Lang;
   portalId: VoicePortalId;
+  pathname?: string;
   transcript: string;
   sessionPatientRecordId?: string;
 }): Promise<VoiceProcessResult> {
   const { auth, lang, portalId, transcript } = params;
-  const intent = await parseVoiceIntent({ lang, portalId, transcript });
+  const skillsPortal =
+    (params.pathname ? resolveSkillsPortalFromPathname(params.pathname) : null) || portalId;
+  const chartPortal = portalId === "PROFESSIONAL" ? "PROFESSIONAL" : skillsPortal;
+
+  const intent = await parseVoiceIntent({
+    lang,
+    portalId,
+    skillsPortalId: skillsPortal,
+    transcript,
+  });
 
   if (intent.confidence < 0.35) {
     return {
@@ -52,10 +63,10 @@ export async function processVoiceCommand(params: {
     };
   }
 
-  const skillRoute = intent.targetRoute || resolveSkillRoute(portalId, intent.skillId);
+  const skillRoute = intent.targetRoute || resolveSkillRoute(skillsPortal, intent.skillId);
 
   if (intent.skillId === "navigate") {
-    const route = skillRoute || resolveSkillRoute(portalId, "navigate");
+    const route = skillRoute || resolveSkillRoute(skillsPortal, "navigate");
     if (!route) {
       return {
         action: "unknown",
@@ -80,7 +91,7 @@ export async function processVoiceCommand(params: {
     if (matches.length === 1 && matches[0].patientRecordId) {
       return {
         action: "navigate",
-        route: patientChartRouteForPortal(portalId, matches[0].patientRecordId),
+        route: patientChartRouteForPortal(chartPortal, matches[0].patientRecordId),
         message: msg(lang, `Abrindo ficha de ${matches[0].displayName}.`, `Opening chart for ${matches[0].displayName}.`, `Abriendo ficha de ${matches[0].displayName}.`),
         transcript,
       };
@@ -94,7 +105,7 @@ export async function processVoiceCommand(params: {
         options: matches.map((m) => m.displayName),
       };
     }
-    const base = patientsRouteForPortal(portalId);
+    const base = patientsRouteForPortal(chartPortal);
     const q = intent.patientName ? `?q=${encodeURIComponent(intent.patientName)}` : "";
     return {
       action: "navigate",
@@ -105,7 +116,7 @@ export async function processVoiceCommand(params: {
   }
 
   if (intent.skillId === "schedule") {
-    let route = appointmentsRouteForPortal(portalId);
+    let route = appointmentsRouteForPortal(skillsPortal === "PSYCHOLOGIST" && portalId === "PROFESSIONAL" ? "PROFESSIONAL" : skillsPortal);
     if (intent.scheduleHint) {
       route += `?voiceHint=${encodeURIComponent(intent.scheduleHint)}`;
     }
@@ -115,16 +126,6 @@ export async function processVoiceCommand(params: {
       message: intent.scheduleHint
         ? msg(lang, `Abrindo agenda. ${intent.scheduleHint}`, `Opening schedule. ${intent.scheduleHint}`, `Abriendo agenda. ${intent.scheduleHint}`)
         : msg(lang, "Abrindo agenda.", "Opening schedule.", "Abriendo agenda."),
-      transcript,
-    };
-  }
-
-  if (intent.skillId === "meal_plan") {
-    const route = resolveSkillRoute(portalId, "meal_plan") || "/nutricionista/planos";
-    return {
-      action: "navigate",
-      route,
-      message: intent.rawSummary || msg(lang, "Abrindo plano alimentar.", "Opening meal plan.", "Abriendo plan alimentario."),
       transcript,
     };
   }
@@ -175,10 +176,13 @@ export async function processVoiceCommand(params: {
     "sbar_note",
     "med_review",
     "anamnesis",
+    "meal_plan",
+    "exam_request",
+    "clinical_document",
   ]);
 
   if (formSkills.has(intent.skillId)) {
-    const formType = resolveFormType(portalId, intent);
+    const formType = resolveFormType(skillsPortal, intent);
     const clinicalText = intent.clinicalText?.trim() || transcript.trim();
 
     const matches = await resolvePatientMatches({
@@ -211,21 +215,45 @@ export async function processVoiceCommand(params: {
     const patientName = patient?.displayName || intent.patientName || undefined;
 
     if (formType) {
-      const data = await generateStructuredFormPrefill({
+      let data = await generateStructuredFormPrefill({
         lang,
         formType,
         transcript: clinicalText,
         patientName,
       });
 
-      let baseRoute = formRouteForType(portalId, formType);
+      if (formType === "exam_request" && intent.examItems?.length) {
+        data = {
+          ...(data as Record<string, unknown>),
+          examItems: intent.examItems,
+        };
+      }
+      if (formType === "clinical_document" && intent.documentType) {
+        const docType = intent.documentType.toUpperCase();
+        const normalized =
+          docType === "REPORT" ? "REPORT"
+          : docType === "OTHER" ? "OTHER"
+          : "CERTIFICATE";
+        data = {
+          ...(data as Record<string, unknown>),
+          documentType: normalized,
+        };
+      }
+
+      let baseRoute = formRouteForType(skillsPortal, formType);
       const extra: Record<string, string> = {};
 
       if (formType === "session_note") {
         extra.view = "create";
       }
+      if (formType === "exam_request") {
+        extra.view = "exam";
+      }
+      if (formType === "clinical_document") {
+        extra.view = "document";
+      }
       if (formType === "chart_evolution" && patientRecordId) {
-        baseRoute = patientChartRouteForPortal(portalId, patientRecordId);
+        baseRoute = patientChartRouteForPortal(chartPortal, patientRecordId);
         extra.newRecord = "1";
         extra.tab = "evolution";
       }
@@ -245,7 +273,7 @@ export async function processVoiceCommand(params: {
     }
 
     const chartRoute = patientRecordId
-      ? patientChartRouteForPortal(portalId, patientRecordId)
+      ? patientChartRouteForPortal(chartPortal, patientRecordId)
       : skillRoute || undefined;
 
     return {

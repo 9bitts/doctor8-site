@@ -7,6 +7,9 @@ export function resolveFormType(
 ): VoiceFormType | null {
   const route = intent.targetRoute || resolveSkillRoute(portalId, intent.skillId) || "";
 
+  if (intent.skillId === "meal_plan") return "meal_plan";
+  if (intent.skillId === "exam_request") return "exam_request";
+  if (intent.skillId === "clinical_document") return "clinical_document";
   if (intent.skillId === "sbar_note") return "sbar";
   if (intent.skillId === "med_review") return "med_review";
 
@@ -46,6 +49,11 @@ export function formRouteForType(portalId: VoicePortalId, formType: VoiceFormTyp
       return "/odontologo/anamnese";
     case "treatment_plan":
       return "/odontologo/plano-tratamento";
+    case "meal_plan":
+      return "/nutricionista/planos";
+    case "exam_request":
+    case "clinical_document":
+      return "/professional/prescriptions";
     case "chart_evolution":
       return "/professional/patients";
     default:

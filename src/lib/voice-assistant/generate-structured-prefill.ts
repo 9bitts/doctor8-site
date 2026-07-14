@@ -63,6 +63,23 @@ const FORM_SCHEMAS: Record<VoiceFormType, string> = {
   "draft": "markdown clinical evolution",
   "title": "string optional"
 }`,
+  meal_plan: `{
+  "title": "string",
+  "dailyKcalTarget": number optional,
+  "notes": "string optional",
+  "meals": [{"name":"Café da manhã|Almoço|Jantar","items":[{"foodName":"","portionG":100}]}]
+}`,
+  exam_request: `{
+  "title": "string optional",
+  "examItems": ["hemograma completo","glicemia"],
+  "notes": "string optional",
+  "cid": "string optional"
+}`,
+  clinical_document: `{
+  "documentType": "CERTIFICATE|REPORT|OTHER",
+  "title": "string",
+  "body": "full document text"
+}`,
 };
 
 export async function generateStructuredFormPrefill(params: {

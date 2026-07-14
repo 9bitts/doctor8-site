@@ -1,25 +1,34 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import { Mic, X } from "lucide-react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { voiceT } from "@/lib/voice-assistant/i18n";
+import { getPrimaryVoiceExample } from "@/lib/voice-assistant/portal-examples";
+import { resolveSkillsPortalFromPathname } from "@/lib/voice-assistant/portal-resolver";
+import type { VoicePortalId } from "@/lib/voice-assistant/types";
 import OwlIcon from "@/components/voice-assistant/OwlIcon";
 
 const DISMISS_PREFIX = "doctor8:voiceAssistant:promoDismissed";
 
 type Props = {
   userId: string;
+  portalId: VoicePortalId;
 };
 
 export function openVoiceAssistantFromBanner() {
   window.dispatchEvent(new CustomEvent("doctor8:voice-assistant:open"));
 }
 
-export default function VoiceAssistantPromoBanner({ userId }: Props) {
+export default function VoiceAssistantPromoBanner({ userId, portalId }: Props) {
   const { lang } = useI18n();
+  const pathname = usePathname();
   const t = (k: string) => voiceT(k, lang);
   const [dismissed, setDismissed] = useState(true);
+
+  const skillsPortal = resolveSkillsPortalFromPathname(pathname) || portalId;
+  const example = getPrimaryVoiceExample(skillsPortal);
 
   useEffect(() => {
     try {
@@ -69,6 +78,11 @@ export default function VoiceAssistantPromoBanner({ userId }: Props) {
           >
             {t("promoBanner.desc")}
           </p>
+          {example && (
+            <p className="text-xs sm:text-sm mt-2 italic" style={{ color: "#5b21b6" }}>
+              {t("promoBanner.examplePrefix")} &ldquo;{example}&rdquo;
+            </p>
+          )}
           <button
             type="button"
             onClick={openVoiceAssistantFromBanner}

@@ -7,7 +7,8 @@ import {
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { voiceT } from "@/lib/voice-assistant/i18n";
-import { resolveVoicePortalFromPathname } from "@/lib/voice-assistant/portal-resolver";
+import { resolveVoicePortalFromPathname, resolveSkillsPortalFromPathname } from "@/lib/voice-assistant/portal-resolver";
+import { getPortalVoiceExamples, formatVoiceHint } from "@/lib/voice-assistant/portal-examples";
 import {
   storeVoiceClinicalNote,
   storeVoiceFormPrefill,
@@ -73,6 +74,11 @@ export default function VoiceAssistantShell({ portalId, userId, variant = "fab" 
   const streamRef = useRef<MediaStream | null>(null);
 
   const activePortal = portalId || resolveVoicePortalFromPathname(pathname);
+  const skillsPortal = resolveSkillsPortalFromPathname(pathname) || activePortal;
+  const portalExamples = skillsPortal ? getPortalVoiceExamples(skillsPortal) : [];
+  const speakHint = skillsPortal
+    ? formatVoiceHint(skillsPortal, t("speakHint"))
+    : t("speakHint");
 
   useEffect(() => {
     setRecordingSupported(
@@ -371,7 +377,14 @@ export default function VoiceAssistantShell({ portalId, userId, variant = "fab" 
 
               {!result && (
                 <>
-                  <p className="text-sm text-slate-500">{t("speakHint")}</p>
+                  <p className="text-sm text-slate-500">{speakHint}</p>
+                  {portalExamples.length > 1 && (
+                    <ul className="text-xs text-slate-500 space-y-1 list-disc pl-4">
+                      {portalExamples.slice(1, 3).map((ex) => (
+                        <li key={ex}>{ex}</li>
+                      ))}
+                    </ul>
+                  )}
 
                   <div className="flex flex-col items-center gap-3 py-2">
                     {recording ? (
@@ -416,7 +429,7 @@ export default function VoiceAssistantShell({ portalId, userId, variant = "fab" 
                       onChange={(e) => setManualText(e.target.value)}
                       rows={3}
                       className="w-full text-sm border border-slate-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-violet-500/30"
-                      placeholder={t("speakHint")}
+                      placeholder={speakHint}
                     />
                     <button
                       type="button"

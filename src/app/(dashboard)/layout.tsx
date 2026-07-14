@@ -643,7 +643,7 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
         )}
 
         {showVoiceAssistant && voicePortalId && userId && (
-          <VoiceAssistantPromoBanner userId={userId} />
+          <VoiceAssistantPromoBanner userId={userId} portalId={voicePortalId} />
         )}
 
         {userId && isVital8B2BRole(role) && (

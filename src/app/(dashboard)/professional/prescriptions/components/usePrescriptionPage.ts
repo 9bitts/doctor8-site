@@ -50,8 +50,13 @@ import {
   apiPath,
   type PrescriptionsPortalId,
 } from "@/lib/prescriptions-portal-config";
-import { consumeVoicePrefill } from "@/lib/voice-assistant/prefill-storage";
-import { VOICE_PRESCRIPTION_PREFILL_EVENT } from "@/lib/voice-assistant/types";
+import { consumeVoicePrefill, consumeVoiceFormPrefill } from "@/lib/voice-assistant/prefill-storage";
+import {
+  VOICE_FORM_PREFILL_EVENT,
+  VOICE_PRESCRIPTION_PREFILL_EVENT,
+  type ClinicalDocumentPrefill,
+  type ExamRequestPrefill,
+} from "@/lib/voice-assistant/types";
 import {
   extendSessionForWrite,
   isAuthFailureStatus,
@@ -175,6 +180,8 @@ export function usePrescriptionPage() {
   const [docTemplatePrefill, setDocTemplatePrefill] = useState<{
     body: string;
     templateId: string;
+    documentType?: string;
+    title?: string;
   } | null>(null);
   const [templateAppliedHint, setTemplateAppliedHint] = useState(false);
   const [pendingFloralProductId, setPendingFloralProductId] = useState<string | null>(null);
@@ -239,17 +246,101 @@ export function usePrescriptionPage() {
     }
   }, [api, lang, toast]);
 
+  const resolveVoicePatient = useCallback(async (patientRecordId?: string, displayName?: string) => {
+    if (patientRecordId) {
+      const res = await fetch(api("/records"));
+      const data = await res.json();
+      const chart = (data.records || []).find((c: Chart) => c.id === patientRecordId) || null;
+      if (chart) {
+        setSelectedPatient(chart);
+        setReusePatient(chart);
+        setPlatformTarget(null);
+      }
+      return chart;
+    }
+    if (displayName) {
+      const res = await fetch(`${api("/records/search")}?q=${encodeURIComponent(displayName)}`);
+      const data = await res.json();
+      const records: Chart[] = data.records || [];
+      const chart = records[0] || null;
+      if (chart) {
+        setSelectedPatient(chart);
+        setReusePatient(chart);
+        setPlatformTarget(null);
+      }
+      return chart;
+    }
+    return null;
+  }, [api]);
+
+  const applyVoiceFormEmissionPrefill = useCallback(async () => {
+    const examPayload = consumeVoiceFormPrefill("exam_request");
+    if (examPayload) {
+      const d = examPayload.data as ExamRequestPrefill;
+      setView("exam");
+      setVoicePrefillActive(true);
+      setExamTemplatePrefill({
+        items: d.examItems || [],
+        notes: d.notes || "",
+        cid: d.cid || "",
+        title: d.title || "",
+      });
+      await resolveVoicePatient(examPayload.patientRecordId, examPayload.patientName);
+      toast.success(
+        lang === "es"
+          ? "Pedido de examen completado por voz. Revise antes de guardar."
+          : lang === "en"
+            ? "Exam request prefilled by voice. Review before saving."
+            : "Pedido de exame preenchido por voz. Confira antes de salvar.",
+      );
+      return true;
+    }
+
+    const docPayload = consumeVoiceFormPrefill("clinical_document");
+    if (docPayload) {
+      const d = docPayload.data as ClinicalDocumentPrefill;
+      setView("document");
+      setVoicePrefillActive(true);
+      setDocTemplatePrefill({
+        body: d.body || "",
+        templateId: "",
+        documentType: d.documentType || "CERTIFICATE",
+        title: d.title || "",
+      });
+      await resolveVoicePatient(docPayload.patientRecordId, docPayload.patientName);
+      toast.success(
+        lang === "es"
+          ? "Documento completado por voz. Revise antes de guardar."
+          : lang === "en"
+            ? "Document prefilled by voice. Review before saving."
+            : "Documento preenchido por voz. Confira antes de salvar.",
+      );
+      return true;
+    }
+    return false;
+  }, [lang, resolveVoicePatient, toast]);
+
   useEffect(() => {
-    void applyVoicePrefill();
-  }, [pathname, searchParams, applyVoicePrefill]);
+    void (async () => {
+      if (await applyVoiceFormEmissionPrefill()) return;
+      await applyVoicePrefill();
+    })();
+  }, [pathname, searchParams, applyVoicePrefill, applyVoiceFormEmissionPrefill]);
 
   useEffect(() => {
     const onVoicePrefill = () => {
-      void applyVoicePrefill();
+      void (async () => {
+        if (await applyVoiceFormEmissionPrefill()) return;
+        await applyVoicePrefill();
+      })();
     };
     window.addEventListener(VOICE_PRESCRIPTION_PREFILL_EVENT, onVoicePrefill);
-    return () => window.removeEventListener(VOICE_PRESCRIPTION_PREFILL_EVENT, onVoicePrefill);
-  }, [applyVoicePrefill]);
+    window.addEventListener(VOICE_FORM_PREFILL_EVENT, onVoicePrefill);
+    return () => {
+      window.removeEventListener(VOICE_PRESCRIPTION_PREFILL_EVENT, onVoicePrefill);
+      window.removeEventListener(VOICE_FORM_PREFILL_EVENT, onVoicePrefill);
+    };
+  }, [applyVoicePrefill, applyVoiceFormEmissionPrefill]);
 
   useEffect(() => {
     fetchAll();

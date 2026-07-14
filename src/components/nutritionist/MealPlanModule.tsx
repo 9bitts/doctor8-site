@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { Loader2, Plus, Trash2, FileDown, ShoppingCart } from "lucide-react";
 import type { Lang } from "@/lib/i18n/translations";
@@ -12,6 +12,9 @@ import { macrosForPortion } from "@/lib/nutrition/taco-foods";
 import type { MealPlanItem, MealPlanMeal } from "@/lib/nutrition/meal-plan-types";
 import { sumMealPlanMacros } from "@/lib/nutrition/meal-plan-types";
 import type { NutritionChart } from "./NutritionChartWorkspace";
+import { consumeVoiceFormPrefill } from "@/lib/voice-assistant/prefill-storage";
+import { VOICE_FORM_PREFILL_EVENT, type MealPlanPrefill } from "@/lib/voice-assistant/types";
+import { VoicePrefillBanner } from "@/components/voice-assistant/useVoiceFormPrefill";
 
 type SavedPlan = {
   id: string;
@@ -41,6 +44,44 @@ export default function MealPlanModule({ chart }: { chart: NutritionChart }) {
   const [foods, setFoods] = useState<TacoFood[]>([]);
   const [activeMealIdx, setActiveMealIdx] = useState(0);
   const [portionG, setPortionG] = useState("100");
+  const [voicePrefillActive, setVoicePrefillActive] = useState(false);
+
+  const applyVoicePrefill = useCallback((data: Record<string, unknown>) => {
+    const prefill = data as MealPlanPrefill;
+    if (prefill.title) setTitle(prefill.title);
+    if (typeof prefill.dailyKcalTarget === "number") {
+      setDailyKcalTarget(String(prefill.dailyKcalTarget));
+    }
+    if (prefill.meals?.length) {
+      setMeals(
+        prefill.meals.map((meal) => ({
+          name: meal.name,
+          items: (meal.items || []).map((item) => ({
+            foodId: "",
+            foodName: item.foodName,
+            portionG: item.portionG || 100,
+            kcal: 0,
+            proteinG: 0,
+            carbsG: 0,
+            fatG: 0,
+          })),
+        })),
+      );
+    }
+    setVoicePrefillActive(true);
+  }, []);
+
+  useEffect(() => {
+    const tryApply = () => {
+      const payload = consumeVoiceFormPrefill("meal_plan", chart.id);
+      if (!payload) return;
+      applyVoicePrefill(payload.data as Record<string, unknown>);
+    };
+    tryApply();
+    const onEvent = () => tryApply();
+    window.addEventListener(VOICE_FORM_PREFILL_EVENT, onEvent);
+    return () => window.removeEventListener(VOICE_FORM_PREFILL_EVENT, onEvent);
+  }, [applyVoicePrefill, chart.id]);
 
   async function loadPlans() {
     setLoading(true);
@@ -138,6 +179,7 @@ export default function MealPlanModule({ chart }: { chart: NutritionChart }) {
 
   return (
     <div className="space-y-6">
+      <VoicePrefillBanner active={voicePrefillActive} />
       <div className="rounded-2xl border border-slate-200 bg-white p-5 space-y-4">
         <h3 className="font-semibold text-slate-900">{t("nutri.meal.newPlan")}</h3>
         <div className="grid sm:grid-cols-2 gap-3">

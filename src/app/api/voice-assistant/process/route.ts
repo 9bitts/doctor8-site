@@ -103,6 +103,7 @@ export async function POST(req: NextRequest) {
       lang,
       portalId,
       transcript: transcript.trim(),
+      pathname,
       sessionPatientRecordId,
     });
 

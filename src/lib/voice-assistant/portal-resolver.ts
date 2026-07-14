@@ -13,6 +13,14 @@ export function resolveVoicePortalFromPathname(pathname: string): VoicePortalId 
   return null;
 }
 
+/** Skills/examples portal — treats /professional/psychology as psychologist. */
+export function resolveSkillsPortalFromPathname(pathname: string): VoicePortalId | null {
+  if (pathname.startsWith("/psychologist") || pathname.startsWith("/professional/psychology")) {
+    return "PSYCHOLOGIST";
+  }
+  return resolveVoicePortalFromPathname(pathname);
+}
+
 export function prescriptionsRouteForPortal(portalId: VoicePortalId): string {
   switch (portalId) {
     case "DENTIST":
