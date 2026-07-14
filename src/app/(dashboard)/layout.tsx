@@ -3,7 +3,7 @@
 // Shared layout for all dashboard pages — patient and professional and admin.
 // Reads role + language from the session; menu adapts and is translated.
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
@@ -95,6 +95,7 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
   const { t, lang } = useI18n();
   const { data: session, status } = useSession();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const mainRef = useRef<HTMLElement>(null);
   const [unreadMessages, setUnreadMessages] = useState(0);
   const [showNaturalMedicineNav, setShowNaturalMedicineNav] = useState(true);
   const [sessionSnapshot, setSessionSnapshot] = useState<{
@@ -368,6 +369,10 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
   const headerAvatar = isAngel ? "bg-rose-500" : isOrganization ? "bg-indigo-500" : isEmployer ? "bg-orange-600" : isOccupationalPhysician ? "bg-teal-600" : isPharmacyStoreUser ? "bg-emerald-600" : isLaboratoryUser ? "bg-violet-600" : isPsychologist ? "bg-violet-500" : isNutritionist ? "bg-amber-500" : isNurse ? "bg-rose-500" : isPharmacist ? "bg-teal-500" : isDentist ? "bg-fuchsia-500" : isProfessional ? "bg-brand-500" : isPsychoanalyst ? "bg-violet-500" : isIntegrativeTherapist ? "bg-teal-500" : "bg-emerald-500";
   const signOutHref = resolveLoginPathForSession(role, pathname, isPsychologistPortal || isNutritionistPortal || isNursePortal || isPharmacistPortal || isDentistPortal);
 
+  function scrollMainToTop() {
+    mainRef.current?.scrollTo({ top: 0 });
+  }
+
   function isNavItemActive(href: string): boolean {
     if (pathname === href) return true;
     const portalRoots = [
@@ -416,7 +421,10 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
         key={item.href}
         href={item.href}
         scroll={false}
-        onClick={() => setSidebarOpen(false)}
+        onClick={() => {
+          scrollMainToTop();
+          setSidebarOpen(false);
+        }}
         className={linkClass}
       >
         {item.icon}
@@ -650,7 +658,7 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
           <Vital8ErpPromoBanner userId={userId} role={role} />
         )}
 
-        <main className="flex-1 p-4 lg:p-8 overflow-auto overflow-x-hidden min-w-0">
+        <main ref={mainRef} className="flex-1 p-4 lg:p-8 overflow-auto overflow-x-hidden min-w-0">
           <PushSubscribe />
           {role === "PATIENT" && userId && (
             <PwaInstallPrompt lang={lang} variant="patient" userId={userId} />
