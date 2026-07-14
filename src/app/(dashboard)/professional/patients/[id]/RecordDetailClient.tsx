@@ -40,6 +40,7 @@ import PharmacistPatientChartPanel from "@/components/pharmacist/PharmacistPatie
 import ChartClinicalActions from "@/components/professional/ChartClinicalActions";
 import ChartActivityTimeline from "@/components/professional/ChartActivityTimeline";
 import CategorySearchSelect from "@/components/professional/CategorySearchSelect";
+import { buildEmissionReuseUrl } from "@/lib/emission-reuse-nav";
 import { openAuthenticatedPdf, openAuthenticatedBlob } from "@/lib/open-url-safely";
 import { uploadFileToApi } from "@/lib/upload-client";
 import {
@@ -925,9 +926,14 @@ export default function RecordDetailClient({
 
   function reuseEmissionDoc(d: Doc) {
     const kind = emissionKindFromDocType(d.type);
-    const view = kind === "prescription" ? "prescription" : kind === "exam" ? "exam" : "document";
-    const href = `${portalBase}/prescriptions?patientRecordId=${chart.id}&view=${view}`;
-    window.location.href = href;
+    if (!kind) return;
+    const emissionId = kind === "prescription" ? (d.prescriptionId || d.id) : d.id;
+    window.location.href = buildEmissionReuseUrl(
+      `${portalBase}/prescriptions`,
+      chart.id,
+      kind,
+      emissionId,
+    );
   }
 
   function markEmissionDelivered(docId: string) {

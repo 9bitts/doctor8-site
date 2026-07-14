@@ -14,6 +14,7 @@ export type PrescriptionMedItem = {
   frequency: string;
   duration: string;
   instructions: string;
+  continuousUse?: boolean;
   presentation?: string;
   pharmaceuticalForm?: string;
   controlled?: boolean;
@@ -38,7 +39,11 @@ interface PrescriptionMedItemFormProps {
   fieldErrors: { name: boolean; dosage: boolean; frequency: boolean };
   kindLabel: string | null;
   controlInfo: ControlInfo;
-  onUpdate: (index: number, field: keyof PrescriptionMedItem, value: string) => void;
+  onUpdate: (
+    index: number,
+    field: keyof PrescriptionMedItem,
+    value: PrescriptionMedItem[keyof PrescriptionMedItem],
+  ) => void;
   onPhytoProductSelect?: (index: number, productId: string) => void;
   onOpenPhytoSearch?: (index: number) => void;
   onOpenFloralSearch?: (index: number) => void;
@@ -72,6 +77,7 @@ export default function PrescriptionMedItemForm({
   rxFieldClass,
 }: PrescriptionMedItemFormProps) {
   const kind = med.itemKind || "medication";
+  const isContinuousUse = med.continuousUse || med.frequency === "Continuous use";
 
   if (isFreeTextPrescriptionItem(kind)) {
     return (
@@ -294,7 +300,6 @@ export default function PrescriptionMedItemForm({
             <option value="Every 12 hours">{t("med.freq12h")}</option>
             <option value="As needed">{t("med.freqAsNeeded")}</option>
             <option value="Weekly">{t("med.freqWeekly")}</option>
-            <option value="Continuous use">{t("med.freqContinuous")}</option>
           </select>
         </div>
         <div>
@@ -306,8 +311,18 @@ export default function PrescriptionMedItemForm({
             value={med.duration}
             onChange={(e) => onUpdate(index, "duration", e.target.value)}
             placeholder={t("rx.medDurationPlaceholder")}
-            className="rx-inp-sm"
+            disabled={isContinuousUse}
+            className={`rx-inp-sm${isContinuousUse ? " opacity-60" : ""}`}
           />
+          <label className="flex items-center gap-2 mt-2 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={isContinuousUse}
+              onChange={(e) => onUpdate(index, "continuousUse", e.target.checked)}
+              className="rounded border-slate-300 text-brand-500 focus:ring-brand-200"
+            />
+            <span className="text-xs font-medium text-slate-700">{t("med.freqContinuous")}</span>
+          </label>
         </div>
         <div>
           <label className="text-xs font-medium text-slate-600 block mb-1">

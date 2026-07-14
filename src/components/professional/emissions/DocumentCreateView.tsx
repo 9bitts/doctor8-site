@@ -48,6 +48,7 @@ interface DocumentCreateViewProps {
   initialBody: string;
   initialType: string;
   initialTemplateId?: string | null;
+  editingDocumentId?: string | null;
   onBack: () => void;
   onSaved: (emission: SavedEmission) => void;
 }
@@ -55,6 +56,7 @@ interface DocumentCreateViewProps {
 export function DocumentCreateView({
   t, charts, chartsLoading = false, reuseHint, templateHint, initialPatient, lockPatient = false, initialBody, initialType,
   initialTemplateId = null,
+  editingDocumentId = null,
   onBack, onSaved,
 }: DocumentCreateViewProps) {
   const { lang } = useI18n();
@@ -185,23 +187,32 @@ export function DocumentCreateView({
     setSaving(true);
     try {
       await extendSessionForWrite(updateSession);
-      const res = await fetch("/api/professional/documents", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "same-origin",
-        body: JSON.stringify({
-          patientRecordId: selectedPatient.id,
-          categoryId,
-          title,
-          content: body,
-          recordKind,
-        }),
-      });
+      const res = await fetch(
+        editingDocumentId
+          ? `/api/professional/documents/${editingDocumentId}`
+          : "/api/professional/documents",
+        {
+          method: editingDocumentId ? "PATCH" : "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify(
+            editingDocumentId
+              ? { title, content: body, ...(categoryId ? { categoryId } : {}) }
+              : {
+                  patientRecordId: selectedPatient.id,
+                  categoryId,
+                  title,
+                  content: body,
+                  recordKind,
+                },
+          ),
+        },
+      );
       if (res.ok) {
         const data = await res.json();
         onSaved({
           kind: "document",
-          id: data.id,
+          id: editingDocumentId || data.id,
           patient: selectedPatient,
           label: title,
           documentBody: body.trim(),

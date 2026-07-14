@@ -22,6 +22,7 @@ export const prescriptionMedicationItemSchema = z
     frequency: z.string().optional(),
     duration: z.string().optional(),
     instructions: z.string().optional(),
+    continuousUse: z.boolean().optional(),
     presentation: z.string().optional(),
     pharmaceuticalForm: z.string().optional(),
     itemKind: z.enum(PRESCRIPTION_ITEM_KINDS).optional(),

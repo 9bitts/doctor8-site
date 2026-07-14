@@ -271,8 +271,20 @@ export function RxTemplateForm({
     setMedications((prev) => prev.filter((_, i) => i !== index));
   }
 
-  function updateMedication(index: number, field: keyof PrescriptionMedItem, value: string) {
-    setMedications((prev) => prev.map((m, i) => (i === index ? { ...m, [field]: value } : m)));
+  function updateMedication(index: number, field: keyof PrescriptionMedItem, value: PrescriptionMedItem[keyof PrescriptionMedItem]) {
+    setMedications((prev) => prev.map((m, i) => {
+      if (i !== index) return m;
+      if (field === "continuousUse") {
+        const checked = value === true;
+        return {
+          ...m,
+          continuousUse: checked,
+          duration: checked ? "" : m.duration,
+          frequency: checked && m.frequency === "Continuous use" ? "" : m.frequency,
+        };
+      }
+      return { ...m, [field]: value };
+    }));
   }
 
   async function handleSave() {
@@ -294,6 +306,7 @@ export function RxTemplateForm({
         frequency: m.frequency || "",
         duration: m.duration,
         instructions: m.instructions,
+        continuousUse: m.continuousUse || undefined,
         presentation: m.presentation || "",
         pharmaceuticalForm: m.pharmaceuticalForm || "",
         itemKind: m.itemKind || "medication",

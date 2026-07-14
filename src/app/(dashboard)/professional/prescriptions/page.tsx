@@ -28,6 +28,7 @@ export default function PrescriptionsPage() {
         postSaveStep={p.postSaveStep}
         postSaveShareUrl={p.postSaveShareUrl}
         onDone={p.finishPostSave}
+        onEdit={p.editSavedEmission}
         deliveryOnly={p.cfg.skipDigitalSign}
         apiBase={p.cfg.apiBase}
       />
@@ -48,6 +49,7 @@ export default function PrescriptionsPage() {
           initialNotes={p.examTemplatePrefill?.notes || p.reuseClinical?.examNotes || ""}
           initialCid={p.examTemplatePrefill?.cid || p.reuseClinical?.cid || ""}
           initialTitle={p.examTemplatePrefill?.title || p.reuseClinical?.title || ""}
+          editingDocumentId={p.editingClinicalDocId}
           onBack={p.closeCreate}
           onSaved={p.handleEmissionSaved}
         />
@@ -69,6 +71,7 @@ export default function PrescriptionsPage() {
           initialBody={p.docTemplatePrefill?.body || p.reuseClinical?.content || ""}
           initialType={p.docTemplatePrefill?.documentType || p.reuseClinical?.type || "CERTIFICATE"}
           initialTemplateId={p.docTemplatePrefill?.templateId || null}
+          editingDocumentId={p.editingClinicalDocId}
           onBack={p.closeCreate}
           onSaved={p.handleEmissionSaved}
         />

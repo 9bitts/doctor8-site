@@ -60,6 +60,8 @@ export interface ChartActivityEvent {
   detail: string | null;
   at: string;
   sourceId: string | null;
+  /** Prescription row id — set for PRESCRIPTION medical documents. */
+  emissionId?: string | null;
 }
 
 function safeDecrypt(v: string | null | undefined): string {
@@ -140,7 +142,7 @@ export async function buildChartActivityTimeline(
       where: { patientRecordId: chartId },
       include: {
         category: { select: { name: true } },
-        prescriptions: { select: { medications: true }, take: 1 },
+        prescriptions: { select: { id: true, medications: true }, take: 1 },
       },
       orderBy: { createdAt: "desc" },
     }),
@@ -289,6 +291,7 @@ export async function buildChartActivityTimeline(
       detail: content,
       at: d.createdAt.toISOString(),
       sourceId: d.id,
+      emissionId: isRx ? (d.prescriptions[0]?.id ?? null) : null,
     });
   }
 

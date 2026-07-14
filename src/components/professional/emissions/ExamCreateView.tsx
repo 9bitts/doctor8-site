@@ -29,12 +29,14 @@ interface ExamCreateViewProps {
   initialNotes: string;
   initialCid: string;
   initialTitle: string;
+  editingDocumentId?: string | null;
   onBack: () => void;
   onSaved: (emission: SavedEmission) => void;
 }
 
 export function ExamCreateView({
   t, charts, chartsLoading = false, reuseHint, templateHint, initialPatient, lockPatient = false, initialItems, initialNotes, initialCid, initialTitle,
+  editingDocumentId = null,
   onBack, onSaved,
 }: ExamCreateViewProps) {
   const { update: updateSession } = useSession();
@@ -66,25 +68,35 @@ export function ExamCreateView({
     setSaving(true);
     try {
       await extendSessionForWrite(updateSession);
-      const res = await fetch("/api/professional/documents", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "same-origin",
-        body: JSON.stringify({
-          patientRecordId: selectedPatient.id,
-          type: "EXAM_REQUEST",
-          title,
-          examItems: cleanItems,
-          notes,
-          cid: cid?.code || "",
-          cidLabel: cid?.description || "",
-        }),
-      });
+      const payload = {
+        patientRecordId: selectedPatient.id,
+        type: "EXAM_REQUEST",
+        title,
+        examItems: cleanItems,
+        notes,
+        cid: cid?.code || "",
+        cidLabel: cid?.description || "",
+      };
+      const res = await fetch(
+        editingDocumentId
+          ? `/api/professional/documents/${editingDocumentId}`
+          : "/api/professional/documents",
+        {
+          method: editingDocumentId ? "PATCH" : "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify(
+            editingDocumentId
+              ? { title, examItems: cleanItems, notes, cid: cid?.code || "" }
+              : payload,
+          ),
+        },
+      );
       if (res.ok) {
         const data = await res.json();
         onSaved({
           kind: "exam",
-          id: data.id,
+          id: editingDocumentId || data.id,
           patient: selectedPatient,
           label: title,
           examItems: cleanItems,

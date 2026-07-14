@@ -16,6 +16,7 @@ export interface ReviewMedication {
   frequency?: string;
   duration?: string;
   instructions?: string;
+  continuousUse?: boolean;
 }
 
 export interface SavedEmission {
@@ -38,13 +39,15 @@ interface EmissionPostSaveFlowProps {
   initialStep?: "review" | "choose" | "deliver" | "success";
   initialShareUrl?: string;
   onDone: () => void;
+  /** Return to the editor with the saved draft before signing or sending */
+  onEdit?: () => void;
   /** Skip digital signature step — go straight to deliver */
   deliveryOnly?: boolean;
   apiBase?: string;
 }
 
 export function EmissionPostSaveFlow({
-  emission, t, lang, signConfig, initialStep = "choose", initialShareUrl = "", onDone,
+  emission, t, lang, signConfig, initialStep = "choose", initialShareUrl = "", onDone, onEdit,
   deliveryOnly = false,
   apiBase = "/api/professional",
 }: EmissionPostSaveFlowProps) {
@@ -188,9 +191,13 @@ export function EmissionPostSaveFlow({
               {emission.medications.map((med, i) => (
                 <li key={i} className="text-sm text-slate-700 border-b border-slate-100 pb-2 last:border-0 last:pb-0">
                   <p className="font-semibold">{med.name}</p>
-                  {(med.dosage || med.frequency || med.duration) && (
+                  {(med.dosage || med.frequency || med.duration || med.continuousUse || med.frequency === "Continuous use") && (
                     <p className="text-xs text-slate-500 mt-0.5">
-                      {[med.dosage, med.frequency, med.duration].filter(Boolean).join(" · ")}
+                      {[
+                        med.dosage,
+                        med.frequency === "Continuous use" ? "" : med.frequency,
+                        med.duration || (med.continuousUse || med.frequency === "Continuous use" ? t("med.freqContinuous") : ""),
+                      ].filter(Boolean).join(" · ")}
                     </p>
                   )}
                   {med.instructions && (
@@ -246,6 +253,16 @@ export function EmissionPostSaveFlow({
           {t("rx.review.previewPdf")}
         </button>
 
+        {onEdit && (
+          <button
+            type="button"
+            onClick={onEdit}
+            className="w-full py-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-sm transition"
+          >
+            {t("rx.review.backEdit")}
+          </button>
+        )}
+
         <button
           type="button"
           onClick={() => setStep("choose")}
@@ -282,6 +299,13 @@ export function EmissionPostSaveFlow({
             {delivering ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
             {t("rx.flow.sendDoctor8")}
           </button>
+
+          {onEdit && (
+            <button onClick={onEdit} disabled={delivering}
+              className="w-full py-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-sm transition disabled:opacity-50">
+              {t("rx.review.backEdit")}
+            </button>
+          )}
 
           <button onClick={onDone} disabled={delivering}
             className="w-full py-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 font-semibold text-sm transition">
@@ -401,8 +425,14 @@ export function EmissionPostSaveFlow({
           <button onClick={handleSendUnsigned} disabled={delivering}
             className="w-full py-3.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-sm transition flex items-center justify-center gap-2 disabled:opacity-50">
             {delivering ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
-            {t("rx.flow.sendDoctor8")}
+            {t("rx.flow.sendUnsigned")}
           </button>
+          {onEdit && (
+            <button onClick={onEdit} disabled={delivering}
+              className="w-full py-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 font-semibold text-sm transition disabled:opacity-50">
+              {t("rx.review.backEdit")}
+            </button>
+          )}
         </div>
 
         <p className="text-xs text-slate-400 text-center">{t("rx.flow.signHint")}</p>

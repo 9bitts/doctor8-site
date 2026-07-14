@@ -53,14 +53,17 @@ const FREQ: Record<Lang, Record<string, string>> = {
     "Once daily": "Uma vez ao dia", "Twice daily": "Duas vezes ao dia",
     "Three times daily": "Três vezes ao dia", "Every 8 hours": "A cada 8 horas",
     "Every 12 hours": "A cada 12 horas", "As needed": "Quando necessário", "Weekly": "Semanalmente",
-    "Continuous use": "Uso Contínuo",
   },
   es: {
     "Once daily": "Una vez al día", "Twice daily": "Dos veces al día",
     "Three times daily": "Tres veces al día", "Every 8 hours": "Cada 8 horas",
     "Every 12 hours": "Cada 12 horas", "As needed": "Cuando sea necesario", "Weekly": "Semanalmente",
-    "Continuous use": "Uso continuo",
   },
+};
+const CONTINUOUS_DURATION: Record<Lang, string> = {
+  en: "Continuous use",
+  pt: "Uso Contínuo",
+  es: "Uso continuo",
 };
 const LOCALE: Record<Lang, string> = { en: "en-US", pt: "pt-BR", es: "es-ES" };
 
@@ -174,11 +177,16 @@ export async function POST(req: NextRequest) {
       pharmaceuticalForm?: string;
       mnSlug?: string;
       renisus?: boolean;
+      continuousUse?: boolean;
       itemKind?: import("@/lib/prescription-item-kind").PrescriptionItemKind;
-    }[]).map((m) => ({
-      ...m,
-      frequency: FREQ[lang][m.frequency] || m.frequency,
-    }));
+    }[]).map((m) => {
+      const isContinuous = m.continuousUse || m.frequency === "Continuous use";
+      return {
+        ...m,
+        frequency: isContinuous ? "" : (FREQ[lang][m.frequency] || m.frequency),
+        duration: isContinuous ? CONTINUOUS_DURATION[lang] : m.duration,
+      };
+    });
 
   const meds = await enrichMedsForPrescriptionPdf(medsRaw, lang);
   const cannabisComplianceLine = cannabisPdfComplianceLine(meds, lang);

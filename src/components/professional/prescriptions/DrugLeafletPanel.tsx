@@ -84,7 +84,7 @@ function LeafletAccordion({
             </button>
             {open && (
               <div className="px-3 pb-3 space-y-2">
-                <p className="text-sm text-slate-600 leading-relaxed whitespace-pre-wrap">
+                <p className="text-sm text-slate-600 leading-relaxed whitespace-pre-wrap break-words">
                   {section.content}
                 </p>
                 {isPosology && posologyExcerpt && onInsertPosology && (
@@ -170,30 +170,30 @@ export default function DrugLeafletPanel({
         : t("rx.leaflet.sourceCatalog");
 
   return (
-    <div className={`flex flex-col min-h-0 bg-slate-50/50 border-l border-slate-100 ${className ?? ""}`}>
+    <div className={`flex flex-col h-full min-h-0 bg-slate-50/50 max-lg:border-0 lg:border-l lg:border-slate-100 ${className ?? ""}`}>
       <div className="flex items-start justify-between gap-2 p-3 border-b border-slate-100 bg-white shrink-0">
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <p className="text-xs font-semibold text-brand-600 uppercase tracking-wide">
             {t("rx.leaflet.panelTitle")}
           </p>
-          <h4 className="font-bold text-slate-900 text-sm leading-snug truncate">
+          <h4 className="font-bold text-slate-900 text-sm leading-snug">
             {target.displayName}
           </h4>
           {leaflet?.subtitle && (
-            <p className="text-xs text-slate-500 truncate">{leaflet.subtitle}</p>
+            <p className="text-xs text-slate-500">{leaflet.subtitle}</p>
           )}
         </div>
         <button
           type="button"
           onClick={onClose}
-          className="shrink-0 p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition lg:hidden"
+          className="shrink-0 p-2 -mr-1 rounded-lg text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition lg:hidden"
           aria-label={t("rx.leaflet.close")}
         >
-          <X size={18} />
+          <X size={20} />
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-3 space-y-3 min-h-0">
+      <div className="flex-1 overflow-y-auto overscroll-contain p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] space-y-3 min-h-0">
         {loading && (
           <div className="flex flex-col items-center justify-center py-12 gap-2">
             <Loader2 size={22} className="animate-spin text-brand-400" />

@@ -61,9 +61,9 @@ const TEXTS: Record<string, Record<string, string>> = {
     es: "Activa la guardia para aparecer disponible para pacientes que necesitan atención inmediata. Controlas el ritmo llamando al siguiente paciente.",
   },
   "prescriptions.title": {
-    pt: "Prescrições e Biblioteca 💊",
-    en: "Prescriptions & Library 💊",
-    es: "Recetas y Biblioteca 💊",
+    pt: "Criar Documentos e Biblioteca 💊",
+    en: "Create Documents & Library 💊",
+    es: "Crear documentos y Biblioteca 💊",
   },
   "prescriptions.body": {
     pt: "Emita receitas digitais com validade legal em PDF, com base de dados da Anvisa integrada. Na Biblioteca, salve e compartilhe recursos educativos com seus pacientes.",

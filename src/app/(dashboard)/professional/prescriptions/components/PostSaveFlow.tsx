@@ -9,6 +9,7 @@ export type PostSaveFlowProps = {
   postSaveStep: "review" | "choose" | "deliver" | "success";
   postSaveShareUrl: string;
   onDone: () => void;
+  onEdit?: () => void;
   deliveryOnly: boolean;
   apiBase: string;
 };
@@ -21,6 +22,7 @@ export function PostSaveFlow({
   postSaveStep,
   postSaveShareUrl,
   onDone,
+  onEdit,
   deliveryOnly,
   apiBase,
 }: PostSaveFlowProps) {
@@ -34,6 +36,7 @@ export function PostSaveFlow({
         initialStep={postSaveStep}
         initialShareUrl={postSaveShareUrl}
         onDone={onDone}
+        onEdit={onEdit}
         deliveryOnly={deliveryOnly}
         apiBase={apiBase}
       />

@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { ChevronDown, ChevronUp, Clock, ExternalLink } from "lucide-react";
+import { ChevronDown, ChevronUp, Clock, Copy, ExternalLink, Eye } from "lucide-react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { localeOf } from "@/lib/i18n/translations";
 import {
@@ -16,6 +16,8 @@ import {
 } from "@/lib/chart-activity-timeline";
 import { chartActionUrl } from "@/lib/video-chart-nav";
 import { mapProfessionalPathToPortal } from "@/lib/psychologist-portal";
+import { buildEmissionReuseUrl } from "@/lib/emission-reuse-nav";
+import { openAuthenticatedPdf } from "@/lib/open-url-safely";
 
 const CONTENT_PREVIEW_CHARS = 200;
 
@@ -38,6 +40,11 @@ function activityFilterLabelKey(filter: ActivityTimelineFilter): string {
 
 function activityCategoryLabelKey(category: ChartActivityEvent["category"]): string {
   return `activityTimeline.category.${category}`;
+}
+
+function resolveApiBase(pathname: string): string {
+  if (pathname.startsWith("/integrative-therapist")) return "/api/integrative-therapist";
+  return "/api/professional";
 }
 
 function resolveModuleHref(
@@ -79,6 +86,35 @@ export default function ChartActivityTimeline({
   const localeFull = localeOf(lang);
   const [filter, setFilter] = useState<ActivityTimelineFilter>("all");
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+  const [pdfError, setPdfError] = useState<string | null>(null);
+
+  const apiBase = resolveApiBase(pathname);
+  const prescriptionsPath = mapProfessionalPathToPortal(pathname, "/professional/prescriptions");
+
+  async function viewPrescription(ev: ChartActivityEvent) {
+    setPdfError(null);
+    const pdfUrl = ev.emissionId
+      ? `${apiBase}/prescriptions/${ev.emissionId}/pdf?lang=${lang}`
+      : ev.sourceId
+        ? `${apiBase}/documents/${ev.sourceId}/pdf?lang=${lang}`
+        : null;
+    if (!pdfUrl) return;
+    try {
+      await openAuthenticatedPdf(pdfUrl);
+    } catch {
+      setPdfError(t("rx.signedPdfUnavailable"));
+    }
+  }
+
+  function reusePrescription(ev: ChartActivityEvent) {
+    if (!ev.emissionId) return;
+    window.location.href = buildEmissionReuseUrl(
+      prescriptionsPath,
+      chartId,
+      "prescription",
+      ev.emissionId,
+    );
+  }
 
   const counts = useMemo(() => countActivityByCategory(events), [events]);
   const filtered = useMemo(() => filterActivityEvents(events, filter), [events, filter]);
@@ -196,7 +232,26 @@ export default function ChartActivityTimeline({
                         {isExpanded ? t("rec.collapse") : t("rec.expand")}
                       </button>
                     )}
-                    {moduleHref && (
+                    {ev.type === "prescription" ? (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => void viewPrescription(ev)}
+                          className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 hover:text-brand-500 border border-slate-200 hover:border-brand-200 px-3 py-1.5 rounded-lg transition"
+                        >
+                          <Eye size={14} />
+                          {t("activityTimeline.view")}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => reusePrescription(ev)}
+                          className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 hover:text-brand-500 border border-slate-200 hover:border-brand-200 px-3 py-1.5 rounded-lg transition"
+                        >
+                          <Copy size={14} />
+                          {t("rx.reuse")}
+                        </button>
+                      </>
+                    ) : moduleHref ? (
                       <Link
                         href={moduleHref}
                         className="inline-flex items-center gap-1 text-xs font-medium text-slate-500 hover:text-brand-600"
@@ -204,7 +259,7 @@ export default function ChartActivityTimeline({
                         <ExternalLink size={12} />
                         {t("activityTimeline.openModule")}
                       </Link>
-                    )}
+                    ) : null}
                   </div>
                 </div>
               );
@@ -212,6 +267,9 @@ export default function ChartActivityTimeline({
           </div>
         )}
       </div>
+      {pdfError && (
+        <p className="text-xs text-rose-600">{pdfError}</p>
+      )}
     </div>
   );
 }

@@ -118,6 +118,8 @@ export function usePrescriptionPage() {
   const [savedEmission, setSavedEmission] = useState<SavedEmission | null>(null);
   const [postSaveStep, setPostSaveStep] = useState<"review" | "choose" | "deliver" | "success">("choose");
   const [postSaveShareUrl, setPostSaveShareUrl] = useState("");
+  const [editingPrescriptionId, setEditingPrescriptionId] = useState<string | null>(null);
+  const [editingClinicalDocId, setEditingClinicalDocId] = useState<string | null>(null);
 
   const [charts, setCharts] = useState<Chart[]>([]);
   const [importablePatients, setImportablePatients] = useState<ImportablePatient[]>([]);
@@ -364,7 +366,9 @@ export function usePrescriptionPage() {
       window.history.replaceState({}, "", window.location.pathname);
     }
 
-    if (patientRecordId) {
+    const hasReuseDeepLink = !!(params.get("reuse") || params.get("reuseDoc"));
+
+    if (patientRecordId && !hasReuseDeepLink) {
       (async () => {
         await loadCharts();
         const recordsRes = await fetch(api("/records"));
@@ -958,6 +962,8 @@ export function usePrescriptionPage() {
     setHighlightIncompleteMeds(false);
     setInstructions(""); setValidDays(30); setFormError("");
     setReuseSource(null);
+    setEditingPrescriptionId(null);
+    setEditingClinicalDocId(null);
     setSavedEmission(null);
     setPostSaveStep("choose");
     setPostSaveShareUrl("");
@@ -967,6 +973,8 @@ export function usePrescriptionPage() {
 
   function handleEmissionSaved(emission: SavedEmission) {
     setSavedEmission(emission);
+    setEditingPrescriptionId(null);
+    setEditingClinicalDocId(null);
     if (cfg.skipDigitalSign) {
       setPostSaveStep("deliver");
     } else if (
@@ -986,11 +994,83 @@ export function usePrescriptionPage() {
     setSavedEmission(null);
     setPostSaveStep("choose");
     setPostSaveShareUrl("");
+    setEditingPrescriptionId(null);
+    setEditingClinicalDocId(null);
     setView("hub");
     resetForm();
     setReuseClinical(null);
     setReusePatient(null);
     fetchAll();
+  }
+
+  function editSavedEmission() {
+    const emission = savedEmission;
+    if (!emission) return;
+
+    setSavedEmission(null);
+    setPostSaveStep("choose");
+    setPostSaveShareUrl("");
+
+    if (emission.kind === "prescription") {
+      setEditingPrescriptionId(emission.id);
+      setEditingClinicalDocId(null);
+      const meds = (emission.medications || []).map((m) => ({ ...m }));
+      setMedications(meds);
+      setInstructions(emission.instructions || "");
+      if (meds.some((m) => isFreeTextPrescriptionItem(m.itemKind))) {
+        setFreeTextMode(true);
+      }
+      if (emission.patient.id) {
+        setSelectedPatient(emission.patient);
+      }
+      setView("prescription");
+      void loadCharts();
+      return;
+    }
+
+    setEditingClinicalDocId(emission.id);
+    setEditingPrescriptionId(null);
+    setReusePatient(emission.patient);
+    if (emission.kind === "exam") {
+      setReuseClinical({
+        id: emission.id,
+        type: "EXAM_REQUEST",
+        title: emission.label,
+        createdAt: new Date().toISOString(),
+        examItems: emission.examItems || [],
+        examNotes: emission.examNotes || "",
+        patientRecordId: emission.patient.id || null,
+        document: { patient: emission.patient },
+      });
+      setView("exam");
+      void loadCharts();
+      return;
+    }
+
+    setReusePatient(emission.patient);
+    void (async () => {
+      try {
+        const res = await fetch(api(`/documents/${emission.id}`));
+        const data = await res.json();
+        if (res.ok && data.document) {
+          await openReuseClinical(data.document as ClinicalDocument);
+        } else {
+          setReuseClinical({
+            id: emission.id,
+            type: "CERTIFICATE",
+            title: emission.label,
+            createdAt: new Date().toISOString(),
+            content: emission.documentBody || "",
+            patientRecordId: emission.patient.id || null,
+            document: { patient: emission.patient },
+          });
+          setView("document");
+        }
+      } catch {
+        setView("document");
+      }
+      await loadCharts();
+    })();
   }
 
   async function openCreate() {
@@ -1067,17 +1147,31 @@ export function usePrescriptionPage() {
     setView("prescription");
     await loadCharts();
 
-    const meds = (p.medications as MedItem[]).map((m) => ({ ...m }));
+    const meds = (p.medications as MedItem[]).map((m) => {
+      if (m.frequency === "Continuous use" || m.continuousUse) {
+        return {
+          ...m,
+          continuousUse: true,
+          frequency: m.frequency === "Continuous use" ? "" : m.frequency,
+        };
+      }
+      return { ...m };
+    });
     setMedications(meds);
     if (p.instructions) setInstructions(p.instructions);
+    if (meds.some((m) => isFreeTextPrescriptionItem(m.itemKind))) {
+      setFreeTextMode(true);
+    }
 
     const recordsRes = await fetch(api("/records"));
     const recordsData = await recordsRes.json();
     const records: Chart[] = recordsData.records || [];
     setCharts(records);
 
-    if (p.patientRecordId) {
-      const chart = records.find((c) => c.id === p.patientRecordId);
+    const { patientRecordId: deepLinkChartId } = readChartDeepLink();
+    const targetChartId = deepLinkChartId || p.patientRecordId;
+    if (targetChartId) {
+      const chart = records.find((c) => c.id === targetChartId);
       if (chart) setSelectedPatient(chart);
     } else if (p.document?.patient) {
       const target = `${p.document.patient.firstName} ${p.document.patient.lastName}`.toLowerCase();
@@ -1085,6 +1179,57 @@ export function usePrescriptionPage() {
       if (chart) setSelectedPatient(chart);
     }
   }
+
+  useEffect(() => {
+    const reuseRxId = searchParams.get("reuse");
+    const reuseDocId = searchParams.get("reuseDoc");
+    if (!reuseRxId && !reuseDocId) return;
+
+    let cancelled = false;
+
+    function stripReuseParams() {
+      const params = new URLSearchParams(window.location.search);
+      params.delete("reuse");
+      params.delete("reuseDoc");
+      const qs = params.toString();
+      window.history.replaceState(
+        {},
+        "",
+        qs ? `${window.location.pathname}?${qs}` : window.location.pathname,
+      );
+    }
+
+    void (async () => {
+      try {
+        if (reuseRxId) {
+          const res = await fetch(api(`/prescriptions/${reuseRxId}`));
+          const data = await res.json();
+          if (cancelled) return;
+          if (res.ok && data.prescription) {
+            await openReuse(data.prescription as Prescription);
+          }
+          return;
+        }
+
+        if (reuseDocId) {
+          const res = await fetch(api(`/documents/${reuseDocId}`));
+          const data = await res.json();
+          if (cancelled) return;
+          if (res.ok && data.document) {
+            await openReuseClinical(data.document as ClinicalDocument);
+          }
+        }
+      } catch {
+        /* optional deep link */
+      } finally {
+        if (!cancelled) stripReuseParams();
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [searchParams]);
 
   const showPatientPicker = patientPickerOpen && !selectedPatient;
 
@@ -1357,8 +1502,20 @@ export function usePrescriptionPage() {
   }
 
   function removeMedication(index: number) { setMedications((prev) => prev.filter((_, i) => i !== index)); }
-  function updateMedication(index: number, field: keyof MedItem, value: string) {
-    setMedications((prev) => prev.map((m, i) => i === index ? { ...m, [field]: value } : m));
+  function updateMedication(index: number, field: keyof MedItem, value: string | boolean) {
+    setMedications((prev) => prev.map((m, i) => {
+      if (i !== index) return m;
+      if (field === "continuousUse") {
+        const checked = value === true;
+        return {
+          ...m,
+          continuousUse: checked,
+          duration: checked ? "" : m.duration,
+          frequency: checked && m.frequency === "Continuous use" ? "" : m.frequency,
+        };
+      }
+      return { ...m, [field]: value };
+    }));
   }
 
   function selectFloralProduct(index: number, productId: string) {
@@ -1402,6 +1559,7 @@ export function usePrescriptionPage() {
         frequency: m.frequency || "",
         duration: m.duration,
         instructions: m.instructions,
+        continuousUse: m.continuousUse || undefined,
         presentation: m.presentation || "",
         pharmaceuticalForm: m.pharmaceuticalForm || "",
         itemKind: m.itemKind || "medication",
@@ -1447,6 +1605,7 @@ export function usePrescriptionPage() {
         frequency: m.frequency || "",
         duration: m.duration,
         instructions: m.instructions,
+        continuousUse: m.continuousUse || undefined,
         presentation: m.presentation || "",
         pharmaceuticalForm: m.pharmaceuticalForm || "",
         itemKind: m.itemKind || "medication",
@@ -1472,13 +1631,20 @@ export function usePrescriptionPage() {
             validDays,
             cannabisTcleAccepted: opts.cannabisTcleAccepted || undefined,
           };
-      const res = await fetch(api("/prescriptions"), {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        credentials: "same-origin",
-        body: JSON.stringify(payload),
-      });
+      const res = await fetch(
+        editingPrescriptionId
+          ? api(`/prescriptions/${editingPrescriptionId}`)
+          : api("/prescriptions"),
+        {
+          method: editingPrescriptionId ? "PATCH" : "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify(payload),
+        },
+      );
       if (res.ok) {
         const data = await res.json();
+        const prescriptionId = editingPrescriptionId || data.prescriptionId;
         const label = selectedPatient
           ? `${selectedPatient.firstName} ${selectedPatient.lastName}`
           : platformTarget!.displayName;
@@ -1492,12 +1658,13 @@ export function usePrescriptionPage() {
         };
         handleEmissionSaved({
           kind: "prescription",
-          id: data.prescriptionId,
+          id: prescriptionId,
           patient: patientForSave,
           label,
           medications: cleanMeds,
           instructions: finalInstructions || undefined,
         });
+        setEditingPrescriptionId(null);
         setPhytoInteractionConfirmed(false);
         setCannabisTcleAccepted(false);
       } else if (isAuthFailureStatus(res.status)) {
@@ -1524,6 +1691,7 @@ export function usePrescriptionPage() {
       frequency: m.frequency || "",
       duration: m.duration,
       instructions: m.instructions,
+      continuousUse: m.continuousUse || undefined,
       presentation: m.presentation || "",
       pharmaceuticalForm: m.pharmaceuticalForm || "",
       itemKind: m.itemKind || "medication",
@@ -1612,6 +1780,9 @@ export function usePrescriptionPage() {
     postSaveShareUrl,
     signConfig,
     finishPostSave,
+    editSavedEmission,
+    editingPrescriptionId,
+    editingClinicalDocId,
     consultReturnUrl,
     reusePatient,
     reuseClinical,
