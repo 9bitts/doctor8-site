@@ -247,11 +247,17 @@ export default function MedicinaIntegrativaLandingPage() {
               p.highlight ? (
                 <div
                   key={p.label}
-                  className="rounded-xl border-2 border-emerald-600 bg-d8-cannabis px-4 py-4 text-center shadow-md col-span-2 sm:col-span-1"
+                  className="rounded-xl border-2 bg-d8-cannabis px-4 py-4 text-center shadow-md col-span-2 sm:col-span-1"
+                  style={{ borderColor: "#7CFC00", boxShadow: "0 4px 20px rgba(124, 252, 0, 0.15)" }}
                 >
-                  <p className="text-2xl font-bold text-emerald-200">{p.count}</p>
+                  <p className="text-2xl font-bold" style={{ color: "#7CFC00" }}>
+                    {p.count}
+                  </p>
                   <p className="text-sm font-semibold text-emerald-50 mt-1">{p.label}</p>
-                  <span className="mt-2 inline-block rounded-full bg-emerald-400/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-emerald-200">
+                  <span
+                    className="mt-2 inline-block rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider"
+                    style={{ color: "#7CFC00", backgroundColor: "rgba(124, 252, 0, 0.12)", border: "1px solid rgba(124, 252, 0, 0.35)" }}
+                  >
                     Exclusivo
                   </span>
                 </div>
