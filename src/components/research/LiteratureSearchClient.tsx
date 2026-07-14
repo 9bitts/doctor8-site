@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { Microscope, Loader2, AlertTriangle, ExternalLink, Search } from "lucide-react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
+import DictationMicButton from "@/components/ui/DictationMicButton";
 
 type ArticleResult = {
   pmid: string;
@@ -65,7 +66,13 @@ export default function LiteratureSearchClient() {
   const [caseText, setCaseText] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [dictationError, setDictationError] = useState("");
   const [result, setResult] = useState<SearchResponse | null>(null);
+  const caseTextRef = useRef(caseText);
+
+  caseTextRef.current = caseText;
+
+  const getCurrentText = useCallback(() => caseTextRef.current, []);
 
   const canSearch = caseText.trim().length >= MIN_CHARS && !loading;
 
@@ -124,15 +131,45 @@ export default function LiteratureSearchClient() {
             {t("research.caseLabel")}
           </label>
           <p className="text-xs text-rose-600 mb-2">{t("research.privacyWarning")}</p>
-          <textarea
-            id="research-case"
-            value={caseText}
-            onChange={(e) => setCaseText(e.target.value)}
-            placeholder={t("research.casePlaceholder")}
-            rows={6}
-            maxLength={4000}
-            className="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:border-brand-400 focus:ring-2 focus:ring-brand-100 outline-none text-sm resize-y min-h-[140px]"
-          />
+          <div className="relative">
+            <textarea
+              id="research-case"
+              value={caseText}
+              onChange={(e) => {
+                setCaseText(e.target.value);
+                setDictationError("");
+              }}
+              placeholder={t("research.casePlaceholder")}
+              rows={6}
+              maxLength={4000}
+              className="w-full px-3 py-2.5 pr-14 rounded-xl border border-slate-200 focus:border-brand-400 focus:ring-2 focus:ring-brand-100 outline-none text-sm resize-y min-h-[140px]"
+            />
+            <div className="absolute right-2 bottom-2">
+              <DictationMicButton
+                lang={lang}
+                onText={setCaseText}
+                getCurrentText={getCurrentText}
+                maxLength={4000}
+                disabled={loading}
+                onError={setDictationError}
+                labels={{
+                  start: t("research.dictateStart"),
+                  stop: t("research.dictateStop"),
+                  listening: t("research.dictating"),
+                  transcribing: t("research.transcribing"),
+                  micError: t("research.dictateMicError"),
+                  notSupported: t("research.dictateNotSupported"),
+                  transcribeNotConfigured: t("research.dictateNotConfigured"),
+                  genericError: t("research.dictateError"),
+                }}
+              />
+            </div>
+          </div>
+          {dictationError && (
+            <p className="text-xs text-rose-600 mt-1" role="alert">
+              {dictationError}
+            </p>
+          )}
           <p className="text-xs text-slate-400 mt-1">
             {caseText.trim().length < MIN_CHARS
               ? t("research.minCharsHint")
