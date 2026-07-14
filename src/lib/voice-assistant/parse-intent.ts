@@ -1,13 +1,16 @@
 import type { Lang } from "@/lib/i18n/translations";
 import { LANG_LABEL } from "@/lib/ai-clinical-standards";
 import {
-  buildNavigationIndex,
-  getSkillsForPortal,
+  buildNavigationIndexForProfile,
+  getSkillsForProfile,
 } from "./skill-registry";
-import type { ParsedVoiceIntent, VoicePortalId } from "./types";
+import type { ParsedVoiceIntent, VoicePortalId, VoiceProfileContext } from "./types";
 
-function skillsPromptBlock(portalId: VoicePortalId): string {
-  const skills = getSkillsForPortal(portalId);
+function skillsPromptBlock(
+  portalId: VoicePortalId,
+  profile?: VoiceProfileContext | null,
+): string {
+  const skills = getSkillsForProfile(portalId, profile);
   return skills
     .map(
       (s) =>
@@ -16,8 +19,11 @@ function skillsPromptBlock(portalId: VoicePortalId): string {
     .join("\n");
 }
 
-function navPromptBlock(portalId: VoicePortalId): string {
-  return buildNavigationIndex(portalId)
+function navPromptBlock(
+  portalId: VoicePortalId,
+  profile?: VoiceProfileContext | null,
+): string {
+  return buildNavigationIndexForProfile(portalId, profile)
     .slice(0, 24)
     .map((n) => `- ${n.href}`)
     .join("\n");
@@ -27,6 +33,7 @@ export async function parseVoiceIntent(params: {
   lang: Lang;
   portalId: VoicePortalId;
   skillsPortalId?: VoicePortalId;
+  profile?: VoiceProfileContext | null;
   transcript: string;
 }): Promise<ParsedVoiceIntent> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
@@ -40,10 +47,10 @@ Your job: read a spoken command (transcript) and return STRICT JSON only — no 
 
 Portal: ${skillsPortal}
 Available skills:
-${skillsPromptBlock(skillsPortal)}
+${skillsPromptBlock(skillsPortal, params.profile)}
 
 Navigation routes (use targetRoute when navigating):
-${navPromptBlock(skillsPortal)}
+${navPromptBlock(skillsPortal, params.profile)}
 
 RULES:
 - Choose exactly ONE skillId from the available skills list.

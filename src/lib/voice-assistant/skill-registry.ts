@@ -7,7 +7,8 @@ import {
   patientsRouteForPortal,
   prescriptionsRouteForPortal,
 } from "./portal-resolver";
-import type { VoicePortalId, VoiceSkill } from "./types";
+import { filterNavigationForProfile } from "./voice-profile";
+import type { VoicePortalId, VoiceProfileContext, VoiceSkill } from "./types";
 
 const BASE_SKILLS: Partial<Record<VoicePortalId, VoiceSkill[]>> = {
   PROFESSIONAL: [
@@ -148,13 +149,31 @@ export function getSkillsForPortal(portalId: VoicePortalId): VoiceSkill[] {
   return BASE_SKILLS[portalId] ?? [];
 }
 
+export function getSkillsForProfile(
+  skillsPortalId: VoicePortalId,
+  profile?: VoiceProfileContext | null,
+): VoiceSkill[] {
+  return getSkillsForPortal(skillsPortalId);
+}
+
 export function buildNavigationIndex(portalId: VoicePortalId): Array<{ href: string; labelKey: string }> {
   const nav = PLATFORM_NAV_BY_PORTAL[portalId as PlatformPortalId] ?? [];
   return nav.map((item) => ({ href: item.href, labelKey: item.labelKey }));
 }
 
-export function resolveSkillRoute(portalId: VoicePortalId, skillId: string): string | undefined {
-  const skill = getSkillsForPortal(portalId).find((s) => s.id === skillId);
+export function buildNavigationIndexForProfile(
+  portalId: VoicePortalId,
+  profile?: VoiceProfileContext | null,
+): Array<{ href: string; labelKey: string }> {
+  return filterNavigationForProfile(buildNavigationIndex(portalId), portalId, profile);
+}
+
+export function resolveSkillRoute(
+  portalId: VoicePortalId,
+  skillId: string,
+  profile?: VoiceProfileContext | null,
+): string | undefined {
+  const skill = getSkillsForProfile(portalId, profile).find((s) => s.id === skillId);
   if (skill?.route) return skill.route;
   if (skillId === "prescribe") return prescriptionsRouteForPortal(portalId);
   if (skillId === "search_patient") return patientsRouteForPortal(portalId);

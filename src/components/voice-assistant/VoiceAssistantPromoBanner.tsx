@@ -26,9 +26,11 @@ export default function VoiceAssistantPromoBanner({ userId, portalId }: Props) {
   const pathname = usePathname();
   const t = (k: string) => voiceT(k, lang);
   const [dismissed, setDismissed] = useState(true);
+  const [primaryExample, setPrimaryExample] = useState<string | null>(null);
 
   const skillsPortal = resolveSkillsPortalFromPathname(pathname) || portalId;
-  const example = getPrimaryVoiceExample(skillsPortal);
+  const fallbackExample = getPrimaryVoiceExample(skillsPortal);
+  const example = primaryExample ?? fallbackExample;
 
   useEffect(() => {
     try {
@@ -38,6 +40,24 @@ export default function VoiceAssistantPromoBanner({ userId, portalId }: Props) {
       setDismissed(false);
     }
   }, [userId]);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch(
+      `/api/voice-assistant/context?portalId=${encodeURIComponent(portalId)}&pathname=${encodeURIComponent(pathname)}`,
+    )
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (cancelled) return;
+        setPrimaryExample(data?.primaryExample ?? null);
+      })
+      .catch(() => {
+        if (!cancelled) setPrimaryExample(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [portalId, pathname]);
 
   if (dismissed) return null;
 

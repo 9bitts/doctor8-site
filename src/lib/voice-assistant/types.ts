@@ -258,6 +258,13 @@ export type VoiceSessionContext = {
   updatedAt: number;
 };
 
+/** Logged-in provider profile fields used to tailor voice skills and navigation. */
+export type VoiceProfileContext = {
+  specialty?: string | null;
+  practicesIntegrativeMedicine?: boolean;
+  picsPractices?: string[];
+};
+
 export const VOICE_PREFILL_STORAGE_KEY = "doctor8:voiceAssistant:prefill";
 export const VOICE_FORM_PREFILL_STORAGE_KEY = "doctor8:voiceAssistant:formPrefill";
 export const VOICE_NOTE_STORAGE_KEY = "doctor8:voiceAssistant:clinicalNote";

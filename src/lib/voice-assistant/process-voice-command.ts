@@ -7,11 +7,11 @@ import {
   patientChartRouteForPortal,
   patientsRouteForPortal,
   prescriptionsRouteForPortal,
-  resolveSkillsPortalFromPathname,
 } from "./portal-resolver";
 import { parseVoiceIntent } from "./parse-intent";
 import { buildPrescriptionPrefill, resolvePatientById, resolvePatientMatches } from "./resolve-entities";
 import { resolveSkillRoute } from "./skill-registry";
+import { resolveEffectiveSkillsPortal } from "./voice-profile";
 import type { VoicePortalId, VoiceProcessResult, PatientMatch } from "./types";
 import type { VoiceAssistantAuth } from "./voice-assistant-auth";
 
@@ -39,14 +39,18 @@ export async function processVoiceCommand(params: {
   sessionPatientRecordId?: string;
 }): Promise<VoiceProcessResult> {
   const { auth, lang, portalId, transcript } = params;
-  const skillsPortal =
-    (params.pathname ? resolveSkillsPortalFromPathname(params.pathname) : null) || portalId;
+  const skillsPortal = resolveEffectiveSkillsPortal(
+    params.pathname,
+    auth.profile,
+    portalId,
+  );
   const chartPortal = portalId === "PROFESSIONAL" ? "PROFESSIONAL" : skillsPortal;
 
   const intent = await parseVoiceIntent({
     lang,
     portalId,
     skillsPortalId: skillsPortal,
+    profile: auth.profile,
     transcript,
   });
 
@@ -63,10 +67,10 @@ export async function processVoiceCommand(params: {
     };
   }
 
-  const skillRoute = intent.targetRoute || resolveSkillRoute(skillsPortal, intent.skillId);
+  const skillRoute = intent.targetRoute || resolveSkillRoute(skillsPortal, intent.skillId, auth.profile);
 
   if (intent.skillId === "navigate") {
-    const route = skillRoute || resolveSkillRoute(skillsPortal, "navigate");
+    const route = skillRoute || resolveSkillRoute(skillsPortal, "navigate", auth.profile);
     if (!route) {
       return {
         action: "unknown",

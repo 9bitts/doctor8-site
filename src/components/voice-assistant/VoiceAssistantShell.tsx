@@ -68,17 +68,51 @@ export default function VoiceAssistantShell({ portalId, userId, variant = "fab" 
   const [result, setResult] = useState<VoiceProcessResult | null>(null);
   const [copied, setCopied] = useState(false);
   const [recordingSupported, setRecordingSupported] = useState(false);
+  const [voiceContext, setVoiceContext] = useState<{
+    skillsPortalId: VoicePortalId;
+    examples: string[];
+  } | null>(null);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const streamRef = useRef<MediaStream | null>(null);
 
   const activePortal = portalId || resolveVoicePortalFromPathname(pathname);
-  const skillsPortal = resolveSkillsPortalFromPathname(pathname) || activePortal;
-  const portalExamples = skillsPortal ? getPortalVoiceExamples(skillsPortal) : [];
+  const skillsPortal =
+    voiceContext?.skillsPortalId ||
+    resolveSkillsPortalFromPathname(pathname) ||
+    activePortal;
+  const portalExamples =
+    voiceContext?.examples ||
+    (skillsPortal ? getPortalVoiceExamples(skillsPortal) : []);
   const speakHint = skillsPortal
     ? formatVoiceHint(skillsPortal, t("speakHint"))
     : t("speakHint");
+
+  useEffect(() => {
+    if (!activePortal) {
+      setVoiceContext(null);
+      return;
+    }
+    let cancelled = false;
+    fetch(
+      `/api/voice-assistant/context?portalId=${encodeURIComponent(activePortal)}&pathname=${encodeURIComponent(pathname)}`,
+    )
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (cancelled || !data?.skillsPortalId) return;
+        setVoiceContext({
+          skillsPortalId: data.skillsPortalId,
+          examples: data.examples ?? [],
+        });
+      })
+      .catch(() => {
+        if (!cancelled) setVoiceContext(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [activePortal, pathname]);
 
   useEffect(() => {
     setRecordingSupported(
