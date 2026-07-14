@@ -1284,7 +1284,8 @@ export function usePrescriptionPage() {
         floralProductId: m.floralProductId || undefined,
       }));
 
-      let finalInstructions = instructions.trim();
+      const finalInstructions = instructions.trim();
+      const payload = selectedPatient
         ? {
             [cfg.patientRecordField]: selectedPatient.id,
             medications: cleanMeds,
