@@ -9,7 +9,7 @@ import { db } from "@/lib/db";
 import { audit } from "@/lib/audit";
 import { scheduleAppointmentReminders, schedulePostConsultNotesReminder, scheduleReviewRequest } from "@/lib/qstash";
 import { notifySlotAlerts } from "@/lib/slot-alerts";
-import { safeDecrypt } from "@/lib/psychoanalyst-api";
+import { decryptPatientName, safeDecrypt } from "@/lib/psychoanalyst-api";
 import {
   AppointmentSlotTakenError,
   isActiveSlotUniqueViolation,
@@ -185,7 +185,7 @@ export async function POST(
       const { sendAppointmentConfirmation } = await import("@/lib/email");
       await sendAppointmentConfirmation({
         patientEmail:  patientUser.email,
-        patientName:   `${patientProfile.firstName} ${patientProfile.lastName}`,
+        patientName:   decryptPatientName(patientProfile.firstName, patientProfile.lastName),
         doctorName:    appointment.professional
           ? `${appointment.professional.firstName} ${appointment.professional.lastName}`
           : `${safeDecrypt(appointment.psychoanalyst!.firstName)} ${safeDecrypt(appointment.psychoanalyst!.lastName)}`,

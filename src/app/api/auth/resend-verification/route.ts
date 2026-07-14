@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { randomBytes } from "crypto";
 import { sendEmailVerification } from "@/lib/email";
+import { safeDecrypt } from "@/lib/psychoanalyst-api";
 import { isAccountVerified } from "@/lib/account-verified";
 import { sanitizeLoginFrom } from "@/lib/auth-portals";
 import {
@@ -80,7 +81,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: true });
     }
 
-    const firstName =
+    const firstName = safeDecrypt(
       user.patientProfile?.firstName ||
       user.professionalProfile?.firstName ||
       user.psychoanalystProfile?.firstName ||
@@ -90,7 +91,8 @@ export async function POST(req: NextRequest) {
       user.pharmacyStoreMemberships[0]?.pharmacyStore.responsibleFirstName ||
       user.employerMemberships[0]?.employerCompany.responsibleFirstName ||
       user.organizationMemberships[0]?.organization.responsibleFirstName ||
-      "there";
+      "there",
+    ) || "there";
 
     // Remove old tokens and create a new one
     await db.verificationToken.deleteMany({

@@ -9,7 +9,7 @@ import {
   type EmailLang,
 } from "@/lib/email-core";
 import { createNotification } from "@/lib/notifications";
-import { safeDecrypt } from "@/lib/sign-helpers";
+import { decryptPatientName } from "@/lib/psychoanalyst-api";
 
 const COPY: Record<
   EmailLang,
@@ -122,7 +122,5 @@ export async function patientDisplayName(userId: string): Promise<string> {
     select: { firstName: true, lastName: true },
   });
   if (!profile) return "Paciente";
-  const first = safeDecrypt(profile.firstName);
-  const last = safeDecrypt(profile.lastName);
-  return `${first} ${last}`.trim() || "Paciente";
+  return decryptPatientName(profile.firstName, profile.lastName);
 }
