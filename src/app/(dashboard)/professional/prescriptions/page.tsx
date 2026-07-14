@@ -186,6 +186,11 @@ export default function PrescriptionsPage() {
                   : p.itemSearchMode;
               p.applyMnCatalogItem(mnMedItemFromListItemForMode(item, mode));
             },
+            leafletTarget: p.leafletTarget,
+            onViewDrugLeaflet: p.viewDrugLeaflet,
+            onViewMnLeaflet: p.viewMnLeaflet,
+            onCloseLeafletPanel: p.closeLeafletPanel,
+            onInsertLeafletPosology: p.insertLeafletPosology,
           }}
           onClose={p.closeCreate}
           onApplyRxTemplate={p.applyRxTemplate}

@@ -1,7 +1,9 @@
 import { FileText, Loader2, Pill, Plus, Search, X } from "lucide-react";
 import DrugSearchResults, { type DrugSearchResult } from "@/components/professional/prescriptions/DrugSearchResults";
+import DrugLeafletPanel from "@/components/professional/prescriptions/DrugLeafletPanel";
 import MedicinaNaturalSearchResults from "@/components/medicina-natural-catalog/MedicinaNaturalSearchResults";
 import { DRUG_COUNTRIES, type DrugCountryCode } from "@/lib/drug-countries";
+import type { DrugLeafletTarget } from "@/lib/drug-leaflet/types";
 import {
   mnCatalogSearchI18nKey,
   mnSearchModalTitleI18nKey,
@@ -45,6 +47,11 @@ export type MedicationSearchProps = {
   onClearDrugSearch: () => void;
   onAddDrug: (drug: DrugSearchResult) => void;
   onMnListItemSelect: (item: MedicinaNaturalListItem) => void;
+  leafletTarget: DrugLeafletTarget | null;
+  onViewDrugLeaflet: (drug: DrugSearchResult) => void;
+  onViewMnLeaflet: (item: MedicinaNaturalListItem) => void;
+  onCloseLeafletPanel: () => void;
+  onInsertLeafletPosology: (excerpt: string) => void;
 };
 
 export function MedicationSearch({
@@ -81,6 +88,11 @@ export function MedicationSearch({
   onClearDrugSearch,
   onAddDrug,
   onMnListItemSelect,
+  leafletTarget,
+  onViewDrugLeaflet,
+  onViewMnLeaflet,
+  onCloseLeafletPanel,
+  onInsertLeafletPosology,
 }: MedicationSearchProps) {
   return (
     <>
@@ -336,14 +348,16 @@ export function MedicationSearch({
 
       {drugSearchModalOpen && (
         <div
-          className="fixed inset-0 bg-black/40 flex items-center justify-center z-[60] p-4"
+          className="fixed inset-0 bg-black/40 flex items-center justify-center z-[60] p-2 sm:p-4"
           onClick={onCloseDrugSearchModal}
         >
           <div
-            className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[85vh] flex flex-col"
+            className={`bg-white rounded-2xl shadow-xl w-full flex flex-col max-h-[90vh] ${
+              leafletTarget ? "max-w-5xl" : "max-w-lg"
+            }`}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-start justify-between gap-3 p-4 border-b border-slate-100">
+            <div className="flex items-start justify-between gap-3 p-4 border-b border-slate-100 shrink-0">
               <div className="min-w-0">
                 <h3 className="font-bold text-slate-900">
                   {mnCatalogSearch
@@ -361,31 +375,55 @@ export function MedicationSearch({
                 <X size={20} />
               </button>
             </div>
-            <div className="p-4 overflow-y-auto flex-1 min-h-0">
-              {drugSearching ? (
-                <div className="flex flex-col items-center justify-center py-12 gap-3">
-                  <Loader2 size={24} className="animate-spin text-brand-400" />
-                  <p className="text-sm text-slate-500">{t("rx2.searchingDrugs")}</p>
-                </div>
-              ) : mnSearchResults.length > 0 ? (
-                <MedicinaNaturalSearchResults
-                  results={mnSearchResults}
-                  onSelect={onMnListItemSelect}
-                  className="max-h-[60vh]"
+
+            <div className="flex flex-col lg:flex-row flex-1 min-h-0 overflow-hidden">
+              <div className="p-4 overflow-y-auto flex-1 min-h-0 lg:max-w-md lg:border-r lg:border-slate-100">
+                {drugSearching ? (
+                  <div className="flex flex-col items-center justify-center py-12 gap-3">
+                    <Loader2 size={24} className="animate-spin text-brand-400" />
+                    <p className="text-sm text-slate-500">{t("rx2.searchingDrugs")}</p>
+                  </div>
+                ) : mnSearchResults.length > 0 ? (
+                  <MedicinaNaturalSearchResults
+                    results={mnSearchResults}
+                    onSelect={onMnListItemSelect}
+                    onViewLeaflet={onViewMnLeaflet}
+                    className="max-h-[60vh]"
+                    t={t}
+                  />
+                ) : drugResults.length > 0 ? (
+                  <DrugSearchResults
+                    results={drugResults}
+                    onSelect={onAddDrug}
+                    onViewLeaflet={onViewDrugLeaflet}
+                    controlInfo={mnCatalogSearch ? () => null : controlInfo}
+                    className="max-h-[60vh]"
+                    viewLeafletLabel={t("rx.leaflet.viewButton")}
+                    addLabel={t("rx.leaflet.addButton")}
+                  />
+                ) : drugSearchDone ? (
+                  <p className="text-sm text-slate-500 text-center py-8 px-4 border border-slate-100 rounded-xl bg-slate-50">
+                    {t("rx2.noDrugsFound")}
+                  </p>
+                ) : null}
+              </div>
+
+              <div
+                className={`min-h-0 ${
+                  leafletTarget
+                    ? "flex flex-col h-[45vh] lg:h-auto lg:flex-1 lg:min-w-[320px]"
+                    : "hidden lg:flex lg:flex-1 lg:min-w-[280px]"
+                }`}
+              >
+                <DrugLeafletPanel
+                  target={leafletTarget}
+                  apiBase={cfg.apiBase}
                   t={t}
+                  onClose={onCloseLeafletPanel}
+                  onInsertPosology={onInsertLeafletPosology}
+                  className="flex-1 min-h-0"
                 />
-              ) : drugResults.length > 0 ? (
-                <DrugSearchResults
-                  results={drugResults}
-                  onSelect={onAddDrug}
-                  controlInfo={mnCatalogSearch ? () => null : controlInfo}
-                  className="max-h-[60vh]"
-                />
-              ) : drugSearchDone ? (
-                <p className="text-sm text-slate-500 text-center py-8 px-4 border border-slate-100 rounded-xl bg-slate-50">
-                  {t("rx2.noDrugsFound")}
-                </p>
-              ) : null}
+              </div>
             </div>
           </div>
         </div>

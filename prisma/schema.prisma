@@ -3407,6 +3407,42 @@ model DrugCatalog {
   @@index([active])
 
   buyingClub BuyingClub?
+
+  drugLeaflets DrugLeaflet[]
+}
+
+// ─────────────────────────────────────────
+// DRUG LEAFLET (ANVISA bula sections — reference, not PHI)
+// Indexed by GGREM and/or normalized active ingredient for prescription lookup.
+// ─────────────────────────────────────────
+model DrugLeaflet {
+  id                  String   @id @default(cuid())
+
+  ggremCode           String?  @unique
+  activeIngredientKey String
+  activeIngredient    String
+  productName         String?
+
+  country             String   @default("BR")
+  anvisaProcessNumber String?
+  manufacturer        String?
+  pdfUrl              String?
+  externalUrl         String?
+
+  /// [{ key, title, content, defaultOpen? }]
+  sections            Json
+  posologyExcerpt     String?  @db.Text
+  source              String   @default("curated")
+
+  active              Boolean  @default(true)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  drugCatalog         DrugCatalog? @relation(fields: [ggremCode], references: [ggremCode], onDelete: SetNull)
+
+  @@index([activeIngredientKey])
+  @@index([country, activeIngredientKey])
+  @@index([active])
 }
 
 // ─────────────────────────────────────────

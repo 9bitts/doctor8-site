@@ -1,0 +1,346 @@
+[
+  {
+    "activeIngredient": "Amoxicilina",
+    "sections": [
+      {
+        "key": "indicacoes",
+        "content": "Amoxicilina é indicada no tratamento de infecções bacterianas sensíveis, incluindo infecções do trato respiratório superior e inferior, otite média, sinusite, faringite, infecções do trato urinário não complicadas, infecções de pele e tecidos moles, e erradicação do H. pylori em associação com inibidor de bomba de prótons."
+      },
+      {
+        "key": "contraindicacoes",
+        "content": "Hipersensibilidade às penicilinas ou a qualquer componente da fórmula. Histórico de reações alérgicas graves a beta-lactâmicos."
+      },
+      {
+        "key": "precaucoes",
+        "content": "Usar com cautela em pacientes com histórico de alergia a cefalosporinas. Reações de hipersensibilidade podem evoluir para anafilaxia. Ajustar dose em insuficiência renal. Uso prolongado pode favorecer superinfecção por organismos não sensíveis."
+      },
+      {
+        "key": "interacoes",
+        "content": "Probenecida aumenta níveis plasmáticos de amoxicilina. Anticoncepcionais orais: risco teórico de redução de eficácia. Alopurinol pode aumentar reações cutâneas. Anticoagulantes orais: monitorar INR."
+      },
+      {
+        "key": "reacoes_adversas",
+        "content": "As mais comuns: náusea, vômito, diarreia, rash cutâneo. Reações graves incluem colite pseudomembranosa, reações anafiláticas e hepatite."
+      },
+      {
+        "key": "posologia",
+        "content": "Adultos e adolescentes ≥40 kg:\n• Infecções leves a moderadas: 500 mg a cada 8 horas ou 875 mg a cada 12 horas.\n• Infecções graves: 1 g a cada 8 horas.\n• Duração usual: 7 a 10 dias (ajustar conforme indicação).\n\nCrianças: 20–40 mg/kg/dia divididos a cada 8 horas (máx. 3 g/dia).\n\nAdministrar por via oral, com ou sem alimentos.",
+        "defaultOpen": true
+      },
+      {
+        "key": "gestacao_pediatria",
+        "content": "Categoria B na gestação (usar se claramente necessário). Excretada no leite materno em pequenas quantidades. Ajustar dose pediátrica por peso."
+      }
+    ],
+    "posologyExcerpt": "Adultos: 500 mg a cada 8 h ou 875 mg a cada 12 h por 7–10 dias. Crianças: 20–40 mg/kg/dia divididos a cada 8 h."
+  },
+  {
+    "activeIngredient": "Dipirona sódica",
+    "sections": [
+      {
+        "key": "indicacoes",
+        "content": "Analgésico e antipirético. Indicada para dor de intensidade leve a moderada e estados febris, quando outros analgésicos não forem adequados ou tolerados."
+      },
+      {
+        "key": "contraindicacoes",
+        "content": "Hipersensibilidade à dipirona, a outras pirazolonas ou pirazolidinas. Porfiria hepática aguda intermitente. Primeiro trimestre de gestação. Deficiência de G6PD. Histórico de agranulocitose induzida por dipirona."
+      },
+      {
+        "key": "precaucoes",
+        "content": "Risco de agranulocitose (raro, porém grave). Orientar paciente a interromper e procurar atendimento se surgirem febre, dor de garganta ou lesões mucosas. Usar a menor dose eficaz pelo menor tempo possível."
+      },
+      {
+        "key": "interacoes",
+        "content": "Ciclosporina: redução dos níveis plasmáticos. Metotrexato em dose baixa: monitorar toxicidade. Pode potencializar efeito de anticoagulantes cumarínicos."
+      },
+      {
+        "key": "reacoes_adversas",
+        "content": "Hipotensão (reação anafilactoide), rash, agranulocitose, leucopenia, trombocitopenia."
+      },
+      {
+        "key": "posologia",
+        "content": "Adultos: 500 mg a 1 g até 4 vezes ao dia (máx. 4 g/dia).\nVia oral ou parenteral conforme apresentação.\nNão exceder dose máxima diária.",
+        "defaultOpen": true
+      }
+    ],
+    "posologyExcerpt": "Adultos: 500 mg a 1 g até 4x/dia (máx. 4 g/dia)."
+  },
+  {
+    "activeIngredient": "Paracetamol",
+    "sections": [
+      {
+        "key": "indicacoes",
+        "content": "Analgésico e antipirético. Dor leve a moderada e febre."
+      },
+      {
+        "key": "contraindicacoes",
+        "content": "Hipersensibilidade ao paracetamol. Insuficiência hepática grave."
+      },
+      {
+        "key": "precaucoes",
+        "content": "Evitar doses acima de 4 g/dia em adultos. Risco de hepatotoxicidade em etilistas crônicos, desnutridos ou uso concomitante de indutores enzimáticos."
+      },
+      {
+        "key": "interacoes",
+        "content": "Warfarina: monitorar INR com uso prolongado. Isoniazida, fenitoína e carbamazepina podem aumentar risco de hepatotoxicidade."
+      },
+      {
+        "key": "reacoes_adversas",
+        "content": "Geralmente bem tolerado. Em superdose: necrose hepática."
+      },
+      {
+        "key": "posologia",
+        "content": "Adultos: 500 mg a 1 g a cada 6 horas, se necessário (máx. 4 g/dia).\nCrianças: 10–15 mg/kg/dose a cada 4–6 h (máx. 60 mg/kg/dia).",
+        "defaultOpen": true
+      }
+    ],
+    "posologyExcerpt": "Adultos: 500 mg a 1 g a cada 6 h (máx. 4 g/dia)."
+  },
+  {
+    "activeIngredient": "Ibuprofeno",
+    "sections": [
+      {
+        "key": "indicacoes",
+        "content": "Anti-inflamatório, analgésico e antipirético. Dor, inflamação e febre."
+      },
+      {
+        "key": "contraindicacoes",
+        "content": "Úlcera péptica ativa, insuficiência cardíaca grave, hipersensibilidade a AINEs, terceiro trimestre de gestação."
+      },
+      {
+        "key": "precaucoes",
+        "content": "Usar com cautela em idosos, asma, hipertensão, insuficiência renal ou hepática. Tomar após refeições."
+      },
+      {
+        "key": "interacoes",
+        "content": "Anticoagulantes, antiagregantes, outros AINEs, metotrexato, lítio, IECA — aumento de risco de eventos adversos."
+      },
+      {
+        "key": "reacoes_adversas",
+        "content": "Dispepsia, náusea, rash, retenção hídrica, elevação de pressão arterial."
+      },
+      {
+        "key": "posologia",
+        "content": "Adultos: 200–400 mg a cada 6–8 horas (máx. 1.200 mg/dia sem prescrição; até 2.400 mg/dia sob supervisão).\nCrianças ≥6 meses: 5–10 mg/kg/dose a cada 6–8 h.",
+        "defaultOpen": true
+      }
+    ],
+    "posologyExcerpt": "Adultos: 400 mg a cada 8 h após refeições (máx. 1.200 mg/dia OTC)."
+  },
+  {
+    "activeIngredient": "Losartana potássica",
+    "sections": [
+      {
+        "key": "indicacoes",
+        "content": "Hipertensão arterial. Redução de risco cardiovascular em hipertensos com hipertrofia ventricular esquerda. Nefropatia diabética com proteinúria."
+      },
+      {
+        "key": "contraindicacoes",
+        "content": "Hipersensibilidade. Uso concomitante com alisquireno em diabéticos. Segundo e terceiro trimestres de gestação."
+      },
+      {
+        "key": "precaucoes",
+        "content": "Monitorar função renal e potássio sérico. Risco de hipotensão em depleção de volume."
+      },
+      {
+        "key": "interacoes",
+        "content": "Suplementos de potássio, espironolactona, AINEs podem reduzir efeito anti-hipertensivo e afetar função renal."
+      },
+      {
+        "key": "reacoes_adversas",
+        "content": "Tontura, hipotensão, hipercalemia, tosse (menos que IECA), elevação de creatinina."
+      },
+      {
+        "key": "posologia",
+        "content": "Hipertensão: iniciar 50 mg uma vez ao dia; pode aumentar para 100 mg/dia.\nNefropatia diabética: 50 mg/dia, titular conforme resposta.",
+        "defaultOpen": true
+      }
+    ],
+    "posologyExcerpt": "50 mg uma vez ao dia; titular até 100 mg/dia."
+  },
+  {
+    "activeIngredient": "Omeprazol",
+    "sections": [
+      {
+        "key": "indicacoes",
+        "content": "Úlcera péptica, refluxo gastroesofágico, erradicação de H. pylori (em combinação), dispepsia associada à acidez."
+      },
+      {
+        "key": "contraindicacoes",
+        "content": "Hipersensibilidade aos benzimidazóis."
+      },
+      {
+        "key": "precaucoes",
+        "content": "Uso prolongado: risco de hipomagnesemia, fraturas, infecções gastrointestinais. Investigar alarmes antes de uso crônico."
+      },
+      {
+        "key": "interacoes",
+        "content": "Clopidogrel: possível redução de efeito antiagregante. Inibidores de CYP2C19 podem alterar níveis."
+      },
+      {
+        "key": "reacoes_adversas",
+        "content": "Cefaleia, diarreia, dor abdominal, náusea."
+      },
+      {
+        "key": "posologia",
+        "content": "DRGE: 20–40 mg uma vez ao dia por 4–8 semanas.\nÚlcera duodenal: 20 mg/dia por 4 semanas.\nTomar em jejum, 30 min antes da primeira refeição.",
+        "defaultOpen": true
+      }
+    ],
+    "posologyExcerpt": "20–40 mg uma vez ao dia em jejum, 30 min antes do café."
+  },
+  {
+    "activeIngredient": "Metformina",
+    "sections": [
+      {
+        "key": "indicacoes",
+        "content": "Diabetes mellitus tipo 2, especialmente em sobrepeso, quando dieta e exercício não são suficientes."
+      },
+      {
+        "key": "contraindicacoes",
+        "content": "Insuficiência renal (TFG <30), acidose metabólica, desidratação grave, sepse, uso de contraste iodado (suspender temporariamente)."
+      },
+      {
+        "key": "precaucoes",
+        "content": "Suspender em jejum prolongado, cirurgia maior, intoxicação alcoólica. Monitorar função renal."
+      },
+      {
+        "key": "interacoes",
+        "content": "Contraste iodado, álcool, diuréticos — risco de acidose lática."
+      },
+      {
+        "key": "reacoes_adversas",
+        "content": "Distúrbios gastrointestinais, acidose lática (rara)."
+      },
+      {
+        "key": "posologia",
+        "content": "Iniciar 500 mg 1–2x/dia com refeições; titular até 2 g/dia conforme tolerância e glicemia.",
+        "defaultOpen": true
+      }
+    ],
+    "posologyExcerpt": "500 mg 2x/dia com refeições; titular até 2 g/dia."
+  },
+  {
+    "activeIngredient": "Azitromicina",
+    "sections": [
+      {
+        "key": "indicacoes",
+        "content": "Infecções bacterianas sensíveis: faringite, otite, sinusite, pneumonia adquirida na comunidade, infecções de pele."
+      },
+      {
+        "key": "contraindicacoes",
+        "content": "Hipersensibilidade a macrolídeos. Histórico de colestase/hepatite com azitromicina."
+      },
+      {
+        "key": "precaucoes",
+        "content": "Prolongamento do QT. Usar com cautela com antiarrítmicos."
+      },
+      {
+        "key": "interacoes",
+        "content": "Antiacidos reduzem absorção (intervalo de 2 h). Warfarina, digoxina — monitorar."
+      },
+      {
+        "key": "reacoes_adversas",
+        "content": "Diarreia, náusea, dor abdominal, rash."
+      },
+      {
+        "key": "posologia",
+        "content": "Adultos: 500 mg no dia 1, depois 250 mg/dia por 4 dias (total 5 dias) OU 500 mg/dia por 3 dias conforme protocolo.\nTomar 1 h antes ou 2 h após refeições.",
+        "defaultOpen": true
+      }
+    ],
+    "posologyExcerpt": "500 mg no dia 1, depois 250 mg/dia por 4 dias."
+  },
+  {
+    "activeIngredient": "Captopril",
+    "sections": [
+      {
+        "key": "indicacoes",
+        "content": "Hipertensão arterial, insuficiência cardíaca, nefropatia diabética."
+      },
+      {
+        "key": "contraindicacoes",
+        "content": "Hipersensibilidade, angioedema prévio com IECA, gestação."
+      },
+      {
+        "key": "precaucoes",
+        "content": "Monitorar potássio e função renal. Tosse seca é efeito classe."
+      },
+      {
+        "key": "posologia",
+        "content": "Hipertensão: iniciar 12,5–25 mg 2–3x/dia; titular até 150 mg/dia em doses divididas.\nTomar 1 h antes das refeições.",
+        "defaultOpen": true
+      }
+    ],
+    "posologyExcerpt": "12,5–25 mg 2–3x/dia; titular conforme PA."
+  },
+  {
+    "activeIngredient": "Sinvastatina",
+    "sections": [
+      {
+        "key": "indicacoes",
+        "content": "Hipercolesterolemia primária, prevenção cardiovascular em alto risco."
+      },
+      {
+        "key": "contraindicacoes",
+        "content": "Doença hepática ativa, gestação, amamentação, uso com inibidores potentes de CYP3A4."
+      },
+      {
+        "key": "precaucoes",
+        "content": "Monitorar CK e função hepática se mialgia. Evitar suco de grapefruit em doses altas."
+      },
+      {
+        "key": "posologia",
+        "content": "20–40 mg à noite. Dose máx. 40 mg/dia (interações).",
+        "defaultOpen": true
+      }
+    ],
+    "posologyExcerpt": "20–40 mg à noite."
+  },
+  {
+    "activeIngredient": "Dexametasona",
+    "sections": [
+      {
+        "key": "indicacoes",
+        "content": "Processos inflamatórios e alérgicos, doenças reumáticas, asma grave, edema cerebral, náusea por quimioterapia (conforme protocolo)."
+      },
+      {
+        "key": "contraindicacoes",
+        "content": "Infecções sistêmicas por fungos, hipersensibilidade."
+      },
+      {
+        "key": "precaucoes",
+        "content": "Não suspender abruptamente após uso prolongado. Monitorar glicemia, PA, infecções oportunistas."
+      },
+      {
+        "key": "posologia",
+        "content": "Dose altamente variável conforme indicação. Ex.: 4–8 mg/dia VO em dose única ou dividida; desmame gradual.",
+        "defaultOpen": true
+      }
+    ],
+    "posologyExcerpt": "4–8 mg/dia conforme indicação; desmame gradual se uso prolongado."
+  },
+  {
+    "activeIngredient": "Atenolol",
+    "sections": [
+      {
+        "key": "indicacoes",
+        "content": "Hipertensão arterial, angina estável, arritmias."
+      },
+      {
+        "key": "contraindicacoes",
+        "content": "Bradicardia significativa, bloqueio AV avançado, choque cardiogênico, asma grave não controlada."
+      },
+      {
+        "key": "precaucoes",
+        "content": "Não interromper abruptamente. Ajustar em insuficiência renal."
+      },
+      {
+        "key": "posologia",
+        "content": "Hipertensão/angina: 50–100 mg uma vez ao dia.",
+        "defaultOpen": true
+      }
+    ],
+    "posologyExcerpt": "50–100 mg uma vez ao dia."
+  }
+]

@@ -1,4 +1,4 @@
-import { Plus } from "lucide-react";
+import { BookOpen, Plus } from "lucide-react";
 import { keepFocusOnPointerDown } from "@/lib/combobox-interaction";
 
 export type DrugSearchResult = {
@@ -26,15 +26,21 @@ export type ControlInfo = {
 interface DrugSearchResultsProps {
   results: DrugSearchResult[];
   onSelect: (drug: DrugSearchResult) => void;
+  onViewLeaflet?: (drug: DrugSearchResult) => void;
   controlInfo: (type: string | null | undefined) => ControlInfo;
   className?: string;
+  viewLeafletLabel?: string;
+  addLabel?: string;
 }
 
 export default function DrugSearchResults({
   results,
   onSelect,
+  onViewLeaflet,
   controlInfo,
   className,
+  viewLeafletLabel = "Ver bula",
+  addLabel = "Adicionar",
 }: DrugSearchResultsProps) {
   if (results.length === 0) return null;
 
@@ -45,12 +51,9 @@ export default function DrugSearchResults({
         const showIngredient = drug.activeIngredient.trim().toLowerCase() !== drug.name.trim().toLowerCase();
 
         return (
-          <button
+          <div
             key={drug.id}
-            type="button"
-            onMouseDown={keepFocusOnPointerDown}
-            onClick={() => onSelect(drug)}
-            className="w-full flex items-start gap-3 px-4 py-3 hover:bg-brand-50 transition text-left"
+            className="flex items-start gap-2 px-3 py-3 hover:bg-brand-50/60 transition"
           >
             <div className="flex-1 min-w-0 space-y-0.5">
               <p className="font-semibold text-slate-900 text-base flex items-center gap-2 flex-wrap leading-snug">
@@ -78,8 +81,31 @@ export default function DrugSearchResults({
                 <p className="text-[10px] text-slate-300 font-mono">CUM {drug.externalCode}</p>
               ) : null}
             </div>
-            <Plus size={16} className="text-brand-500 shrink-0 mt-1" />
-          </button>
+            <div className="flex flex-col gap-1 shrink-0">
+              {onViewLeaflet && (
+                <button
+                  type="button"
+                  onMouseDown={keepFocusOnPointerDown}
+                  onClick={() => onViewLeaflet(drug)}
+                  className="inline-flex items-center gap-1 px-2 py-1 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-[10px] font-semibold text-slate-600 transition"
+                  title={viewLeafletLabel}
+                >
+                  <BookOpen size={12} aria-hidden />
+                  <span className="hidden sm:inline">{viewLeafletLabel}</span>
+                </button>
+              )}
+              <button
+                type="button"
+                onMouseDown={keepFocusOnPointerDown}
+                onClick={() => onSelect(drug)}
+                className="inline-flex items-center justify-center gap-1 px-2 py-1 rounded-lg bg-brand-500 hover:bg-brand-600 text-white text-[10px] font-semibold transition"
+                title={addLabel}
+              >
+                <Plus size={14} aria-hidden />
+                <span className="hidden sm:inline">{addLabel}</span>
+              </button>
+            </div>
+          </div>
         );
       })}
     </div>

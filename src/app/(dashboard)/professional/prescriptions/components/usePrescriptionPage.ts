@@ -18,6 +18,7 @@ import { mapProfessionalPathToPortal } from "@/lib/psychologist-portal";
 import type { Chart } from "@/components/professional/emissions/types";
 import { type DrugCountryCode } from "@/lib/drug-countries";
 import { type DrugSearchResult } from "@/components/professional/prescriptions/DrugSearchResults";
+import type { DrugLeafletTarget } from "@/lib/drug-leaflet/types";
 import { type PrescriptionMedItem } from "@/components/professional/prescriptions/PrescriptionMedItemForm";
 import { isFreeTextPrescriptionItem } from "@/lib/prescription-item-kind";
 import {
@@ -140,6 +141,9 @@ export function usePrescriptionPage() {
   const [mnSearchResults, setMnSearchResults] = useState<MedicinaNaturalListItem[]>([]);
   const [mnPickerTargetIndex, setMnPickerTargetIndex] = useState<number | null>(null);
   const [floralOnlyMode, setFloralOnlyMode] = useState(false);
+  const [leafletTarget, setLeafletTarget] = useState<DrugLeafletTarget | null>(null);
+  const [leafletDrug, setLeafletDrug] = useState<DrugSearchResult | null>(null);
+  const [leafletMnItem, setLeafletMnItem] = useState<MedicinaNaturalListItem | null>(null);
 
   const floralCatalogSearch = floralOnlyMode && cfg.allowFloral;
   const mnSearchCategoria = resolveMnCatalogCategoria({
@@ -1138,6 +1142,78 @@ export function usePrescriptionPage() {
     setMnSearchResults([]);
     setDrugSearchDone(false);
     setMnPickerTargetIndex(null);
+    setLeafletTarget(null);
+    setLeafletDrug(null);
+    setLeafletMnItem(null);
+  }
+
+  function closeLeafletPanel() {
+    setLeafletTarget(null);
+    setLeafletDrug(null);
+    setLeafletMnItem(null);
+  }
+
+  function viewDrugLeaflet(drug: DrugSearchResult) {
+    if (mnSearchCategoria) {
+      const item = mnSearchResults.find((i) => i.slug === drug.id);
+      if (item) {
+        viewMnLeaflet(item);
+        return;
+      }
+    }
+    setLeafletDrug(drug);
+    setLeafletMnItem(null);
+    setLeafletTarget({ kind: "drug", drugId: drug.id, displayName: drug.name });
+  }
+
+  function viewMnLeaflet(item: MedicinaNaturalListItem) {
+    setLeafletMnItem(item);
+    setLeafletDrug(null);
+    setLeafletTarget({ kind: "mn", slug: item.slug, displayName: item.nome });
+  }
+
+  function insertLeafletPosology(excerpt: string) {
+    const dosage = excerpt.trim();
+    if (!dosage) return;
+
+    if (leafletMnItem) {
+      const mode: PrescriptionItemSearchMode =
+        floralOnlyMode ? "floral" : itemSearchMode === "medication" ? "phytotherapy" : itemSearchMode;
+      const item = mnMedItemFromListItemForMode(leafletMnItem, mode);
+      applyMnCatalogItem({ ...item, dosage });
+      closeLeafletPanel();
+      return;
+    }
+
+    if (leafletDrug) {
+      if (mnSearchCategoria) {
+        const mode: PrescriptionItemSearchMode =
+          floralOnlyMode ? "floral" : itemSearchMode === "medication" ? "phytotherapy" : itemSearchMode;
+        const item = mnMedItemFromDrugResultForMode(leafletDrug, mode);
+        applyMnCatalogItem({ ...item, dosage });
+      } else {
+        setFreeTextMode(false);
+        const substance = leafletDrug.activeIngredient?.trim() || leafletDrug.name;
+        setMedications((prev) => [...prev, {
+          name: substance,
+          dosage,
+          frequency: "",
+          duration: "",
+          instructions: "",
+          presentation: leafletDrug.presentation,
+          pharmaceuticalForm: leafletDrug.pharmaceuticalForm?.trim() || "",
+          controlled: leafletDrug.controlled,
+          prescriptionType: leafletDrug.prescriptionType,
+          itemKind: cfg.phytoOnly ? "phytotherapy" as const : "medication",
+        }]);
+        setDrugQuery("");
+        setDrugResults([]);
+        setMnSearchResults([]);
+        setDrugSearchModalOpen(false);
+        setMnPickerTargetIndex(null);
+      }
+      closeLeafletPanel();
+    }
   }
 
   function applyMnCatalogItem(item: PrescriptionMedItem) {
@@ -1605,6 +1681,11 @@ export function usePrescriptionPage() {
     setDrugSearchModalOpen,
     setMnSearchResults,
     setMnPickerTargetIndex,
+    leafletTarget,
+    closeLeafletPanel,
+    viewDrugLeaflet,
+    viewMnLeaflet,
+    insertLeafletPosology,
     addDrug,
     applyMnCatalogItem,
     applyRxTemplate,
