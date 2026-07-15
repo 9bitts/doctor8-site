@@ -8,7 +8,7 @@ import { requirePatient, isApiError } from "@/lib/api-auth";
 import { db } from "@/lib/db";
 import { audit } from "@/lib/audit";
 import { storedNotificationText } from "@/lib/notification-i18n";
-import { decrypt } from "@/lib/encryption";
+import { decrypt, encrypt } from "@/lib/encryption";
 import { z } from "zod";
 import { nanoid } from "nanoid";
 
@@ -17,6 +17,16 @@ import {
   resolvePublicShareExpiresAt,
   resolvePublicShareMaxViews,
 } from "@/lib/shared-record-public";
+
+/** Tolerant: ciphertext decrypts; legacy plaintext returns as-is. */
+function safeDecrypt(v: string | null | undefined): string {
+  if (v == null || v === "") return "";
+  try {
+    return decrypt(v);
+  } catch {
+    return String(v);
+  }
+}
 
 const schema = z.object({
   type: z.enum(["history", "medications"]),
@@ -106,7 +116,7 @@ export async function POST(req: NextRequest) {
       select: { firstName: true, lastName: true },
     });
 
-    const patientName = `${patient.firstName} ${patient.lastName}`;
+    const patientName = `${safeDecrypt(patient.firstName)} ${safeDecrypt(patient.lastName)}`.trim();
     const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://doctor8.app";
     const shareUrl = `${APP_URL}/share/${accessToken}`;
 
@@ -114,11 +124,13 @@ export async function POST(req: NextRequest) {
     const messageContent = `📋 ${patientName} shared their ${label} with you.\n\nView here: ${shareUrl}`;
 
     // Create message from patient's user to professional's user
+    // Chat GET already decrypts Message.content; encrypt at rest. Reader
+    // safeDecrypt keeps legacy plaintext rows displayable.
     await db.message.create({
       data: {
         senderId: userId,
         receiverId: professionalUserId,
-        content: messageContent,
+        content: encrypt(messageContent),
       },
     });
 

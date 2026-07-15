@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { useI18n } from "@/lib/i18n/I18nProvider";import ConsultPricingSettings from "@/components/professional/ConsultPricingSettings";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { useI18n } from "@/lib/i18n/I18nProvider";
+import ConsultPricingSettings from "@/components/professional/ConsultPricingSettings";
 import PracticeSettings from "@/components/PracticeSettings";
 import PublicListingSettings from "@/components/PublicListingSettings";
 import HealthPlansSettings from "@/components/HealthPlansSettings";
@@ -14,6 +15,7 @@ import { useRegistrationChecklist } from "@/hooks/useRegistrationChecklist";
 import { registrationChecklistHash } from "@/lib/provider-registration-complete";
 import { Loader2, CheckCircle2, Sparkles, User, Camera, X } from "lucide-react";
 import { initials as nameInitials } from "@/lib/format-name";
+
 const PA_VARIANT = "psychoanalyst" as const;
 
 const inputClass =
@@ -22,13 +24,17 @@ const inputClass =
 export default function PsychoanalystSettingsPage() {
   const { t } = useI18n();
   const fileRef = useRef<HTMLInputElement>(null);
-  const [loading, setLoading] = useState(true);  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
+  const readyRef = useRef(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [autoSaving, setAutoSaving] = useState(false);
+  const [autoSaved, setAutoSaved] = useState(false);
   const [error, setError] = useState("");
 
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
-  const [avatarUrl, setAvatarUrl] = useState("");  const [trainingInstitution, setTrainingInstitution] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState("");
+  const [trainingInstitution, setTrainingInstitution] = useState("");
   const [yearsOfPractice, setYearsOfPractice] = useState("0");
   const [personalAnalysisDone, setPersonalAnalysisDone] = useState(false);
   const [theoreticalStudyDone, setTheoreticalStudyDone] = useState(false);
@@ -66,7 +72,8 @@ export default function PsychoanalystSettingsPage() {
           if (p) {
             setFirstName(p.firstName || "");
             setLastName(p.lastName || "");
-            setAvatarUrl(p.avatarUrl || "");            setTrainingInstitution(p.trainingInstitution || "");
+            setAvatarUrl(p.avatarUrl || "");
+            setTrainingInstitution(p.trainingInstitution || "");
             setYearsOfPractice(String(p.yearsOfPractice ?? 0));
             setPersonalAnalysisDone(!!p.personalAnalysisDone);
             setTheoreticalStudyDone(!!p.theoreticalStudyDone);
@@ -82,6 +89,7 @@ export default function PsychoanalystSettingsPage() {
         }
       } finally {
         setLoading(false);
+        readyRef.current = true;
       }
     }
     load();
@@ -122,12 +130,10 @@ export default function PsychoanalystSettingsPage() {
     reader.readAsDataURL(file);
   }
 
-  async function handleSave() {    setError("");
-    if (!firstName || !lastName || !trainingInstitution) {
-      setError(t("pa.settings.errRequired"));
-      return;
-    }
-    setSaving(true);
+  const persistProfile = useCallback(async () => {
+    if (!firstName || !lastName || !trainingInstitution) return;
+    setAutoSaving(true);
+    setError("");
     try {
       const res = await fetch("/api/psychoanalyst/profile", {
         method: "POST",
@@ -136,7 +142,8 @@ export default function PsychoanalystSettingsPage() {
           firstName,
           lastName,
           avatarUrl,
-          trainingInstitution,          yearsOfPractice: Number(yearsOfPractice),
+          trainingInstitution,
+          yearsOfPractice: Number(yearsOfPractice),
           personalAnalysisDone,
           theoreticalStudyDone,
           clinicalSupervision,
@@ -153,13 +160,34 @@ export default function PsychoanalystSettingsPage() {
         setError(t("pa.settings.errSave"));
         return;
       }
-      setSaved(true);
-      setTimeout(() => setSaved(false), 3000);
+      setAutoSaved(true);
+      setTimeout(() => setAutoSaved(false), 3000);
       await refreshRegistration();
     } finally {
-      setSaving(false);
+      setAutoSaving(false);
     }
-  }
+  }, [
+    firstName, lastName, avatarUrl, trainingInstitution, yearsOfPractice,
+    personalAnalysisDone, theoreticalStudyDone, clinicalSupervision,
+    theoreticalLineage, associations, publications, otherRegulatedProfession,
+    bio, clinicCity, clinicCountry, t, refreshRegistration,
+  ]);
+
+  useEffect(() => {
+    if (!readyRef.current) return;
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      void persistProfile();
+    }, 1500);
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [
+    firstName, lastName, avatarUrl, trainingInstitution, yearsOfPractice,
+    personalAnalysisDone, theoreticalStudyDone, clinicalSupervision,
+    theoreticalLineage, associations, publications, otherRegulatedProfession,
+    bio, clinicCity, clinicCountry, persistProfile,
+  ]);
 
   if (loading) {
     return (
@@ -172,7 +200,23 @@ export default function PsychoanalystSettingsPage() {
   const avatarInitials = nameInitials(firstName, lastName);
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
+    <div className="relative max-w-2xl mx-auto space-y-6">
+      <div className="sticky top-3 z-20 h-0 overflow-visible pointer-events-none flex justify-end">
+        {(autoSaving || autoSaved) && (
+          <p className="pointer-events-auto text-xs text-slate-600 flex items-center gap-1.5 bg-white/95 backdrop-blur-sm border border-slate-200 rounded-full px-3 py-1.5 shadow-sm">
+            {autoSaving ? (
+              <>
+                <Loader2 size={12} className="animate-spin" /> {t("set.autoSaving")}
+              </>
+            ) : (
+              <>
+                <CheckCircle2 size={12} className="text-emerald-500" /> {t("set.autoSaved")}
+              </>
+            )}
+          </p>
+        )}
+      </div>
+
       <div>
         <h1 className="text-2xl font-bold text-slate-900">{t("pa.settings.title")}</h1>
         <p className="text-slate-500 text-sm mt-1">{t("pa.settings.subtitle")}</p>
@@ -311,15 +355,7 @@ export default function PsychoanalystSettingsPage() {
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={saving}
-            className="w-full flex items-center justify-center gap-2 bg-violet-600 hover:bg-violet-700 text-white font-semibold py-3 rounded-xl disabled:opacity-50"
-          >
-            {saving ? <Loader2 size={18} className="animate-spin" /> : saved ? <CheckCircle2 size={18} /> : null}
-            {saving ? t("avail.saving") : saved ? t("avail.saved") : t("common.save")}
-          </button>
+
         </div>
       </IncompleteSectionHighlight>
 
@@ -334,6 +370,8 @@ export default function PsychoanalystSettingsPage() {
             consultServicesApiPath="/api/psychoanalyst/consult-services"
             showSessionDuration
             accent="violet"
+            autoSave
+            hideSaveButton
             onSaved={refreshRegistration}
           />
           <PracticeSettings variant={PA_VARIANT} apiPath="/api/psychoanalyst/practice" />

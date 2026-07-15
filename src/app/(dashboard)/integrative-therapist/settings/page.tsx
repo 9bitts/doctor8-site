@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useI18n } from "@/lib/i18n/I18nProvider";
@@ -48,9 +48,12 @@ export default function IntegrativeTherapistSettingsPage() {
   const { t, lang } = useI18n();
   const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
+  const readyRef = useRef(false);
+  const regionReadyRef = useRef(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
+  const [autoSaving, setAutoSaving] = useState(false);
+  const [autoSaved, setAutoSaved] = useState(false);
   const [error, setError] = useState("");
 
   const [avatarUrl, setAvatarUrl] = useState("");
@@ -69,8 +72,6 @@ export default function IntegrativeTherapistSettingsPage() {
   const [clinicCountry, setClinicCountry] = useState("");
   const [clinicZip, setClinicZip] = useState("");
   const [accountRegion, setAccountRegion] = useState<RegistrationRegionCode>("US");
-  const [regionSaving, setRegionSaving] = useState(false);
-  const [regionSaved, setRegionSaved] = useState(false);
   const [regionError, setRegionError] = useState("");
   const [doctorImageOpen, setDoctorImageOpen] = useState(false);
 
@@ -123,6 +124,8 @@ export default function IntegrativeTherapistSettingsPage() {
         }
       } finally {
         setLoading(false);
+        readyRef.current = true;
+        setTimeout(() => { regionReadyRef.current = true; }, 100);
       }
     }
     load();
@@ -134,10 +137,8 @@ export default function IntegrativeTherapistSettingsPage() {
     );
   }
 
-  async function saveAccountRegion() {
-    setRegionSaving(true);
+  const saveAccountRegion = useCallback(async () => {
     setRegionError("");
-    setRegionSaved(false);
     try {
       const res = await fetch("/api/user/region", {
         method: "PATCH",
@@ -146,15 +147,19 @@ export default function IntegrativeTherapistSettingsPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || t("acct.regionErr"));
-      setRegionSaved(true);
-      setTimeout(() => setRegionSaved(false), 4000);
       router.refresh();
     } catch (e) {
       setRegionError(e instanceof Error ? e.message : t("acct.regionErr"));
-    } finally {
-      setRegionSaving(false);
     }
-  }
+  }, [accountRegion, router, t]);
+
+  useEffect(() => {
+    if (!regionReadyRef.current) return;
+    const timer = setTimeout(() => {
+      void saveAccountRegion();
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, [accountRegion, saveAccountRegion]);
 
   function handlePhoto(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -191,17 +196,11 @@ export default function IntegrativeTherapistSettingsPage() {
     reader.readAsDataURL(file);
   }
 
-  async function handleSave() {
+  const persistProfile = useCallback(async () => {
+    if (!firstName || !lastName || !trainingInstitution) return;
+    if (selectedPractices.length === 0) return;
+    setAutoSaving(true);
     setError("");
-    if (!firstName || !lastName || !trainingInstitution) {
-      setError(t("it.settings.errRequired"));
-      return;
-    }
-    if (selectedPractices.length === 0) {
-      setError(t("it.settings.errPractices"));
-      return;
-    }
-    setSaving(true);
     try {
       const res = await fetch("/api/integrative-therapist/profile", {
         method: "POST",
@@ -229,14 +228,33 @@ export default function IntegrativeTherapistSettingsPage() {
         setError(d.error || t("it.settings.errSave"));
         return;
       }
-      setSaved(true);
-      setTimeout(() => setSaved(false), 3000);
+      setAutoSaved(true);
+      setTimeout(() => setAutoSaved(false), 3000);
       router.refresh();
       await refreshRegistration();
     } finally {
-      setSaving(false);
+      setAutoSaving(false);
     }
-  }
+  }, [
+    firstName, lastName, phone, trainingInstitution, certifications, yearsOfPractice,
+    bio, selectedPractices, avatarUrl, clinicName, clinicAddress, clinicCity,
+    clinicState, clinicCountry, clinicZip, t, router, refreshRegistration,
+  ]);
+
+  useEffect(() => {
+    if (!readyRef.current) return;
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      void persistProfile();
+    }, 1500);
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [
+    firstName, lastName, phone, trainingInstitution, certifications, yearsOfPractice,
+    bio, selectedPractices, avatarUrl, clinicName, clinicAddress, clinicCity,
+    clinicState, clinicCountry, clinicZip, persistProfile,
+  ]);
 
   const grouped = PICS_PRACTICES.reduce<Record<PicCategory, typeof PICS_PRACTICES>>(
     (acc, p) => {
@@ -263,7 +281,23 @@ export default function IntegrativeTherapistSettingsPage() {
   const avatarInitials = nameInitials(firstName, lastName);
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6 pb-10">
+    <div className="relative max-w-3xl mx-auto space-y-6 pb-10">
+      <div className="sticky top-3 z-20 h-0 overflow-visible pointer-events-none flex justify-end">
+        {(autoSaving || autoSaved) && (
+          <p className="pointer-events-auto text-xs text-slate-600 flex items-center gap-1.5 bg-white/95 backdrop-blur-sm border border-slate-200 rounded-full px-3 py-1.5 shadow-sm">
+            {autoSaving ? (
+              <>
+                <Loader2 size={12} className="animate-spin" /> {t("set.autoSaving")}
+              </>
+            ) : (
+              <>
+                <CheckCircle2 size={12} className="text-emerald-500" /> {t("set.autoSaved")}
+              </>
+            )}
+          </p>
+        )}
+      </div>
+
       <div>
         <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
           <Leaf className="text-teal-500" size={24} />
@@ -274,11 +308,6 @@ export default function IntegrativeTherapistSettingsPage() {
 
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-700">{error}</div>
-      )}
-      {saved && (
-        <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded-xl p-4 text-sm text-emerald-700">
-          <CheckCircle2 size={16} /> {t("avail.saved")}
-        </div>
       )}
 
       {/* 1 — Região da conta */}
@@ -292,30 +321,14 @@ export default function IntegrativeTherapistSettingsPage() {
             {regionError}
           </p>
         )}
-        {regionSaved && (
-          <p className="text-sm text-teal-700 bg-teal-50 border border-teal-200 rounded-xl px-3 py-2">
-            {t("it.settings.accountRegionSaved")}
-          </p>
-        )}
-        <div className="flex flex-col sm:flex-row gap-3 sm:items-end">
-          <div className="flex-1">
-            <label className="block text-xs font-medium text-slate-500 mb-1.5">{t("it.settings.countryRegion")}</label>
-            <RegistrationRegionSelect
-              value={accountRegion}
-              onChange={setAccountRegion}
-              lang={lang}
-              className={inputClass}
-            />
-          </div>
-          <button
-            type="button"
-            onClick={saveAccountRegion}
-            disabled={regionSaving}
-            className="bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white font-semibold px-5 py-2.5 rounded-xl text-sm flex items-center gap-2 shrink-0"
-          >
-            {regionSaving && <Loader2 size={14} className="animate-spin" />}
-            {t("it.settings.saveRegion")}
-          </button>
+        <div>
+          <label className="block text-xs font-medium text-slate-500 mb-1.5">{t("it.settings.countryRegion")}</label>
+          <RegistrationRegionSelect
+            value={accountRegion}
+            onChange={setAccountRegion}
+            lang={lang}
+            className={inputClass}
+          />
         </div>
       </div>
 
@@ -460,16 +473,6 @@ export default function IntegrativeTherapistSettingsPage() {
           <p className="text-xs text-slate-500">
             {t("it.settings.picsSelected")}: {selectedPractices.length}
           </p>
-
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={saving}
-            className="w-full flex items-center justify-center gap-2 bg-teal-600 hover:bg-teal-700 text-white font-semibold py-3 rounded-xl disabled:opacity-50"
-          >
-            {saving ? <Loader2 size={18} className="animate-spin" /> : saved ? <CheckCircle2 size={18} /> : null}
-            {saving ? t("avail.saving") : saved ? t("avail.saved") : t("set.saveProfile")}
-          </button>
         </section>
       </IncompleteSectionHighlight>
 
@@ -484,6 +487,8 @@ export default function IntegrativeTherapistSettingsPage() {
             consultServicesApiPath="/api/integrative-therapist/consult-services"
             showSessionDuration
             accent="teal"
+            autoSave
+            hideSaveButton
             onSaved={refreshRegistration}
           />
           <PracticeSettings variant={IT_VARIANT} apiPath="/api/integrative-therapist/practice" />
@@ -527,15 +532,19 @@ export default function IntegrativeTherapistSettingsPage() {
           </Link>
           .
         </p>
-        <button
-          type="button"
-          onClick={handleSave}
-          disabled={saving}
-          className="w-full sm:w-auto bg-teal-600 hover:bg-teal-700 text-white font-semibold px-6 py-3 rounded-xl disabled:opacity-50 flex items-center justify-center gap-2 shrink-0 min-h-[44px]"
-        >
-          {saving ? <Loader2 size={16} className="animate-spin" /> : null}
-          {t("set.saveProfile")}
-        </button>
+        {(autoSaving || autoSaved) && (
+          <p className="text-xs text-slate-600 flex items-center gap-1.5 sm:pr-2">
+            {autoSaving ? (
+              <>
+                <Loader2 size={12} className="animate-spin" /> {t("set.autoSaving")}
+              </>
+            ) : (
+              <>
+                <CheckCircle2 size={12} className="text-emerald-500" /> {t("set.autoSaved")}
+              </>
+            )}
+          </p>
+        )}
       </div>
     </div>
   );

@@ -3,7 +3,8 @@
 // src/app/(dashboard)/patient/history/page.tsx
 // Complete medical history (anamnesis). UI + clinical options are i18n-aware.
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { useSession } from "next-auth/react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { histOptionLabel } from "@/lib/i18n/hist-option-labels";
 import type { HistOption } from "@/lib/medical-history-options";
@@ -25,6 +26,12 @@ import {
   HIST_INFECTIOUS,
   HIST_REVIEW_SYSTEMS,
 } from "@/lib/medical-history-options";
+import {
+  clearHistoryDraft,
+  isHistoryDraftEmpty,
+  loadHistoryDraft,
+  saveHistoryDraft,
+} from "@/lib/history-draft";
 import { Save, Share2, Download, Loader2, CheckCircle2, AlertCircle, RefreshCw } from "lucide-react";
 import ShareModal from "@/components/ShareModal";
 
@@ -143,6 +150,8 @@ const selectClass = inputClass + " bg-white";
 
 export default function HistoryPage() {
   const { t, lang } = useI18n();
+  const { data: session } = useSession();
+  const userId = session?.user?.id;
   const optLabel = (key: string) => histOptionLabel(lang, key);
   const [data, setData] = useState<HistoryData>(EMPTY);
   const [loading, setLoading] = useState(true);
@@ -153,6 +162,11 @@ export default function HistoryPage() {
   const [shareLoading, setShareLoading] = useState(false);
   const [shareUrl, setShareUrl] = useState("");
   const [showShareModal, setShowShareModal] = useState(false);
+  const [draftRestored, setDraftRestored] = useState(false);
+  const [draftSaved, setDraftSaved] = useState(false);
+  const draftReadyRef = useRef(false);
+  const draftHydratedRef = useRef(false);
+  const suppressDraftRef = useRef(false);
 
   useEffect(() => { fetchHistory(); }, []);
 
@@ -166,26 +180,65 @@ export default function HistoryPage() {
     }
   }, []);
 
+  useEffect(() => {
+    if (loading || loadError || !userId || draftHydratedRef.current) return;
+    draftHydratedRef.current = true;
+    const draft = loadHistoryDraft(userId);
+    if (draft && !isHistoryDraftEmpty(draft)) {
+      setData({ ...EMPTY, ...(draft as unknown as HistoryData) });
+      setDraftRestored(true);
+    }
+    draftReadyRef.current = true;
+  }, [loading, loadError, userId]);
+
+  useEffect(() => {
+    if (!draftReadyRef.current || !userId || suppressDraftRef.current) return;
+    saveHistoryDraft(userId, data as unknown as Record<string, unknown>);
+    if (isHistoryDraftEmpty(data as unknown as Record<string, unknown>)) {
+      setDraftSaved(false);
+      return;
+    }
+    setDraftSaved(true);
+    const timer = setTimeout(() => setDraftSaved(false), 2000);
+    return () => clearTimeout(timer);
+  }, [data, userId]);
+
   async function fetchHistory() {
     setLoading(true);
     setLoadError(false);
+    draftReadyRef.current = false;
+    draftHydratedRef.current = false;
+    suppressDraftRef.current = false;
+    setDraftRestored(false);
     try {
       const res = await fetch("/api/patient/history");
       // A failed load must block the form — otherwise saving would
       // overwrite the stored anamnesis with an empty one.
       if (!res.ok) { setLoadError(true); return; }
       const d = await res.json();
-      if (d.history) setData({ ...EMPTY, ...d.history });
+      if (d.history) {
+        const rawCc = d.history.chronicConditions;
+        const chronicConditions: string[] = Array.isArray(rawCc)
+          ? rawCc.filter((x: unknown): x is string => typeof x === "string")
+          : typeof rawCc === "string" && rawCc.trim()
+            ? rawCc.split(/,\s*/).map((s: string) => s.trim()).filter(Boolean)
+            : [];
+        setData({ ...EMPTY, ...d.history, chronicConditions });
+      } else {
+        setData(EMPTY);
+      }
     } catch {
       setLoadError(true);
     } finally { setLoading(false); }
   }
 
   function set<K extends keyof HistoryData>(key: K, value: HistoryData[K]) {
+    suppressDraftRef.current = false;
     setData((prev) => ({ ...prev, [key]: value }));
   }
 
   function toggleArray(key: keyof HistoryData, value: string) {
+    suppressDraftRef.current = false;
     setData((prev) => {
       const arr = (prev[key] as string[]) || [];
       return { ...prev, [key]: arr.includes(value) ? arr.filter((v) => v !== value) : [...arr, value] };
@@ -211,6 +264,10 @@ export default function HistoryPage() {
         setError(t("hist.errSave"));
         return;
       }
+      if (userId) clearHistoryDraft(userId);
+      suppressDraftRef.current = true;
+      setDraftRestored(false);
+      setDraftSaved(false);
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch {
@@ -237,11 +294,26 @@ export default function HistoryPage() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6 pb-10">
+    <div className="relative max-w-3xl mx-auto space-y-6 pb-10">
+      <div className="sticky top-3 z-20 h-0 overflow-visible pointer-events-none flex justify-end">
+        {draftSaved && !saved && (
+          <p className="pointer-events-auto text-xs text-slate-600 flex items-center gap-1.5 bg-white/95 backdrop-blur-sm border border-slate-200 rounded-full px-3 py-1.5 shadow-sm">
+            <CheckCircle2 size={12} className="text-emerald-500" /> {t("hist.draftSaved")}
+          </p>
+        )}
+      </div>
+
       <div>
         <h1 className="text-2xl font-bold text-slate-900">{t("hist.title")}</h1>
         <p className="text-slate-500 mt-1 text-sm">{t("hist.subtitle")}</p>
       </div>
+
+      {draftRestored && !saved && (
+        <div className="flex items-center gap-3 bg-sky-50 border border-sky-200 rounded-xl p-4">
+          <CheckCircle2 className="text-sky-500 shrink-0" size={20} />
+          <p className="text-sky-800 text-sm font-medium">{t("hist.draftRestored")}</p>
+        </div>
+      )}
 
       {saved && (
         <div className="flex items-center gap-3 bg-emerald-50 border border-emerald-200 rounded-xl p-4">
