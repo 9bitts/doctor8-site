@@ -38,6 +38,8 @@ export type PrescriptionsHubProps = {
   onListFilterChange: (filter: ListFilter) => void;
   onShowAllHistory: (value: boolean) => void;
   onOpenCreate: () => void;
+  onOpenReceitaB?: () => void;
+  onOpenReceitaControleEspecial?: () => void;
   onOpenExamCreate: () => void;
   onOpenDocumentCreate: () => void;
   onOpenReuse: (p: Prescription) => void;
@@ -73,6 +75,8 @@ export function PrescriptionsHub({
   onListFilterChange,
   onShowAllHistory,
   onOpenCreate,
+  onOpenReceitaB,
+  onOpenReceitaControleEspecial,
   onOpenExamCreate,
   onOpenDocumentCreate,
   onOpenReuse,
@@ -91,10 +95,24 @@ export function PrescriptionsHub({
           <h1 className="text-2xl font-bold text-slate-900">{t("rx.title")}</h1>
           <p className="text-slate-500 text-sm mt-1">{t("rx.subtitle")}</p>
         </div>
-        <button onClick={onOpenCreate}
-          className="flex items-center gap-2 bg-brand-500 hover:bg-brand-600 text-white px-5 py-2.5 rounded-xl font-semibold text-sm transition shadow-md shadow-brand-500/20">
-          <Plus size={16} /> {t("rx.new")}
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <button onClick={onOpenCreate}
+            className="flex items-center gap-2 bg-brand-500 hover:bg-brand-600 text-white px-5 py-2.5 rounded-xl font-semibold text-sm transition shadow-md shadow-brand-500/20">
+            <Plus size={16} /> {t("rx.new")}
+          </button>
+          {!cfg.phytoOnly && onOpenReceitaB && onOpenReceitaControleEspecial && (
+            <>
+              <button onClick={onOpenReceitaB}
+                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl font-semibold text-sm transition shadow-md shadow-blue-600/20">
+                <Plus size={16} /> {t("rx.newReceitaB")}
+              </button>
+              <button onClick={onOpenReceitaControleEspecial}
+                className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2.5 rounded-xl font-semibold text-sm transition shadow-md shadow-red-600/20">
+                <Plus size={16} /> {t("rx.newReceitaC")}
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
       {signProcessing && (

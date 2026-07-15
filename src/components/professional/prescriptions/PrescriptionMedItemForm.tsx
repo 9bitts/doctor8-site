@@ -32,6 +32,12 @@ export type ControlInfo = {
   receita: string;
 } | null;
 
+export type PrescriptionMedItemUpdateHandler = (
+  index: number,
+  field: keyof PrescriptionMedItem,
+  value: PrescriptionMedItem[keyof PrescriptionMedItem],
+) => void;
+
 interface PrescriptionMedItemFormProps {
   med: PrescriptionMedItem;
   index: number;
@@ -39,11 +45,7 @@ interface PrescriptionMedItemFormProps {
   fieldErrors: { name: boolean; dosage: boolean; frequency: boolean };
   kindLabel: string | null;
   controlInfo: ControlInfo;
-  onUpdate: (
-    index: number,
-    field: keyof PrescriptionMedItem,
-    value: PrescriptionMedItem[keyof PrescriptionMedItem],
-  ) => void;
+  onUpdate: PrescriptionMedItemUpdateHandler;
   onPhytoProductSelect?: (index: number, productId: string) => void;
   onOpenPhytoSearch?: (index: number) => void;
   onOpenFloralSearch?: (index: number) => void;

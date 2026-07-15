@@ -19,7 +19,10 @@ import type { Chart } from "@/components/professional/emissions/types";
 import { type DrugCountryCode } from "@/lib/drug-countries";
 import { type DrugSearchResult } from "@/components/professional/prescriptions/DrugSearchResults";
 import type { DrugLeafletTarget } from "@/lib/drug-leaflet/types";
-import { type PrescriptionMedItem } from "@/components/professional/prescriptions/PrescriptionMedItemForm";
+import {
+  type PrescriptionMedItem,
+  type PrescriptionMedItemUpdateHandler,
+} from "@/components/professional/prescriptions/PrescriptionMedItemForm";
 import { isFreeTextPrescriptionItem } from "@/lib/prescription-item-kind";
 import {
   fetchMnByCategoriaForPrescription,
@@ -80,6 +83,9 @@ import {
   type View,
   type ListFilter,
   type MnAddItemKind,
+  type ControlledFormKind,
+  defaultValidDaysForFormKind,
+  prescriptionTypeMatchesFormKind,
 } from "./shared";
 import { type SavedEmission } from "@/components/professional/emissions/EmissionPostSaveFlow";
 
@@ -165,6 +171,7 @@ export function usePrescriptionPage() {
   const [highlightIncompleteMeds, setHighlightIncompleteMeds] = useState(false);
   const [instructions, setInstructions] = useState("");
   const [validDays, setValidDays] = useState(30);
+  const [controlledFormKind, setControlledFormKind] = useState<ControlledFormKind>("simple");
 
   const [signConfig, setSignConfig] = useState<{ configured: boolean; provider: string; cpfMasked: string } | null>(null);
   const [signTarget, setSignTarget] = useState<SignTarget | null>(null);
@@ -961,6 +968,7 @@ export function usePrescriptionPage() {
     setItemSearchMode("medication"); setMnPickerTargetIndex(null);
     setHighlightIncompleteMeds(false);
     setInstructions(""); setValidDays(30); setFormError("");
+    setControlledFormKind("simple");
     setReuseSource(null);
     setEditingPrescriptionId(null);
     setEditingClinicalDocId(null);
@@ -1014,7 +1022,14 @@ export function usePrescriptionPage() {
     if (emission.kind === "prescription") {
       setEditingPrescriptionId(emission.id);
       setEditingClinicalDocId(null);
-      const meds = (emission.medications || []).map((m) => ({ ...m }));
+      const meds = (emission.medications || []).map((m) => ({
+        ...m,
+        name: m.name ?? "",
+        dosage: m.dosage ?? "",
+        frequency: m.frequency ?? "",
+        duration: m.duration ?? "",
+        instructions: m.instructions ?? "",
+      })) as MedItem[];
       setMedications(meds);
       setInstructions(emission.instructions || "");
       if (meds.some((m) => isFreeTextPrescriptionItem(m.itemKind))) {
@@ -1076,6 +1091,23 @@ export function usePrescriptionPage() {
   async function openCreate() {
     resetForm();
     setShowBulkPaste(true);
+    setControlledFormKind("simple");
+    setView("prescription");
+    await loadCharts();
+  }
+
+  async function openCreateReceitaB() {
+    resetForm();
+    setControlledFormKind("B");
+    setValidDays(defaultValidDaysForFormKind("B"));
+    setView("prescription");
+    await loadCharts();
+  }
+
+  async function openCreateReceitaControleEspecial() {
+    resetForm();
+    setControlledFormKind("C");
+    setValidDays(defaultValidDaysForFormKind("C"));
     setView("prescription");
     await loadCharts();
   }
@@ -1384,6 +1416,15 @@ export function usePrescriptionPage() {
       applyMnCatalogItem(mnMedItemFromDrugResultForMode(drug, mode));
       return;
     }
+    if (
+      controlledFormKind !== "simple" &&
+      !prescriptionTypeMatchesFormKind(drug.prescriptionType, controlledFormKind)
+    ) {
+      toast.error(
+        controlledFormKind === "B" ? t("rx.wrongListForReceitaB") : t("rx.wrongListForReceitaC"),
+      );
+      return;
+    }
     setFreeTextMode(false);
     const substance = drug.activeIngredient?.trim() || drug.name;
     setMedications((prev) => [...prev, {
@@ -1502,7 +1543,7 @@ export function usePrescriptionPage() {
   }
 
   function removeMedication(index: number) { setMedications((prev) => prev.filter((_, i) => i !== index)); }
-  function updateMedication(index: number, field: keyof MedItem, value: string | boolean) {
+  const updateMedication: PrescriptionMedItemUpdateHandler = (index, field, value) => {
     setMedications((prev) => prev.map((m, i) => {
       if (i !== index) return m;
       if (field === "continuousUse") {
@@ -1516,7 +1557,7 @@ export function usePrescriptionPage() {
       }
       return { ...m, [field]: value };
     }));
-  }
+  };
 
   function selectFloralProduct(index: number, productId: string) {
     const product = floralProductByValue(productId);
@@ -1683,6 +1724,18 @@ export function usePrescriptionPage() {
     if (!isMedsFormValid(medications)) {
       flagIncompleteMeds();
       return;
+    }
+
+    if (controlledFormKind !== "simple") {
+      const invalidMed = medications.find(
+        (m) => !prescriptionTypeMatchesFormKind(m.prescriptionType, controlledFormKind),
+      );
+      if (invalidMed) {
+        setFormError(
+          controlledFormKind === "B" ? t("rx.wrongListForReceitaB") : t("rx.wrongListForReceitaC"),
+        );
+        return;
+      }
     }
 
     const cleanMeds = medications.map((m) => ({
@@ -1886,6 +1939,8 @@ export function usePrescriptionPage() {
     showPrescriptionList,
     showClinicalList,
     openCreate,
+    openCreateReceitaB,
+    openCreateReceitaControleEspecial,
     openExamCreate,
     openDocumentCreate,
     openReuse,
@@ -1902,5 +1957,6 @@ export function usePrescriptionPage() {
     setCannabisTcleOpen,
     acceptCannabisTcle,
     hasMixedPrescription,
+    controlledFormKind,
   };
 }

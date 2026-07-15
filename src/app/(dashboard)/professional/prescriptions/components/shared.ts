@@ -2,7 +2,7 @@ import {
   Leaf, Flower2, Droplets, Wind, Hexagon, Sprout,
 } from "lucide-react";
 import type { EmissionKind } from "@/components/professional/emissions/EmissionsSignModal";
-import type { PrescriptionMedItem } from "@/components/professional/prescriptions/PrescriptionMedItemForm";
+import { type PrescriptionMedItem } from "@/components/professional/prescriptions/PrescriptionMedItemForm";
 import { isFreeTextPrescriptionItem } from "@/lib/prescription-item-kind";
 
 export type ImportablePatient = {
@@ -63,6 +63,25 @@ export const MN_RX_SEARCH_TABS: {
   { mode: "apitherapy", icon: Hexagon, labelKey: "rx.searchMode.apitherapy", activeClass: "border-amber-500 bg-amber-50 text-amber-800 ring-2 ring-amber-500/20" },
   { mode: "cannabis", icon: Sprout, labelKey: "rx.searchMode.cannabis", activeClass: "border-lime-600 bg-lime-50 text-lime-900 ring-2 ring-lime-600/20", cannabisOnly: true },
 ];
+
+/** Formulário de prescrição: simples, Receita B (Lista B) ou Controle Especial (Lista C). */
+export type ControlledFormKind = "simple" | "B" | "C";
+
+export function prescriptionTypeMatchesFormKind(
+  prescriptionType: string | null | undefined,
+  kind: ControlledFormKind,
+): boolean {
+  if (kind === "simple") return true;
+  if (!prescriptionType) return false;
+  const code = prescriptionType.toUpperCase();
+  if (kind === "B") return code.startsWith("B");
+  if (kind === "C") return code.startsWith("C");
+  return false;
+}
+
+export function defaultValidDaysForFormKind(kind: ControlledFormKind): number {
+  return kind === "B" ? 60 : 30;
+}
 
 export function controlInfo(type: string | null | undefined): {
   tarja: "preta" | "vermelha"; label: string; receita: string;

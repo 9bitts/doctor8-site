@@ -1,5 +1,7 @@
 import { ArrowLeft, BookmarkPlus, Copy, FileText, LayoutTemplate, Loader2, Pill, Sparkles } from "lucide-react";
-import PrescriptionMedItemForm from "@/components/professional/prescriptions/PrescriptionMedItemForm";
+import PrescriptionMedItemForm, {
+  type PrescriptionMedItemUpdateHandler,
+} from "@/components/professional/prescriptions/PrescriptionMedItemForm";
 import VideoConsultReturnBanner from "@/components/professional/VideoConsultReturnBanner";
 import { isFreeTextPrescriptionItem } from "@/lib/prescription-item-kind";
 import { templateHasFloralItems } from "@/lib/pics/reference-library/floral-starter-templates";
@@ -14,6 +16,7 @@ import {
   type MedItem,
   type Prescription,
   type RxTemplate,
+  type ControlledFormKind,
 } from "./shared";
 
 export type PrescriptionFormProps = {
@@ -38,7 +41,7 @@ export type PrescriptionFormProps = {
   medicationSearchProps: MedicationSearchProps;
   onClose: () => void;
   onApplyRxTemplate: (tpl: RxTemplate) => void;
-  onUpdateMedication: (index: number, field: keyof MedItem, value: string) => void;
+  onUpdateMedication: PrescriptionMedItemUpdateHandler;
   onOpenMnSearchForIndex: (index: number) => void;
   onSelectFloralProduct: (index: number, productId: string) => void;
   onRemoveMedication: (index: number) => void;
@@ -47,6 +50,7 @@ export type PrescriptionFormProps = {
   onSaveAsRxTemplate: () => void;
   onSubmit: () => void;
   hasMixedPrescription?: boolean;
+  controlledFormKind?: ControlledFormKind;
 };
 
 export function PrescriptionForm({
@@ -80,6 +84,7 @@ export function PrescriptionForm({
   onSaveAsRxTemplate,
   onSubmit,
   hasMixedPrescription = false,
+  controlledFormKind = "simple",
 }: PrescriptionFormProps) {
   const selectedPatient = patientPickerProps.selectedPatient;
   const todayLabel = patientPickerProps.todayLabel;
@@ -93,9 +98,33 @@ export function PrescriptionForm({
       </button>
 
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">{t("rx.formTitle")}</h1>
-        <p className="text-slate-500 text-sm mt-1">{t("rx.formSubtitle")}</p>
+        <h1 className="text-2xl font-bold text-slate-900">
+          {controlledFormKind === "B"
+            ? t("rx.formTitleReceitaB")
+            : controlledFormKind === "C"
+              ? t("rx.formTitleReceitaC")
+              : t("rx.formTitle")}
+        </h1>
+        <p className="text-slate-500 text-sm mt-1">
+          {controlledFormKind === "B"
+            ? t("rx.formSubtitleReceitaB")
+            : controlledFormKind === "C"
+              ? t("rx.formSubtitleReceitaC")
+              : t("rx.formSubtitle")}
+        </p>
       </div>
+
+      {controlledFormKind === "B" && (
+        <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 text-sm text-blue-900">
+          {t("rx.receitaBBanner")}
+        </div>
+      )}
+
+      {controlledFormKind === "C" && (
+        <div className="bg-red-50 border border-red-200 rounded-2xl p-4 text-sm text-red-900">
+          {t("rx.receitaCBanner")}
+        </div>
+      )}
 
       {templateAppliedHint && (
         <div className="bg-brand-50 border border-brand-200 rounded-2xl p-4 text-sm text-brand-700">

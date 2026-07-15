@@ -206,6 +206,7 @@ export default function PrescriptionsPage() {
           onSaveAsRxTemplate={p.saveAsRxTemplate}
           onSubmit={p.handleSubmit}
           hasMixedPrescription={p.hasMixedPrescription}
+          controlledFormKind={p.controlledFormKind}
         />
         <PhytoInteractionConfirmModal
           open={p.phytoConfirmOpen}
@@ -248,6 +249,8 @@ export default function PrescriptionsPage() {
         onListFilterChange={p.setListFilter}
         onShowAllHistory={p.setShowAllHistory}
         onOpenCreate={p.openCreate}
+        onOpenReceitaB={p.openCreateReceitaB}
+        onOpenReceitaControleEspecial={p.openCreateReceitaControleEspecial}
         onOpenExamCreate={p.openExamCreate}
         onOpenDocumentCreate={p.openDocumentCreate}
         onOpenReuse={p.openReuse}
