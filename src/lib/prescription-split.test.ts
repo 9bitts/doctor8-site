@@ -1,6 +1,22 @@
 import { describe, expect, it } from "vitest";
+import { expandSncrNumberRange } from "@/lib/sncr/number-range";
 import { splitPrescriptionMedications } from "@/lib/prescription-split";
 import { classifyMedicationItem } from "@/lib/prescription-item-classifier";
+
+describe("expandSncrNumberRange", () => {
+  it("returns single when inicio equals fim", () => {
+    expect(expandSncrNumberRange("ABC001", "ABC001")).toEqual(["ABC001"]);
+  });
+
+  it("expands numeric suffix range", () => {
+    expect(expandSncrNumberRange("20260001", "20260003")).toEqual([
+      "20260001",
+      "20260002",
+      "20260003",
+    ]);
+  });
+});
+
 
 describe("classifyMedicationItem", () => {
   it("maps Lista B to NRB", () => {

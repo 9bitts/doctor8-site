@@ -6,6 +6,7 @@ import {
   councilFromSpecialty,
   type NotificacaoReceitaType,
 } from "@/lib/sncr/client";
+import { expandSncrNumberRange } from "@/lib/sncr/number-range";
 import {
   sncrEnabled,
   sncrMinBatchSize,
@@ -99,9 +100,18 @@ async function replenishPool(opts: {
     documento,
     cnpj,
   });
+  const inicio = res.inicio;
+  const fim = res.fim;
+  if (inicio && fim) {
+    const numbers = expandSncrNumberRange(inicio, fim);
+    const existing = await readPool(opts.professionalId, receiptType);
+    const merged = [...existing, ...numbers];
+    await writePool(opts.professionalId, receiptType, merged);
+    return merged;
+  }
   if (res.numbers.length === 0) return [];
   const existing = await readPool(opts.professionalId, receiptType);
-  const merged = [...existing, ...res.inicio!].filter(Boolean);
+  const merged = [...existing, ...res.numbers];
   await writePool(opts.professionalId, receiptType, merged);
   return merged;
 }

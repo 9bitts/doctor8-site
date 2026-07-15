@@ -262,6 +262,8 @@ export default function PrescriptionsPage() {
         onRefreshPrescriptions={p.fetchPrescriptions}
         onRefreshAll={p.fetchAll}
         onCloseSignModal={() => p.setSignTarget(null)}
+        sncrStatus={p.sncrStatus}
+        onSncrLogin={p.openSncrLogin}
       />
       <style>{RX_STYLES}</style>
     </>

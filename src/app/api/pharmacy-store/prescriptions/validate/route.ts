@@ -7,8 +7,11 @@ import { isPharmacistSpecialty } from "@/lib/profession-label";
 import { authorizePharmacyPrescriptionValidate } from "@/lib/pharmacy-prescription-validate-auth";
 import {
   assertOrderPaidForDispense,
-  assertPrescriptionDispensable,
 } from "@/lib/pharmacy-network/dispense-guards";
+import { assertPrescriptionReadyForPharmacyDispense } from "@/lib/pharmacy-network/prescription-signature-verify";
+import { registerSncrDispense } from "@/lib/sncr/dispense";
+import { requiresSncrNumber } from "@/lib/prescription-form-kind";
+import type { PrescriptionFormKind } from "@/lib/prescription-form-kind";
 import { createAuditLog } from "@/lib/audit";
 import { AuditAction } from "@prisma/client";
 import type { Prisma } from "@prisma/client";
@@ -72,12 +75,18 @@ export async function GET(req: NextRequest) {
       createdAt: rx.createdAt,
       validUntil: rx.validUntil,
       signatureStatus: rx.signatureStatus,
+      signedAt: rx.signedAt,
+      prescriptionFormKind: rx.prescriptionFormKind,
+      sncrReceiptNumber: rx.sncrReceiptNumber,
+      sncrReceiptType: rx.sncrReceiptType,
       medications: rx.medications,
       instructions: rx.instructions ? safeDecrypt(rx.instructions) : "",
       patientName,
       doctor: rx.professional
         ? `${rx.professional.firstName} ${rx.professional.lastName}`.trim()
         : null,
+      requiresSncr: requiresSncrNumber((rx.prescriptionFormKind || "SIMPLE") as PrescriptionFormKind),
+      itiReady: rx.signatureStatus === "SIGNED" && !!rx.signedFileUrl,
     },
     order: row.pharmacyOrder
       ? { id: row.pharmacyOrder.id, status: row.pharmacyOrder.status }
@@ -137,7 +146,7 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  const rxError = assertPrescriptionDispensable(rxFull);
+  const rxError = assertPrescriptionReadyForPharmacyDispense(rxFull);
   if (rxError) {
     return NextResponse.json({ error: rxError }, { status: 400 });
   }
@@ -151,6 +160,31 @@ export async function POST(req: NextRequest) {
   const orderError = assertOrderPaidForDispense(linkedOrder, Boolean(row.pharmacyOrderId));
   if (orderError) {
     return NextResponse.json({ error: orderError }, { status: 400 });
+  }
+
+  const pharmacyStore = await db.pharmacyStore.findUnique({
+    where: { id: storeId },
+    select: { cnpj: true },
+  });
+  if (!pharmacyStore) {
+    return NextResponse.json({ error: "Farmácia não encontrada" }, { status: 404 });
+  }
+
+  let sncrBaixaStatus: string | null = null;
+  const formKind = (rxFull!.prescriptionFormKind || "SIMPLE") as PrescriptionFormKind;
+  if (requiresSncrNumber(formKind) && rxFull!.sncrReceiptNumber) {
+    const baixa = await registerSncrDispense({
+      accessToken: null,
+      sncrReceiptNumber: rxFull!.sncrReceiptNumber,
+      sncrReceiptType: rxFull!.sncrReceiptType || formKind,
+      pharmacyCnpj: pharmacyStore.cnpj,
+      prescriptionId: rxFull!.id,
+      dispensedAt: now,
+    });
+    if (!baixa.ok) {
+      return NextResponse.json({ error: baixa.error }, { status: 502 });
+    }
+    sncrBaixaStatus = baixa.skipped ? "SKIPPED" : "REGISTERED";
   }
 
   let pharmacistProfileId: string | null = null;
@@ -180,6 +214,9 @@ export async function POST(req: NextRequest) {
       data: {
         pharmacyDispensedAt: now,
         pharmacyDispensedStoreId: storeId,
+        ...(sncrBaixaStatus
+          ? { sncrBaixaAt: now, sncrBaixaStatus }
+          : {}),
       },
     });
 

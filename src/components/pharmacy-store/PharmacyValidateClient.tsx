@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Loader2, ShieldCheck, Pill, CheckCircle2 } from "lucide-react";
+import { Loader2, ShieldCheck, Pill, CheckCircle2, AlertTriangle } from "lucide-react";
 import {
   MN_ITEM_KIND_LABELS_PT,
   type PrescriptionMedicationLine,
@@ -18,6 +18,11 @@ type RxData = {
     medications: unknown;
     validUntil: string | null;
     signatureStatus: string | null;
+    signedAt?: string | null;
+    prescriptionFormKind?: string | null;
+    sncrReceiptNumber?: string | null;
+    requiresSncr?: boolean;
+    itiReady?: boolean;
   };
 };
 
@@ -27,9 +32,19 @@ export default function PharmacyValidateClient({ token }: { token: string }) {
   const [error, setError] = useState<string | null>(null);
   const [dispensing, setDispensing] = useState(false);
   const [done, setDone] = useState(false);
+  const [pharmacyStoreId, setPharmacyStoreId] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch(`/api/pharmacy-store/prescriptions/validate?token=${encodeURIComponent(token)}`)
+    fetch("/api/pharmacy-store/company", { credentials: "same-origin" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (d?.store?.id) setPharmacyStoreId(d.store.id);
+      })
+      .catch(() => {});
+
+    fetch(`/api/pharmacy-store/prescriptions/validate?token=${encodeURIComponent(token)}`, {
+      credentials: "same-origin",
+    })
       .then((r) => r.json())
       .then((d) => {
         if (d.error) setError(d.error);
@@ -42,11 +57,16 @@ export default function PharmacyValidateClient({ token }: { token: string }) {
 
   async function dispense() {
     setDispensing(true);
+    setError(null);
     try {
       const res = await fetch("/api/pharmacy-store/prescriptions/validate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token }),
+        credentials: "same-origin",
+        body: JSON.stringify({
+          token,
+          ...(pharmacyStoreId ? { pharmacyStoreId } : {}),
+        }),
       });
       const d = await res.json();
       if (!res.ok) {
@@ -58,6 +78,12 @@ export default function PharmacyValidateClient({ token }: { token: string }) {
       setDispensing(false);
     }
   }
+
+  const rx = data?.prescription;
+  const canDispense =
+    rx?.signatureStatus === "SIGNED" &&
+    rx?.itiReady !== false &&
+    (!rx?.requiresSncr || !!rx?.sncrReceiptNumber);
 
   if (loading) {
     return (
@@ -80,7 +106,13 @@ export default function PharmacyValidateClient({ token }: { token: string }) {
     );
   }
 
-  const meds = (data?.prescription.medications as PrescriptionMedicationLine[]) || [];
+  const meds = (rx?.medications as PrescriptionMedicationLine[]) || [];
+  const formLabel =
+    rx?.prescriptionFormKind === "NRB"
+      ? "Notificação de Receita B (azul)"
+      : rx?.prescriptionFormKind === "RCE"
+        ? "Receita de Controle Especial"
+        : null;
 
   return (
     <div className="min-h-screen bg-slate-50 py-10 px-4">
@@ -93,12 +125,20 @@ export default function PharmacyValidateClient({ token }: { token: string }) {
         <div className="rounded-2xl border border-slate-200 bg-white p-6 space-y-4">
           <div>
             <p className="text-xs text-slate-500 uppercase font-semibold">Paciente</p>
-            <p className="font-semibold text-slate-900">{data?.prescription.patientName}</p>
+            <p className="font-semibold text-slate-900">{rx?.patientName}</p>
           </div>
-          {data?.prescription.doctor && (
+          {rx?.doctor && (
             <div>
               <p className="text-xs text-slate-500 uppercase font-semibold">Prescritor</p>
-              <p className="text-slate-800">{data.prescription.doctor}</p>
+              <p className="text-slate-800">{rx.doctor}</p>
+            </div>
+          )}
+          {formLabel && (
+            <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 text-sm text-blue-900">
+              <p className="font-semibold">{formLabel}</p>
+              {rx?.sncrReceiptNumber && (
+                <p className="text-xs mt-1">SNCR: {rx.sncrReceiptNumber}</p>
+              )}
             </div>
           )}
           <div>
@@ -113,11 +153,6 @@ export default function PharmacyValidateClient({ token }: { token: string }) {
                         {MN_ITEM_KIND_LABELS_PT[m.itemKind]}
                       </span>
                     )}
-                    {m.renisus && (
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-teal-50 text-teal-800 border border-teal-200">
-                        RENISUS
-                      </span>
-                    )}
                   </div>
                   {m.dosage ? <span className="text-slate-500">{m.dosage}</span> : null}
                 </li>
@@ -125,9 +160,13 @@ export default function PharmacyValidateClient({ token }: { token: string }) {
             </ul>
           </div>
 
-          {data?.prescription.signatureStatus === "SIGNED" && (
+          {rx?.itiReady ? (
             <p className="text-xs text-emerald-700 flex items-center gap-1">
-              <ShieldCheck size={14} /> Receita assinada digitalmente
+              <ShieldCheck size={14} /> Assinatura ICP-Brasil verificada (PDF disponível)
+            </p>
+          ) : (
+            <p className="text-xs text-amber-800 flex items-center gap-1 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+              <AlertTriangle size={14} /> Receita não assinada ou PDF indisponível para validação ITI
             </p>
           )}
 
@@ -140,11 +179,14 @@ export default function PharmacyValidateClient({ token }: { token: string }) {
             <button
               type="button"
               onClick={dispense}
-              disabled={dispensing}
+              disabled={dispensing || !canDispense}
               className="w-full py-3 rounded-xl bg-emerald-600 text-white font-bold disabled:opacity-50"
             >
               {dispensing ? "Registrando..." : "Confirmar dispensação (CRF)"}
             </button>
+          )}
+          {error && data && (
+            <p className="text-sm text-rose-600 bg-rose-50 rounded-lg px-3 py-2">{error}</p>
           )}
         </div>
 

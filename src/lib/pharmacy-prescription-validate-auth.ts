@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { isPharmacistSpecialty } from "@/lib/profession-label";
+import { getPharmacyStoreMembership } from "@/lib/pharmacy-store-auth";
 
 export type PharmacyPrescriptionValidateAuth =
   | { ok: true; role: string; storeId?: string }
@@ -28,6 +29,16 @@ export async function authorizePharmacyPrescriptionValidate(
   }
 
   const storeId = resolveDispenseStoreId(opts.rowPharmacyStoreId, opts.pharmacyStoreId);
+  if (!storeId && role !== "ADMIN") {
+    const membership = await getPharmacyStoreMembership(userId);
+    if (membership) {
+      return authorizePharmacyPrescriptionValidate(userId, role, {
+        ...opts,
+        pharmacyStoreId: membership.pharmacyStoreId,
+      });
+    }
+  }
+
   if (!storeId && role !== "ADMIN") {
     return { ok: false, status: 400, error: "pharmacyStoreId obrigatório" };
   }

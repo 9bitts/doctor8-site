@@ -1532,6 +1532,8 @@ model Prescription {
   sncrReceiptNumber      String?
   sncrReceiptType        String?
   sncrIssuedAt           DateTime?
+  sncrBaixaAt            DateTime?
+  sncrBaixaStatus        String?
   issuedViaTelemedicine  Boolean @default(false)
 
   createdAt        DateTime @default(now())

@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { canPrescribeCannabisMedicinal } from "@/lib/profession-label";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams, useRouter } from "next/navigation";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { localeOf } from "@/lib/i18n/translations";
 import { useToast } from "@/components/ui/toast";
@@ -101,6 +101,7 @@ export function usePrescriptionPage() {
   const toast = useToast();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const router = useRouter();
   const portal: PrescriptionsPortalId = pathname.startsWith("/integrative-therapist")
     ? "integrative-therapist"
     : "professional";
@@ -217,6 +218,35 @@ export function usePrescriptionPage() {
   const [phytoInteractionConfirmed, setPhytoInteractionConfirmed] = useState(false);
   const [cannabisTcleOpen, setCannabisTcleOpen] = useState(false);
   const [cannabisTcleAccepted, setCannabisTcleAccepted] = useState(false);
+  const [sncrStatus, setSncrStatus] = useState<{
+    enabled: boolean;
+    authenticated: boolean;
+    platformCnpjConfigured: boolean;
+    cpfConfigured: boolean;
+    pool: { NRB: number; RCE: number };
+    loginPath: string;
+  } | null>(null);
+
+  useEffect(() => {
+    const authResult = searchParams.get("sncrAuth");
+    if (!authResult) return;
+    if (authResult === "success") toast.success(t("rx.sncrAuthSuccess"));
+    else if (authResult === "error") toast.error(t("rx.sncrAuthError"));
+    else if (authResult === "missing_session") toast.error(t("rx.sncrAuthMissingSession"));
+    else if (authResult === "forbidden") toast.error(t("rx.sncrAuthForbidden"));
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("sncrAuth");
+    const q = params.toString();
+    router.replace(q ? `${pathname}?${q}` : pathname);
+  }, [searchParams, pathname, router, toast, t]);
+
+  useEffect(() => {
+    if (view !== "hub") return;
+    fetch("/api/professional/sncr/status", { credentials: "same-origin" })
+      .then((r) => r.json())
+      .then((d) => setSncrStatus(d))
+      .catch(() => setSncrStatus(null));
+  }, [view]);
 
   useEffect(() => {
     if (cfg.prescriptionsOnly && (view === "exam" || view === "document")) {
@@ -1672,6 +1702,7 @@ export function usePrescriptionPage() {
             instructions: finalInstructions,
             validDays,
             cannabisTcleAccepted: opts.cannabisTcleAccepted || undefined,
+            issuedViaTelemedicine: consultReturnUrl ? true : undefined,
           }
         : {
             patientUserId: platformTarget!.patientUserId,
@@ -1679,6 +1710,7 @@ export function usePrescriptionPage() {
             instructions: finalInstructions,
             validDays,
             cannabisTcleAccepted: opts.cannabisTcleAccepted || undefined,
+            issuedViaTelemedicine: consultReturnUrl ? true : undefined,
           };
       const res = await fetch(
         editingPrescriptionId
@@ -1719,6 +1751,7 @@ export function usePrescriptionPage() {
           label: data.isMixed ? t("rx.package.emissionLabel") : label,
           medications: primary.medications,
           instructions: finalInstructions || undefined,
+          prescriptionFormKind: primary.formKind,
           packageId: data.packageId || null,
           packageDocuments: prescriptions.length > 1
             ? prescriptions.map((p) => ({
@@ -1769,6 +1802,21 @@ export function usePrescriptionPage() {
     if (!splitPreview.ok) {
       setFormError(splitPreview.error);
       return;
+    }
+
+    if (controlledFormKind === "B" || controlledFormKind === "C") {
+      for (const m of medications) {
+        if (
+          m.name.trim() &&
+          (!m.prescriptionType ||
+            !prescriptionTypeMatchesFormKind(m.prescriptionType, controlledFormKind))
+        ) {
+          setFormError(
+            t(controlledFormKind === "B" ? "rx.wrongListForReceitaB" : "rx.wrongListForReceitaC"),
+          );
+          return;
+        }
+      }
     }
 
     const cleanMeds = medications.map((m) => ({
@@ -2002,5 +2050,9 @@ export function usePrescriptionPage() {
     hasMixedPrescription,
     hasMixedRegulatoryPrescription,
     controlledFormKind,
+    sncrStatus,
+    openSncrLogin: () => {
+      window.location.href = "/api/professional/sncr/auth/login";
+    },
   };
 }

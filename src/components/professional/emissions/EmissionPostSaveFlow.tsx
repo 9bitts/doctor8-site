@@ -9,6 +9,7 @@ import Doctor8DeliverButton from "./Doctor8DeliverButton";
 import { openWhatsAppShareLink } from "./whatsapp-share-link";
 import { openAuthenticatedPdf } from "@/lib/open-url-safely";
 import { scrollDashboardToTopAfterPaint } from "@/lib/scroll-dashboard-client";
+import { requiresIcpSignature, type PrescriptionFormKind } from "@/lib/prescription-form-kind";
 import type { Chart } from "./types";
 
 export interface ReviewMedication {
@@ -41,6 +42,8 @@ export interface SavedEmission {
   /** Multiple prescriptions from a mixed regulatory split */
   packageId?: string | null;
   packageDocuments?: SavedPrescriptionDoc[];
+  /** Primary document form kind (NRB/RCE/SIMPLE) */
+  prescriptionFormKind?: string;
 }
 
 interface EmissionPostSaveFlowProps {
@@ -128,14 +131,30 @@ export function EmissionPostSaveFlow({
     }
   }
 
+  const packageDocs = emission.packageDocuments?.length
+    ? emission.packageDocuments
+    : null;
+
+  function docRequiresIcpSignature(formKind: string): boolean {
+    return requiresIcpSignature(formKind as PrescriptionFormKind);
+  }
+
+  const hasControlledPrescription = packageDocs
+    ? packageDocs.some((d) => docRequiresIcpSignature(d.formKind))
+    : docRequiresIcpSignature(emission.prescriptionFormKind || "SIMPLE");
+
   async function handleSendUnsigned() {
+    if (hasControlledPrescription) {
+      setDeliverError(t("rx.controlledSignRequired"));
+      return;
+    }
     await deliverToPatient();
   }
 
   function handleSign(doc?: SavedPrescriptionDoc) {
     const target = doc || {
       id: emission.id,
-      formKind: "SIMPLE",
+      formKind: emission.prescriptionFormKind || "SIMPLE",
       label: emission.label,
     };
     setSignTarget({
@@ -144,10 +163,6 @@ export function EmissionPostSaveFlow({
       label: target.label,
     });
   }
-
-  const packageDocs = emission.packageDocuments?.length
-    ? emission.packageDocuments
-    : null;
 
   async function sendInvite() {
     setInviteSending(true);
@@ -492,11 +507,18 @@ export function EmissionPostSaveFlow({
             className="w-full py-3.5 rounded-xl bg-brand-500 hover:bg-brand-600 text-white font-bold text-sm transition flex items-center justify-center gap-2 disabled:opacity-50">
             <PenLine size={18} /> {t("rx.flow.signNow")}
           </button>
+          {!hasControlledPrescription && (
           <button onClick={handleSendUnsigned} disabled={delivering}
             className="w-full py-3.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-sm transition flex items-center justify-center gap-2 disabled:opacity-50">
             {delivering ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
             {t("rx.flow.sendUnsigned")}
           </button>
+          )}
+          {hasControlledPrescription && (
+            <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-center">
+              {t("rx.controlledSignRequired")}
+            </p>
+          )}
           {onEdit && (
             <button onClick={onEdit} disabled={delivering}
               className="w-full py-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 font-semibold text-sm transition disabled:opacity-50">

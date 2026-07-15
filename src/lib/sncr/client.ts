@@ -18,7 +18,7 @@ export class SncrApiError extends Error {
   }
 }
 
-async function sncrFetch(
+export async function sncrFetch(
   path: string,
   accessToken: string,
   init?: RequestInit,
