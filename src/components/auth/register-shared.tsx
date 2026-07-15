@@ -385,6 +385,7 @@ export function RegisterAccountForm({
     }
   }
 
+  return (
     <>
       {onBack && (
         <button
