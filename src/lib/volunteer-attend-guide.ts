@@ -1,5 +1,35 @@
 export const VOLUNTEER_ATTEND_GUIDE_KEY = "doctor8.volunteerAttendGuide";
 const VOLUNTEER_ATTEND_GUIDE_COOKIE = "doctor8.volunteerAttendGuide";
+const VOLUNTEER_GUIDE_SEEN_PREFIX = "doctor8.volunteerGuide.seenDate";
+
+function todayLocalDate(): string {
+  const d = new Date();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${d.getFullYear()}-${month}-${day}`;
+}
+
+export function volunteerGuideSeenStorageKey(userId: string): string {
+  return `${VOLUNTEER_GUIDE_SEEN_PREFIX}.${userId}`;
+}
+
+export function hasSeenVolunteerGuideToday(userId: string): boolean {
+  if (typeof window === "undefined" || !userId) return false;
+  try {
+    return localStorage.getItem(volunteerGuideSeenStorageKey(userId)) === todayLocalDate();
+  } catch {
+    return false;
+  }
+}
+
+export function markVolunteerGuideSeenToday(userId: string): void {
+  if (typeof window === "undefined" || !userId) return;
+  try {
+    localStorage.setItem(volunteerGuideSeenStorageKey(userId), todayLocalDate());
+  } catch {
+    /* ignore */
+  }
+}
 
 export function isVolunteerGuideProviderRole(role: string | undefined | null): boolean {
   return (

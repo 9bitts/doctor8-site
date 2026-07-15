@@ -10,15 +10,17 @@ import { useT } from "@/lib/i18n/I18nProvider";
 import { isPsychologistSpecialty } from "@/lib/psychologist-portal";
 import {
   clearVolunteerAttendGuideFlag,
+  hasSeenVolunteerGuideToday,
   isVolunteerGuideProviderRole,
+  markVolunteerGuideSeenToday,
   shouldShowVolunteerAttendGuide,
   volunteerGuidePaths,
 } from "@/lib/volunteer-attend-guide";
 
 type ProviderSession = {
+  userId: string;
   role: string;
   specialty: string | null;
-  showVolunteerGuide: boolean;
 };
 
 function renderBodyWithEmphasis(text: string) {
@@ -45,11 +47,11 @@ async function fetchProviderSession(maxAttempts = 20): Promise<ProviderSession |
         const session = await res.json();
         const role = session?.user?.role as string | undefined;
         if (role && !isVolunteerGuideProviderRole(role)) return null;
-        if (role && isVolunteerGuideProviderRole(role)) {
+        if (role && isVolunteerGuideProviderRole(role) && session?.user?.id) {
           return {
+            userId: session.user.id as string,
             role,
             specialty: session?.user?.professionalSpecialty ?? null,
-            showVolunteerGuide: session?.user?.showVolunteerGuide === true,
           };
         }
       }
@@ -69,6 +71,7 @@ export default function VolunteerAttendGuideModal() {
   const [open, setOpen] = useState(false);
   const [role, setRole] = useState("");
   const [specialty, setSpecialty] = useState<string | null>(null);
+  const [userId, setUserId] = useState("");
 
   useEffect(() => {
     setMounted(true);
@@ -77,13 +80,42 @@ export default function VolunteerAttendGuideModal() {
   useEffect(() => {
     if (!mounted) return;
 
-    const clientFlag = shouldShowVolunteerAttendGuide();
+    const fromLogin = shouldShowVolunteerAttendGuide();
     let cancelled = false;
 
     (async () => {
+      if (!fromLogin) return;
+
       const session = await fetchProviderSession();
       if (cancelled || !session) return;
-      if (!session.showVolunteerGuide && !clientFlag) return;
+
+      if (hasSeenVolunteerGuideToday(session.userId)) {
+        clearVolunteerAttendGuideFlag();
+        return;
+      }
+
+      try {
+        const regRes = await fetch("/api/user/registration-status", {
+          cache: "no-store",
+          credentials: "same-origin",
+        });
+        if (!regRes.ok) {
+          clearVolunteerAttendGuideFlag();
+          return;
+        }
+        const registration = await regRes.json();
+        if (registration.complete !== false) {
+          clearVolunteerAttendGuideFlag();
+          return;
+        }
+      } catch {
+        clearVolunteerAttendGuideFlag();
+        return;
+      }
+
+      if (cancelled) return;
+      markVolunteerGuideSeenToday(session.userId);
+      setUserId(session.userId);
       setRole(session.role);
       setSpecialty(session.specialty);
       setOpen(true);
@@ -111,6 +143,7 @@ export default function VolunteerAttendGuideModal() {
   }, [open]);
 
   async function dismiss() {
+    if (userId) markVolunteerGuideSeenToday(userId);
     clearVolunteerAttendGuideFlag();
     try {
       await update({ clearVolunteerGuide: true });

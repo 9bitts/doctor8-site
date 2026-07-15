@@ -28,6 +28,7 @@ import {
 import { fetchUserProfileSnapshot } from "@/lib/user-profile-db";
 import { canSkipHumanitarianEmailVerification } from "@/lib/humanitarian/feature-flags";
 import { isVolunteerGuideProviderRole } from "@/lib/volunteer-attend-guide";
+import { getProviderRegistrationStatus } from "@/lib/provider-registration-complete";
 import {
   readServerHumAuthCookies,
   resolveHumanitarianAuthCallback,
@@ -479,8 +480,16 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
       if (trigger === "update" && (session as { clearVolunteerGuide?: boolean })?.clearVolunteerGuide) {
         token.showVolunteerGuide = false;
-      } else if ((user || account) && isVolunteerGuideProviderRole(String(token.role ?? ""))) {
-        token.showVolunteerGuide = true;
+      } else if ((user || account) && isVolunteerGuideProviderRole(String(token.role ?? "")) && token.id) {
+        try {
+          const registration = await getProviderRegistrationStatus(
+            token.id as string,
+            String(token.role ?? ""),
+          );
+          token.showVolunteerGuide = registration ? !registration.complete : false;
+        } catch {
+          token.showVolunteerGuide = false;
+        }
       }
 
       // Extend session during active teleconsult (video room keepalive)
