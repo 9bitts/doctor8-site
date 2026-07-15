@@ -13,18 +13,11 @@ import {
 } from "@/lib/shared-document-attach";
 import { patientChartPathForSpecialty, professionalSharedPathForSpecialty } from "@/lib/patient-chart-path";
 import { ensurePatientRecord } from "@/lib/ensure-patient-record";
-import {
-  ageFromIsoDate,
-  getPatientPsychologyTerm,
-  isAdolescentAge,
-  isMinorAge,
-  parseTermIdFromContent,
-  renderPatientTermDocument,
-  termRequiresGuardian,
-  termsVisibleForAge,
-  validateTermFields,
-  type PatientPsychologyTermId,
-} from "@/lib/patient-psychology-terms";
+import { getScale, scoreScale, PSYCHOLOGY_SCALES, type ScaleId } from "@/lib/psychology-scales";
+import { buildScalePayload } from "@/lib/psychology-templates";
+import { assessScaleRisk } from "@/lib/psychology-risk";
+import { notifyPsychologyCriticalRisk } from "@/lib/psychology-critical-risk-notify";
+import { invalidatePsychologyRiskAlertCache } from "@/lib/psychology-risk-alerts";
 
 function safeDecrypt(v: string | null | undefined): string {
   if (v == null) return "";
@@ -35,19 +28,36 @@ function safeDecrypt(v: string | null | undefined): string {
   }
 }
 
+function parsePatientScale(content: string | null): {
+  scaleId: ScaleId;
+  score: number;
+  interpretation: { levelPt: string; levelEn: string; levelEs: string };
+} | null {
+  if (!content) return null;
+  try {
+    const raw = JSON.parse(content) as Record<string, unknown>;
+    if (!raw.psychologyScale || !raw.patientSelfReport) return null;
+    const scaleId = raw.scaleId as ScaleId;
+    if (!getScale(scaleId)) return null;
+    return {
+      scaleId,
+      score: Number(raw.score) || 0,
+      interpretation: (raw.interpretation as { levelPt: string; levelEn: string; levelEs: string }) || {
+        levelPt: "—",
+        levelEn: "—",
+        levelEs: "—",
+      },
+    };
+  } catch {
+    return null;
+  }
+}
+
 const postSchema = z.object({
-  termId: z.enum([
-    "TDIC_CONSENT",
-    "TDIC_CONTRACT",
-    "MINOR_PSYCHOTHERAPY_AUTH",
-    "MINOR_GENERAL_AUTH",
-    "ADOLESCENT_ASSENT",
-    "CONTRACT_ADDENDUM",
-  ]),
+  scaleId: z.enum(["PHQ9", "GAD7", "BAI", "BDI2", "DASS21"]),
+  responses: z.array(z.number().int().min(0).max(3)),
   professionalId: z.string().min(1),
   shareAuthorized: z.literal(true),
-  fields: z.record(z.string()).default({}),
-  lang: z.enum(["pt", "en", "es"]).optional(),
 });
 
 export async function GET() {
@@ -55,37 +65,21 @@ export async function GET() {
   if (isApiError(ctx)) return ctx.error;
   const { userId, patientProfileId } = ctx;
 
-  const patient = await db.patientProfile.findUnique({
-    where: { userId },
-    select: {
-      id: true,
-      firstName: true,
-      lastName: true,
-      dateOfBirth: true,
-      phone: true,
-      cpf: true,
-      city: true,
-      state: true,
-    },
-  });
-  if (!patient) return NextResponse.json({ error: "No profile" }, { status: 404 });
-
-  const dob = safeDecrypt(patient.dateOfBirth);
-  const age = ageFromIsoDate(dob);
-  const visible = termsVisibleForAge(age);
-
   const ownDocs = await db.medicalDocument.findMany({
-    where: { patientId: patientProfileId, professionalId: null },
+    where: {
+      patientId: patientProfileId,
+      professionalId: null,
+      recordKind: "SCALE",
+    },
     select: {
       id: true,
-      title: true,
       content: true,
       createdAt: true,
       sharedRecords: {
         where: { sharedByUserId: userId },
         select: {
-          sharedWithProfessionalId: true,
           createdAt: true,
+          sharedWithProfessionalId: true,
           sharedWithProfessional: {
             select: { id: true, firstName: true, lastName: true },
           },
@@ -95,57 +89,46 @@ export async function GET() {
     orderBy: { createdAt: "desc" },
   });
 
-  const latestByTerm = new Map<
-    PatientPsychologyTermId,
+  const latestByScale = new Map<
+    ScaleId,
     {
       documentId: string;
+      score: number;
+      interpretation: { levelPt: string; levelEn: string; levelEs: string };
       sharedAt: string | null;
-      professionalId: string | null;
       professionalName: string | null;
     }
   >();
 
   for (const doc of ownDocs) {
-    const termId = parseTermIdFromContent(safeDecrypt(doc.content));
-    if (!termId || latestByTerm.has(termId)) continue;
+    const parsed = parsePatientScale(safeDecrypt(doc.content));
+    if (!parsed || latestByScale.has(parsed.scaleId)) continue;
     const share = doc.sharedRecords[0];
     const pro = share?.sharedWithProfessional;
-    latestByTerm.set(termId, {
+    latestByScale.set(parsed.scaleId, {
       documentId: doc.id,
+      score: parsed.score,
+      interpretation: parsed.interpretation,
       sharedAt: share?.createdAt?.toISOString() ?? doc.createdAt.toISOString(),
-      professionalId: share?.sharedWithProfessionalId ?? null,
       professionalName: pro ? `${pro.firstName} ${pro.lastName}`.trim() : null,
     });
   }
 
   return NextResponse.json({
-    profile: {
-      fullName: `${safeDecrypt(patient.firstName)} ${safeDecrypt(patient.lastName)}`.trim(),
-      dateOfBirth: dob || null,
-      age,
-      isMinor: age !== null && age < 18,
-      phone: safeDecrypt(patient.phone) || null,
-      cpf: safeDecrypt(patient.cpf) || null,
-      cityState: [patient.city, patient.state].filter(Boolean).join(" / ") || null,
-    },
-    terms: visible.map((t) => ({
-      id: t.id,
-      audience: t.audience,
-      titlePt: t.titlePt,
-      titleEn: t.titleEn,
-      titleEs: t.titleEs,
-      summaryPt: t.summaryPt,
-      summaryEn: t.summaryEn,
-      summaryEs: t.summaryEs,
-      requiresGuardian: termRequiresGuardian(t, age),
-      fields: t.fields,
-      status: latestByTerm.get(t.id)
+    scales: PSYCHOLOGY_SCALES.map((s) => ({
+      id: s.id,
+      namePt: s.namePt,
+      nameEn: s.nameEn,
+      nameEs: s.nameEs,
+      descriptionPt: s.descriptionPt,
+      descriptionEn: s.descriptionEn,
+      descriptionEs: s.descriptionEs,
+      options: s.options,
+      questions: s.questions,
+      status: latestByScale.get(s.id)
         ? {
             sent: true,
-            documentId: latestByTerm.get(t.id)!.documentId,
-            sharedAt: latestByTerm.get(t.id)!.sharedAt,
-            professionalId: latestByTerm.get(t.id)!.professionalId,
-            professionalName: latestByTerm.get(t.id)!.professionalName,
+            ...latestByScale.get(s.id)!,
           }
         : { sent: false },
     })),
@@ -163,35 +146,18 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const { termId, professionalId, fields, lang } = parsed.data;
-  const term = getPatientPsychologyTerm(termId);
-  if (!term) return NextResponse.json({ error: "Unknown term" }, { status: 400 });
+  const { scaleId, responses, professionalId } = parsed.data;
+  const scale = getScale(scaleId);
+  if (!scale) return NextResponse.json({ error: "Scale not available" }, { status: 400 });
+  if (responses.length !== scale.questions.length) {
+    return NextResponse.json({ error: "Número de respostas inválido" }, { status: 400 });
+  }
 
   const patient = await db.patientProfile.findUnique({
     where: { userId },
-    select: {
-      id: true,
-      firstName: true,
-      lastName: true,
-      dateOfBirth: true,
-    },
+    select: { id: true, firstName: true, lastName: true },
   });
   if (!patient) return NextResponse.json({ error: "No profile" }, { status: 404 });
-
-  const dob = safeDecrypt(patient.dateOfBirth) || fields.patientDob || fields.adolescentDob || "";
-  const age = ageFromIsoDate(dob);
-
-  if (term.audience === "minor" && !isMinorAge(age)) {
-    return NextResponse.json({ error: "Este termo é apenas para menores de 18 anos." }, { status: 403 });
-  }
-  if (term.audience === "adolescent" && !isAdolescentAge(age)) {
-    return NextResponse.json({ error: "Este termo é apenas para adolescentes de 12 a 17 anos." }, { status: 403 });
-  }
-
-  const missing = validateTermFields(term, fields, age);
-  if (missing) {
-    return NextResponse.json({ error: `Campo obrigatório: ${missing}` }, { status: 400 });
-  }
 
   const professional = await db.professionalProfile.findUnique({
     where: { id: professionalId },
@@ -205,32 +171,35 @@ export async function POST(req: NextRequest) {
   });
   if (!eligible) {
     return NextResponse.json(
-      { error: "Você só pode enviar termos a um profissional com consulta confirmada ou recentes." },
+      { error: "Você só pode enviar testes a um profissional com consulta confirmada ou recente." },
       { status: 403 },
     );
   }
 
-  const professionalName = `${professional.firstName} ${professional.lastName}`.trim();
-  const signedAtIso = new Date().toISOString();
-  const content = renderPatientTermDocument({
-    term,
-    values: fields,
-    age,
-    professionalName,
-    signedAtIso,
+  const score = scoreScale(scaleId, responses);
+  const interpretation = scale.interpret(score);
+  const risk = assessScaleRisk(scaleId, responses, score);
+  const payload = {
+    ...buildScalePayload(
+      scaleId,
+      responses,
+      score,
+      interpretation,
+      risk.level !== "none" ? risk : null,
+    ),
+    patientSelfReport: true,
     shareAuthorized: true,
-    lang: lang ?? "pt",
-  });
+    completedAt: new Date().toISOString(),
+  };
 
-  const title =
-    lang === "en" ? term.titleEn : lang === "es" ? term.titleEs : term.titlePt;
-
+  const title = `${scale.namePt} — score ${score} (paciente)`;
   const doc = await db.medicalDocument.create({
     data: {
       patientId: patientProfileId,
-      type: "OTHER",
+      type: "CLINICAL_NOTE",
+      recordKind: "SCALE",
       title: encrypt(title),
-      content: encrypt(content),
+      content: encrypt(JSON.stringify(payload)),
     },
   });
 
@@ -250,36 +219,26 @@ export async function POST(req: NextRequest) {
 
   const patientName =
     `${safeDecrypt(patient.firstName)} ${safeDecrypt(patient.lastName)}`.trim() || "Paciente";
+  const professionalName = `${professional.firstName} ${professional.lastName}`.trim();
   const docLink = chartId
     ? `${patientChartPathForSpecialty(professional.specialty, chartId)}?recordId=${doc.id}`
     : `${professionalSharedPathForSpecialty(professional.specialty)}?documentId=${doc.id}`;
 
-  const already = await db.sharedRecord.findFirst({
-    where: {
+  await db.sharedRecord.create({
+    data: {
       documentId: doc.id,
-      sharedWithProfessionalId: professional.id,
+      patientId: patientProfileId,
+      sharedWithUserId: professional.userId,
       sharedByUserId: userId,
+      sharedWithProfessionalId: professional.id,
     },
-    select: { id: true },
   });
-
-  if (!already) {
-    await db.sharedRecord.create({
-      data: {
-        documentId: doc.id,
-        patientId: patientProfileId,
-        sharedWithUserId: professional.userId,
-        sharedByUserId: userId,
-        sharedWithProfessionalId: professional.id,
-      },
-    });
-  }
 
   await db.message.create({
     data: {
       senderId: userId,
       receiverId: professional.userId,
-      content: encrypt(`📎 Termo de psicologia assinado: ${title}\n${docLink}`),
+      content: encrypt(`📊 Teste psicológico preenchido: ${title}\n${docLink}`),
     },
   });
 
@@ -296,8 +255,8 @@ export async function POST(req: NextRequest) {
       fromUserId: userId,
       documentId: doc.id,
       link: docLink,
-      kind: "patient_psychology_term",
-      termId,
+      kind: "patient_psychology_scale",
+      scaleId,
       titleKey: "notif.docShared.title",
       bodyKey: "notif.docShared.body",
       bodyParams: { name: patientName, title },
@@ -305,29 +264,47 @@ export async function POST(req: NextRequest) {
   });
 
   let autoAttached = false;
+  let chartRecordId: string | null = null;
   if (chartId) {
     const attachResult = await attachSharedDocumentToChart({
       documentId: doc.id,
       chartId,
       professionalId: professional.id,
     });
-    if (attachResult && !attachResult.alreadyAttached) {
-      autoAttached = true;
-      const chartLink = `${getAppUrl()}${patientChartPathForSpecialty(professional.specialty, chartId)}?recordId=${attachResult.recordId}`;
-      await db.message.create({
-        data: {
-          senderId: userId,
-          receiverId: professional.userId,
-          content: encrypt(`✅ Termo adicionado à ficha: ${title}\n${chartLink}`),
-        },
-      });
+    if (attachResult) {
+      chartRecordId = attachResult.recordId;
+      if (!attachResult.alreadyAttached) {
+        autoAttached = true;
+        const chartLink = `${getAppUrl()}${patientChartPathForSpecialty(professional.specialty, chartId)}?recordId=${attachResult.recordId}`;
+        await db.message.create({
+          data: {
+            senderId: userId,
+            receiverId: professional.userId,
+            content: encrypt(`✅ Escala adicionada à ficha: ${title}\n${chartLink}`),
+          },
+        });
+      }
+    }
+
+    if (risk.level === "critical") {
+      notifyPsychologyCriticalRisk({
+        professionalId: professional.id,
+        patientRecordId: chartId,
+        scaleId,
+        documentId: chartRecordId || doc.id,
+        risk,
+      }).catch((e) => console.error("[PSYCHOLOGY-CRITICAL-RISK-PATIENT]", e));
+      invalidatePsychologyRiskAlertCache(professional.id);
     }
   }
 
   return NextResponse.json({
     ok: true,
     documentId: doc.id,
-    termId,
+    scaleId,
+    score,
+    interpretation,
+    risk: risk.level !== "none" ? risk : null,
     autoAttached,
     professionalName,
   }, { status: 201 });

@@ -8,7 +8,8 @@ export type PatientPsychologyTermId =
   | "TDIC_CONTRACT"
   | "MINOR_PSYCHOTHERAPY_AUTH"
   | "MINOR_GENERAL_AUTH"
-  | "ADOLESCENT_ASSENT";
+  | "ADOLESCENT_ASSENT"
+  | "CONTRACT_ADDENDUM";
 
 export type PatientTermAudience = "all" | "minor" | "adolescent";
 
@@ -22,6 +23,9 @@ export type PatientTermFieldKey =
   | "sessionFrequency"
   | "sessionDuration"
   | "feeAmount"
+  | "addendumFee"
+  | "addendumSchedule"
+  | "addendumOther"
   | "guardianName"
   | "guardianCpf"
   | "guardianRelation"
@@ -166,6 +170,23 @@ export const PATIENT_PSYCHOLOGY_TERMS: PatientPsychologyTermDef[] = [
       { key: "adolescentDob", labelPt: "Sua data de nascimento", labelEn: "Your date of birth", labelEs: "Tu fecha de nacimiento", required: true, kind: "date" },
     ],
   },
+  {
+    id: "CONTRACT_ADDENDUM",
+    audience: "all",
+    titlePt: "Termo aditivo ao contrato",
+    titleEn: "Contract addendum",
+    titleEs: "Término aditivo al contrato",
+    summaryPt: "Altera condições já acordadas (valor, horário, outras cláusulas) do contrato de prestação de serviços.",
+    summaryEn: "Changes previously agreed terms (fee, schedule, other clauses) of the services agreement.",
+    summaryEs: "Modifica condiciones ya acordadas (valor, horario, otras cláusulas) del contrato de servicios.",
+    fields: [
+      ...PATIENT_CORE,
+      { key: "addendumFee", labelPt: "Novo valor por sessão (ou deixe em branco)", labelEn: "New fee per session (or leave blank)", labelEs: "Nuevo valor por sesión (o deje en blanco)", required: false, kind: "text" },
+      { key: "addendumSchedule", labelPt: "Nova frequência / horários (ou deixe em branco)", labelEn: "New frequency / schedule (or leave blank)", labelEs: "Nueva frecuencia / horarios (o deje en blanco)", required: false, kind: "text" },
+      { key: "addendumOther", labelPt: "Outras alterações acordadas *", labelEn: "Other agreed changes *", labelEs: "Otros cambios acordados *", required: true, kind: "text" },
+      ...GUARDIAN_FIELDS,
+    ],
+  },
 ];
 
 export const PSY_TERM_CONTENT_MARKER = "__DOCTOR8_PSY_TERM__";
@@ -305,6 +326,14 @@ export function renderPatientTermDocument(opts: {
       "Entendi que o atendimento psicológico é um espaço de conversa com profissionais de",
       "psicologia, que o que eu contar é sigiloso (exceto risco grave), que posso fazer",
       "perguntas e interromper quando quiser, e concordo em participar.",
+      "",
+    );
+  } else if (opts.term.id === "CONTRACT_ADDENDUM") {
+    lines.push(
+      "TERMO ADITIVO AO CONTRATO DE PRESTAÇÃO DE SERVIÇOS PSICOLÓGICOS",
+      "",
+      "As partes acordam alterar o contrato original nos termos abaixo. Demais cláusulas",
+      "não modificadas permanecem em vigor.",
       "",
     );
   }

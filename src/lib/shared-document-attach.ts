@@ -61,7 +61,7 @@ export async function attachSharedDocumentToChart(opts: {
 
   const original = await db.medicalDocument.findUnique({
     where: { id: documentId },
-    select: { type: true, categoryId: true, title: true, content: true, fileUrl: true },
+    select: { type: true, categoryId: true, title: true, content: true, fileUrl: true, recordKind: true },
   });
   if (!original) return null;
 
@@ -70,6 +70,7 @@ export async function attachSharedDocumentToChart(opts: {
       patientRecordId: chartId,
       professionalId,
       type: original.type,
+      recordKind: original.recordKind,
       categoryId: original.categoryId,
       title: original.title,
       content: original.content,
