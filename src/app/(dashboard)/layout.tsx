@@ -96,6 +96,7 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
   const { data: session, status } = useSession();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const mainRef = useRef<HTMLElement>(null);
+  const sidebarNavScrollRef = useRef(false);
   const [unreadMessages, setUnreadMessages] = useState(0);
   const [showNaturalMedicineNav, setShowNaturalMedicineNav] = useState(true);
   const [sessionSnapshot, setSessionSnapshot] = useState<{
@@ -369,9 +370,29 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
   const headerAvatar = isAngel ? "bg-rose-500" : isOrganization ? "bg-indigo-500" : isEmployer ? "bg-orange-600" : isOccupationalPhysician ? "bg-teal-600" : isPharmacyStoreUser ? "bg-emerald-600" : isLaboratoryUser ? "bg-violet-600" : isPsychologist ? "bg-violet-500" : isNutritionist ? "bg-amber-500" : isNurse ? "bg-rose-500" : isPharmacist ? "bg-teal-500" : isDentist ? "bg-fuchsia-500" : isProfessional ? "bg-brand-500" : isPsychoanalyst ? "bg-violet-500" : isIntegrativeTherapist ? "bg-teal-500" : "bg-emerald-500";
   const signOutHref = resolveLoginPathForSession(role, pathname, isPsychologistPortal || isNutritionistPortal || isNursePortal || isPharmacistPortal || isDentistPortal);
 
-  function scrollMainToTop() {
-    mainRef.current?.scrollTo({ top: 0 });
+  function scrollDashboardToTop() {
+    const main = mainRef.current;
+    if (main && main.scrollTop > 0) {
+      main.scrollTo({ top: 0 });
+    }
+    if (window.scrollY > 0) {
+      window.scrollTo({ top: 0 });
+    }
   }
+
+  function handleSidebarNavClick(href: string) {
+    scrollDashboardToTop();
+    setSidebarOpen(false);
+    if (href !== pathname) {
+      sidebarNavScrollRef.current = true;
+    }
+  }
+
+  useEffect(() => {
+    if (!sidebarNavScrollRef.current) return;
+    sidebarNavScrollRef.current = false;
+    scrollDashboardToTop();
+  }, [pathname]);
 
   function isNavItemActive(href: string): boolean {
     if (pathname === href) return true;
@@ -421,10 +442,7 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
         key={item.href}
         href={item.href}
         scroll={false}
-        onClick={() => {
-          scrollMainToTop();
-          setSidebarOpen(false);
-        }}
+        onClick={() => handleSidebarNavClick(item.href)}
         className={linkClass}
       >
         {item.icon}
