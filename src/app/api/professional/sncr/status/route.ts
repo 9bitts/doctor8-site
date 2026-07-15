@@ -3,7 +3,12 @@ import { requireProfessionalApi, isApiError } from "@/lib/api-auth";
 import { db } from "@/lib/db";
 import { getSncrAccessToken } from "@/lib/sncr/client";
 import { sncrPoolBalance } from "@/lib/sncr/number-pool";
-import { sncrEnabled, sncrPlatformCnpj } from "@/lib/sncr/config";
+import {
+  controlledPrescriptionsAvailable,
+  sncrEnabled,
+  sncrPlatformCnpj,
+  sncrPlatformReady,
+} from "@/lib/sncr/config";
 
 export async function GET() {
   const ctx = await requireProfessionalApi();
@@ -25,6 +30,8 @@ export async function GET() {
 
   return NextResponse.json({
     enabled: sncrEnabled(),
+    platformReady: sncrPlatformReady(),
+    controlledAvailable: controlledPrescriptionsAvailable(),
     authenticated: !!token,
     platformCnpjConfigured: !!sncrPlatformCnpj(),
     cpfConfigured: !!professional.digitalSignCpf,

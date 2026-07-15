@@ -222,6 +222,8 @@ export function usePrescriptionPage() {
   const [cannabisTcleAccepted, setCannabisTcleAccepted] = useState(false);
   const [sncrStatus, setSncrStatus] = useState<{
     enabled: boolean;
+    platformReady: boolean;
+    controlledAvailable: boolean;
     authenticated: boolean;
     platformCnpjConfigured: boolean;
     cpfConfigured: boolean;
@@ -236,6 +238,7 @@ export function usePrescriptionPage() {
     else if (authResult === "error") toast.error(t("rx.sncrAuthError"));
     else if (authResult === "missing_session") toast.error(t("rx.sncrAuthMissingSession"));
     else if (authResult === "forbidden") toast.error(t("rx.sncrAuthForbidden"));
+    else if (authResult === "platform_unavailable") toast.error(t("rx.sncrAuthPlatformUnavailable"));
     const params = new URLSearchParams(searchParams.toString());
     params.delete("sncrAuth");
     const q = params.toString();
@@ -243,7 +246,6 @@ export function usePrescriptionPage() {
   }, [searchParams, pathname, router, toast, t]);
 
   useEffect(() => {
-    if (view !== "hub") return;
     fetch("/api/professional/sncr/status", { credentials: "same-origin" })
       .then((r) => r.json())
       .then((d) => setSncrStatus(d))
@@ -1137,6 +1139,10 @@ export function usePrescriptionPage() {
   }
 
   async function openCreateReceitaB() {
+    if (!sncrStatus?.controlledAvailable) {
+      toast.error(t("rx.sncrAuthPlatformUnavailable"));
+      return;
+    }
     resetForm();
     setControlledFormKind("B");
     setValidDays(defaultValidDaysForFormKind("B"));
@@ -1149,6 +1155,10 @@ export function usePrescriptionPage() {
   }
 
   async function openCreateReceitaControleEspecial() {
+    if (!sncrStatus?.controlledAvailable) {
+      toast.error(t("rx.sncrAuthPlatformUnavailable"));
+      return;
+    }
     resetForm();
     setControlledFormKind("C");
     setValidDays(defaultValidDaysForFormKind("C"));
@@ -1819,7 +1829,7 @@ export function usePrescriptionPage() {
       } else if (res.status === 428) {
         const d = await res.json().catch(() => ({}));
         setFormError(typeof d.error === "string" ? d.error : t("rx.sncrAuthRequired"));
-        if (d.sncrLoginPath) {
+        if (d.sncrLoginPath && !d.needsSncrPlatform) {
           window.location.href = d.sncrLoginPath;
         }
       } else if (isAuthFailureStatus(res.status)) {
@@ -1851,6 +1861,15 @@ export function usePrescriptionPage() {
     );
     if (!splitPreview.ok) {
       setFormError(splitPreview.error);
+      return;
+    }
+
+    const splitHasControlled = splitPreview.groups.some((g) => g.formKind !== "SIMPLE");
+    if (
+      !sncrStatus?.controlledAvailable &&
+      (splitHasControlled || isControlledRxFormMode(controlledFormKind))
+    ) {
+      setFormError(t("rx.controlledPrescriptionUnavailable"));
       return;
     }
 
@@ -2097,6 +2116,10 @@ export function usePrescriptionPage() {
     controlledFormKind,
     sncrStatus,
     openSncrLogin: () => {
+      if (!sncrStatus?.controlledAvailable) {
+        toast.error(t("rx.sncrAuthPlatformUnavailable"));
+        return;
+      }
       window.location.href = "/api/professional/sncr/auth/login";
     },
   };

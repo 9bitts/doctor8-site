@@ -20,7 +20,7 @@ import {
 } from "@/lib/prescription-form-kind";
 import { reserveSncrReceiptNumber } from "@/lib/sncr/number-pool";
 import { getSncrAccessToken } from "@/lib/sncr/client";
-import { sncrEnabled } from "@/lib/sncr/config";
+import { sncrEnabled, controlledPrescriptionsAvailable } from "@/lib/sncr/config";
 
 export type CreatePrescriptionInput = {
   professionalId: string;
@@ -58,6 +58,7 @@ export type CreatePrescriptionBatchResult =
       ok: false;
       error: string;
       needsSncrAuth?: boolean;
+      needsSncrPlatform?: boolean;
     };
 
 async function resolvePatientTargets(input: CreatePrescriptionInput) {
@@ -119,6 +120,14 @@ export async function createPrescriptionBatch(
   if (!split.ok) return { ok: false, error: split.error };
 
   const needsControlled = split.groups.some((g) => requiresSncrNumber(g.formKind));
+  if (needsControlled && !controlledPrescriptionsAvailable()) {
+    return {
+      ok: false,
+      error:
+        "Receitas Lista B/C estão temporariamente indisponíveis. A integração SNCR com a Anvisa ainda aguarda liberação. Remova medicamentos controlados ou emita apenas receita comum.",
+      needsSncrPlatform: true,
+    };
+  }
   if (needsControlled && sncrEnabled()) {
     const token = await getSncrAccessToken(input.professionalId);
     if (!token) {

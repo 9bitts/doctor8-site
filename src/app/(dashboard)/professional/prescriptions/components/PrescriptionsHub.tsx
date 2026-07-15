@@ -52,6 +52,8 @@ export type PrescriptionsHubProps = {
   onCloseSignModal: () => void;
   sncrStatus?: {
     enabled: boolean;
+    platformReady: boolean;
+    controlledAvailable: boolean;
     authenticated: boolean;
     platformCnpjConfigured: boolean;
     cpfConfigured: boolean;
@@ -111,7 +113,7 @@ export function PrescriptionsHub({
             className="flex items-center gap-2 bg-brand-500 hover:bg-brand-600 text-white px-5 py-2.5 rounded-xl font-semibold text-sm transition shadow-md shadow-brand-500/20">
             <Plus size={16} /> {t("rx.new")}
           </button>
-          {!cfg.phytoOnly && onOpenReceitaB && onOpenReceitaControleEspecial && (
+          {!cfg.phytoOnly && sncrStatus?.controlledAvailable && onOpenReceitaB && onOpenReceitaControleEspecial && (
             <>
               <button onClick={onOpenReceitaB}
                 className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl font-semibold text-sm transition shadow-md shadow-blue-600/20">
@@ -126,7 +128,14 @@ export function PrescriptionsHub({
         </div>
       </div>
 
-      {sncrStatus?.enabled && !sncrStatus.authenticated && (
+      {!cfg.phytoOnly && sncrStatus && !sncrStatus.controlledAvailable && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+          <p className="text-sm font-semibold text-amber-900">{t("rx.sncrPlatformUnavailableTitle")}</p>
+          <p className="text-sm text-amber-800 mt-1">{t("rx.sncrPlatformUnavailableBanner")}</p>
+        </div>
+      )}
+
+      {sncrStatus?.controlledAvailable && !sncrStatus.authenticated && (
         <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <p className="text-sm text-blue-900">{t("rx.sncrStatusBanner")}</p>
           {onSncrLogin && (
@@ -141,7 +150,7 @@ export function PrescriptionsHub({
         </div>
       )}
 
-      {sncrStatus?.enabled && sncrStatus.authenticated && (
+      {sncrStatus?.controlledAvailable && sncrStatus.authenticated && (
         <div className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-xs text-slate-600">
           {t("rx.sncrPoolBalance")
             .replace("{{nrb}}", String(sncrStatus.pool.NRB))

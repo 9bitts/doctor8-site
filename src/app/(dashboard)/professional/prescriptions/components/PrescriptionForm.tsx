@@ -52,6 +52,7 @@ export type PrescriptionFormProps = {
   onSubmit: () => void;
   hasMixedPrescription?: boolean;
   hasMixedRegulatoryPrescription?: boolean;
+  controlledPrescriptionsAvailable?: boolean;
   controlledFormKind?: ControlledFormKind;
 };
 
@@ -87,6 +88,7 @@ export function PrescriptionForm({
   onSubmit,
   hasMixedPrescription = false,
   hasMixedRegulatoryPrescription = false,
+  controlledPrescriptionsAvailable = true,
   controlledFormKind = "simple",
 }: PrescriptionFormProps) {
   const selectedPatient = patientPickerProps.selectedPatient;
@@ -119,13 +121,17 @@ export function PrescriptionForm({
 
       {controlledFormKind === "B" && (
         <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 text-sm text-blue-900">
-          {t("rx.receitaBBanner")}
+          {controlledPrescriptionsAvailable
+            ? t("rx.receitaBBanner")
+            : t("rx.sncrPlatformUnavailableBanner")}
         </div>
       )}
 
       {controlledFormKind === "C" && (
         <div className="bg-red-50 border border-red-200 rounded-2xl p-4 text-sm text-red-900">
-          {t("rx.receitaCBanner")}
+          {controlledPrescriptionsAvailable
+            ? t("rx.receitaCBanner")
+            : t("rx.sncrPlatformUnavailableBanner")}
         </div>
       )}
 
@@ -135,7 +141,14 @@ export function PrescriptionForm({
         </div>
       )}
 
-      {hasMixedRegulatoryPrescription && (
+      {!controlledPrescriptionsAvailable && hasMixedRegulatoryPrescription && (
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-sm text-amber-900">
+          <p className="font-semibold">{t("rx.controlledItemsBlockedTitle")}</p>
+          <p className="mt-1">{t("rx.controlledItemsBlockedHint")}</p>
+        </div>
+      )}
+
+      {controlledPrescriptionsAvailable && hasMixedRegulatoryPrescription && (
         <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-sm text-amber-900">
           <p className="font-semibold">{t("rx.package.splitTitle")}</p>
           <p className="mt-1">{t("rx.package.splitHint")}</p>

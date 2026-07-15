@@ -208,6 +208,7 @@ export default function PrescriptionsPage() {
           onSubmit={p.handleSubmit}
           hasMixedPrescription={p.hasMixedPrescription}
           hasMixedRegulatoryPrescription={p.hasMixedRegulatoryPrescription}
+          controlledPrescriptionsAvailable={p.sncrStatus?.controlledAvailable ?? false}
           controlledFormKind={p.controlledFormKind}
         />
         <PhytoInteractionConfirmModal

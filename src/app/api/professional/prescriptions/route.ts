@@ -75,7 +75,11 @@ export async function POST(req: NextRequest) {
       {
         error: batch.error,
         needsSncrAuth: batch.needsSncrAuth || false,
-        sncrLoginPath: batch.needsSncrAuth ? "/api/professional/sncr/auth/login" : undefined,
+        needsSncrPlatform: batch.needsSncrPlatform || false,
+        sncrLoginPath:
+          batch.needsSncrAuth && !batch.needsSncrPlatform
+            ? "/api/professional/sncr/auth/login"
+            : undefined,
       },
       { status },
     );

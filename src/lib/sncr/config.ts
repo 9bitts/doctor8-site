@@ -11,6 +11,16 @@ export function sncrEnabled(): boolean {
   return process.env.SNCR_ENABLED !== "false";
 }
 
+/** Anvisa whitelist + OAuth SNCR liberados para a plataforma (defina SNCR_PLATFORM_READY=true após homologação). */
+export function sncrPlatformReady(): boolean {
+  return process.env.SNCR_PLATFORM_READY === "true";
+}
+
+/** Receita B/C disponível para o profissional — exige SNCR ativo e plataforma homologada pela Anvisa. */
+export function controlledPrescriptionsAvailable(): boolean {
+  return sncrEnabled() && sncrPlatformReady();
+}
+
 /** CNPJ da plataforma Doctor8 — obrigatório para RCE/RET (Manual API §2.3.2). */
 export function sncrPlatformCnpj(): string | null {
   const raw = process.env.SNCR_PLATFORM_CNPJ || process.env.DOCTOR8_CNPJ || "";

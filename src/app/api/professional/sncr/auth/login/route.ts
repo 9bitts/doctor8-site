@@ -2,11 +2,18 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireProfessionalApi, isApiError } from "@/lib/api-auth";
 import { db } from "@/lib/db";
 import { buildSncrLoginUrl } from "@/lib/sncr/client";
+import { controlledPrescriptionsAvailable } from "@/lib/sncr/config";
 import { getPublicBase } from "@/lib/sign-helpers";
 
 export async function GET(req: NextRequest) {
   const ctx = await requireProfessionalApi();
   if (isApiError(ctx)) return ctx.error;
+
+  if (!controlledPrescriptionsAvailable()) {
+    return NextResponse.redirect(
+      new URL("/professional/prescriptions?sncrAuth=platform_unavailable", req.url),
+    );
+  }
 
   const professional = await db.professionalProfile.findUnique({
     where: { userId: ctx.userId },
