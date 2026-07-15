@@ -6,6 +6,7 @@ import { useI18n } from "@/lib/i18n/I18nProvider";
 import { localeOf } from "@/lib/i18n/translations";
 import { useUserTimeZone } from "@/hooks/useUserTimeZone";
 import { formatShortDateWithWeekday, formatAppointmentTimeWithLabel } from "@/lib/timezone";
+import ConfirmAttendanceButton from "@/components/patient/ConfirmAttendanceButton";
 
 export type UpcomingConsultProps = {
   appointmentId: string;
@@ -13,6 +14,7 @@ export type UpcomingConsultProps = {
   type: string;
   providerName: string;
   hasPreConsult: boolean;
+  patientConfirmedAt?: string | null;
 };
 
 export default function PatientUpcomingConsultBanner({
@@ -26,18 +28,20 @@ export default function PatientUpcomingConsultBanner({
   const when = new Date(appointment.scheduledAt);
   const msUntil = when.getTime() - Date.now();
   const hoursUntil = Math.max(0, Math.round(msUntil / (60 * 60 * 1000)));
+  const within48h = msUntil > 0 && msUntil <= 48 * 60 * 60 * 1000;
+  const needsPresence = within48h && !appointment.patientConfirmedAt;
 
   const timeLabel = formatAppointmentTimeWithLabel(when, userTz, locale);
   const dateLabel = formatShortDateWithWeekday(when, userTz, locale);
 
   const title =
     hoursUntil <= 24
-      ? t("pdash.upcoming.soon").replace("{provider}", appointment.providerName)
+      ? t("pdash.upcoming.soon").replace("{{provider}}", appointment.providerName)
       : t("pdash.upcoming.title");
 
   const subtitle = t("pdash.upcoming.when")
-    .replace("{date}", dateLabel)
-    .replace("{time}", timeLabel);
+    .replace("{{date}}", dateLabel)
+    .replace("{{time}}", timeLabel);
 
   return (
     <div className="rounded-2xl border border-violet-200 bg-violet-50 p-4 sm:p-5">
@@ -58,7 +62,15 @@ export default function PatientUpcomingConsultBanner({
               {t("appt.preConsultHint")}
             </p>
           )}
-          <div className="flex flex-wrap gap-3 mt-3">
+          {needsPresence && (
+            <p className="text-xs text-violet-800 mt-2 font-medium">{t("pdash.presence.prompt")}</p>
+          )}
+          <div className="flex flex-wrap items-center gap-3 mt-3">
+            <ConfirmAttendanceButton
+              appointmentId={appointment.appointmentId}
+              confirmed={!!appointment.patientConfirmedAt}
+              within48h={within48h}
+            />
             <Link
               href={`/patient/appointments?id=${appointment.appointmentId}`}
               className="inline-flex items-center gap-1 text-xs font-semibold text-violet-700 hover:text-violet-900"

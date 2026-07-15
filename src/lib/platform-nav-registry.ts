@@ -163,6 +163,12 @@ export const PATIENT_NAV_GROUPS: PlatformNavGroup[] = [
       { href: "/patient/assinar-termos", labelKey: "nav.signTerms", roles: ["PATIENT"], iconKey: "ScrollText" },
       { href: "/patient/medications", labelKey: "nav.medications", roles: ["PATIENT"], iconKey: "Pill" },
       { href: "/patient/resources", labelKey: "nav.doctorResources", roles: ["PATIENT"], iconKey: "BookOpen" },
+    ],
+  },
+  {
+    // Marketplace / specialty care — same routes as before, separate group to reduce clutter.
+    labelKey: "nav.group.services",
+    items: [
       { href: "/patient/integrative-care", labelKey: "nav.integrativeCare", roles: ["PATIENT"], iconKey: "Leaf" },
       { href: "/patient/nutrition", labelKey: "nav.nutrition", roles: ["PATIENT"], iconKey: "BarChart3" },
       { href: "/patient/nursing", labelKey: "nav.nursing", roles: ["PATIENT"], iconKey: "Heart" },

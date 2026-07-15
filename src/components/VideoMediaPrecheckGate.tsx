@@ -1,11 +1,21 @@
 "use client";
 
 import { useCallback, useState, type ReactNode } from "react";
-import { Loader2, VideoOff, RefreshCw, AlertCircle, Video } from "lucide-react";
+import { Loader2, VideoOff, RefreshCw, AlertCircle, Video, Mic } from "lucide-react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import type { Lang } from "@/lib/i18n/translations";
 
-type MediaCheck = "idle" | "checking" | "granted" | "denied" | "notfound" | "unavailable";
+type MediaCheck =
+  | "idle"
+  | "checking"
+  | "granted"
+  | "denied"
+  | "notfound"
+  | "unavailable"
+  | "audio_only_ok";
+
+/** Daily join reads this to start with camera off (session-scoped, no account impact). */
+export const VIDEO_START_VIDEO_OFF_KEY = "doctor8.video.startVideoOff";
 
 const MEDIA_PROMPT: Record<string, Record<Lang, string>> = {
   idleTitle: {
@@ -43,10 +53,46 @@ const MEDIA_PROMPT: Record<string, Record<Lang, string>> = {
     en: "Restart Safari if the problem persists.",
     es: "Reinicia Safari si el problema persiste.",
   },
+  audioOnlyTitle: {
+    pt: "Câmera indisponível — microfone ok",
+    en: "Camera unavailable — microphone OK",
+    es: "Cámara no disponible — micrófono OK",
+  },
+  audioOnlyIntro: {
+    pt: "Você pode entrar só com áudio. O médico ainda poderá falar com você; a câmera fica desligada.",
+    en: "You can join with audio only. Your doctor can still talk with you; the camera stays off.",
+    es: "Puedes entrar solo con audio. El médico aún podrá hablar contigo; la cámara queda apagada.",
+  },
+  audioOnlyButton: {
+    pt: "Entrar só com áudio",
+    en: "Join with audio only",
+    es: "Entrar solo con audio",
+  },
+  continueAnyway: {
+    pt: "Tentar entrar mesmo assim",
+    en: "Try to join anyway",
+    es: "Intentar entrar de todos modos",
+  },
 };
 
 function isDeviceNotFoundError(name: string): boolean {
   return name === "NotFoundError" || name === "DevicesNotFoundError";
+}
+
+function clearStartVideoOffFlag() {
+  try {
+    sessionStorage.removeItem(VIDEO_START_VIDEO_OFF_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
+function setStartVideoOffFlag() {
+  try {
+    sessionStorage.setItem(VIDEO_START_VIDEO_OFF_KEY, "1");
+  } catch {
+    /* ignore */
+  }
 }
 
 /** AGD-28 — shared camera/mic pre-check before scheduled or JIT video rooms. */
@@ -59,8 +105,20 @@ export default function VideoMediaPrecheckGate({ children }: { children: ReactNo
     [lang],
   );
 
+  const enterWithAudioOnly = useCallback(() => {
+    setStartVideoOffFlag();
+    setMediaCheck("granted");
+  }, []);
+
+  const enterAnyway = useCallback(() => {
+    // Let Daily prompt inside the room; prefer camera off to avoid hard fail loops.
+    setStartVideoOffFlag();
+    setMediaCheck("granted");
+  }, []);
+
   const runMediaCheck = useCallback(async () => {
     setMediaCheck("checking");
+    clearStartVideoOffFlag();
     if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) {
       setMediaCheck("granted");
       return;
@@ -69,8 +127,18 @@ export default function VideoMediaPrecheckGate({ children }: { children: ReactNo
       const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
       stream.getTracks().forEach((track) => track.stop());
       setMediaCheck("granted");
+      return;
     } catch (e) {
       const name = e instanceof DOMException ? e.name : "";
+      // Camera failed — microfone sozinho já desbloqueia a consulta.
+      try {
+        const audioOnly = await navigator.mediaDevices.getUserMedia({ video: false, audio: true });
+        audioOnly.getTracks().forEach((track) => track.stop());
+        setMediaCheck("audio_only_ok");
+        return;
+      } catch {
+        /* classify original AV failure below */
+      }
       if (name === "NotAllowedError" || name === "PermissionDeniedError") {
         setMediaCheck("denied");
       } else if (isDeviceNotFoundError(name)) {
@@ -115,6 +183,34 @@ export default function VideoMediaPrecheckGate({ children }: { children: ReactNo
     );
   }
 
+  if (mediaCheck === "audio_only_ok") {
+    return (
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-4">
+          <div className="w-12 h-12 rounded-2xl bg-sky-100 flex items-center justify-center">
+            <Mic size={24} className="text-sky-600" />
+          </div>
+          <h1 className="text-lg font-bold text-slate-900">{tp("audioOnlyTitle")}</h1>
+          <p className="text-sm text-slate-600">{tp("audioOnlyIntro")}</p>
+          <button
+            type="button"
+            onClick={enterWithAudioOnly}
+            className="w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white font-semibold text-sm transition flex items-center justify-center gap-2"
+          >
+            <Mic size={15} /> {tp("audioOnlyButton")}
+          </button>
+          <button
+            type="button"
+            onClick={() => void runMediaCheck()}
+            className="w-full py-3 rounded-xl border border-slate-200 text-slate-700 font-semibold text-sm transition hover:bg-slate-50 flex items-center justify-center gap-2"
+          >
+            <RefreshCw size={15} /> {t("videoPerm.retry")}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (mediaCheck === "denied") {
     return (
       <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
@@ -135,6 +231,13 @@ export default function VideoMediaPrecheckGate({ children }: { children: ReactNo
             className="w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white font-semibold text-sm transition flex items-center justify-center gap-2"
           >
             <RefreshCw size={15} /> {t("videoPerm.retry")}
+          </button>
+          <button
+            type="button"
+            onClick={enterAnyway}
+            className="w-full py-3 rounded-xl border border-slate-200 text-slate-700 font-semibold text-sm transition hover:bg-slate-50"
+          >
+            {tp("continueAnyway")}
           </button>
         </div>
       </div>
@@ -161,6 +264,13 @@ export default function VideoMediaPrecheckGate({ children }: { children: ReactNo
           >
             <RefreshCw size={15} /> {t("videoPerm.retry")}
           </button>
+          <button
+            type="button"
+            onClick={enterAnyway}
+            className="w-full py-3 rounded-xl border border-slate-200 text-slate-700 font-semibold text-sm transition hover:bg-slate-50"
+          >
+            {tp("continueAnyway")}
+          </button>
         </div>
       </div>
     );
@@ -180,6 +290,13 @@ export default function VideoMediaPrecheckGate({ children }: { children: ReactNo
           className="w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white font-semibold text-sm transition flex items-center justify-center gap-2"
         >
           <RefreshCw size={15} /> {t("videoPerm.retry")}
+        </button>
+        <button
+          type="button"
+          onClick={enterAnyway}
+          className="w-full py-3 rounded-xl border border-slate-200 text-slate-700 font-semibold text-sm transition hover:bg-slate-50"
+        >
+          {tp("continueAnyway")}
         </button>
       </div>
     </div>

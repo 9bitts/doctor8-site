@@ -199,6 +199,7 @@ export default async function PatientDashboard() {
           type: soonAppointment.type,
           providerName,
           hasPreConsult: Boolean(intake?.visitReason),
+          patientConfirmedAt: soonAppointment.patientConfirmedAt?.toISOString() ?? null,
         };
       })()
     : null;

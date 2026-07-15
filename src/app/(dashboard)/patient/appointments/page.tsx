@@ -1373,6 +1373,10 @@ export default function AppointmentsPage() {
                 : t("appt.completePayment")}
           </h2>
 
+          {!selectedSlotIsVolunteer && !selectedSlotIsEap && (
+            <p className="text-sm text-slate-600 -mt-2">{t("appt.paymentStepIntro")}</p>
+          )}
+
           {(selectedSlotIsVolunteer || selectedSlotIsEap) && (
             <div className="bg-green-50 border border-green-200 rounded-xl p-4 text-sm text-green-800">
               {selectedSlotIsEap
@@ -1613,6 +1617,7 @@ export default function AppointmentsPage() {
               <li>{t("appt.confirmedStep2")}</li>
               <li>{t("appt.confirmedStep3")}</li>
               <li>{t("appt.confirmedStep4")}</li>
+              <li>{t("appt.confirmedStep5")}</li>
             </ul>
           </div>
           <div className="bg-slate-50 rounded-xl p-5 text-sm space-y-2 text-left">

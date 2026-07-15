@@ -392,6 +392,9 @@ export default function MessagesPage() {
               </button>
             )}
           </div>
+          {role === "PATIENT" && (
+            <p className="text-xs text-slate-500 mb-3 leading-relaxed">{t("msg.inAppHint")}</p>
+          )}
           <div className="relative">
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input

@@ -2,6 +2,15 @@
 
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
 import type { DailyCall } from "@daily-co/daily-js";
+import { VIDEO_START_VIDEO_OFF_KEY } from "@/components/VideoMediaPrecheckGate";
+
+function preferStartVideoOff(): boolean {
+  try {
+    return sessionStorage.getItem(VIDEO_START_VIDEO_OFF_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
 
 export type DailyPrebuiltHandle = {
   leave: () => Promise<void>;
@@ -257,7 +266,11 @@ const DailyPrebuiltEmbed = forwardRef<DailyPrebuiltHandle, Props>(function Daily
 
         if (cancelled) return;
 
-        await call.join({ url, token });
+        await call.join({
+          url,
+          token,
+          ...(preferStartVideoOff() ? { startVideoOff: true } : {}),
+        });
 
         if (cancelled) return;
 
