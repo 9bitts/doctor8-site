@@ -12,7 +12,7 @@ import { getProfessionLabel } from "@/lib/professions";
 import PatientEmissionAlertsPanel from "@/components/patient/PatientEmissionAlertsPanel";
 import PatientPharmacySearchPanel from "@/components/patient/PatientPharmacySearchPanel";
 import PatientPharmacyBuyPanel from "@/components/patient/PatientPharmacyBuyPanel";
-import { openAuthenticatedPdf } from "@/lib/open-url-safely";
+import { downloadAuthenticatedPdf } from "@/lib/open-url-safely";
 import {
   FileText, Download, Loader2, Pill, Calendar, AlertCircle, RefreshCw,
   ShieldCheck, Clock, XCircle, MessageCircle, Search, ShoppingBag,
@@ -53,6 +53,7 @@ export default function PatientPrescriptionsPage() {
   const [activeBuyPrescriptionId, setActiveBuyPrescriptionId] = useState<string | null>(null);
   const [searchPrescriptionId, setSearchPrescriptionId] = useState<string | undefined>();
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
 
   useEffect(() => { fetchData(); }, []);
 
@@ -78,10 +79,14 @@ export default function PatientPrescriptionsPage() {
 
   async function downloadPdf(prescriptionId: string) {
     setDownloadingId(prescriptionId);
+    setDownloadError(null);
     try {
-      await openAuthenticatedPdf(`/api/patient/prescriptions/${prescriptionId}/pdf`);
+      await downloadAuthenticatedPdf(
+        `/api/patient/prescriptions/${prescriptionId}/pdf`,
+        `receita-${prescriptionId.slice(0, 8)}.pdf`,
+      );
     } catch {
-      /* user can retry */
+      setDownloadError(t("rx.pdfDownloadError"));
     } finally {
       setDownloadingId(null);
     }
@@ -145,6 +150,13 @@ export default function PatientPrescriptionsPage() {
       </div>
 
       <PatientEmissionAlertsPanel />
+
+      {downloadError && (
+        <div className="flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+          <AlertCircle size={16} className="shrink-0" />
+          {downloadError}
+        </div>
+      )}
 
       <div id="pharmacy-search-panel">
         <PatientPharmacySearchPanel

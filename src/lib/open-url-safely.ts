@@ -8,6 +8,22 @@ export async function openAuthenticatedPdf(url: string): Promise<void> {
   return openAuthenticatedBlob(url);
 }
 
+/** Fetches an authenticated PDF and triggers a browser download (no popup). */
+export async function downloadAuthenticatedPdf(
+  url: string,
+  filename = "receita.pdf",
+): Promise<void> {
+  const res = await fetch(url, { credentials: "same-origin" });
+  if (!res.ok) throw new Error("PDF_FETCH_FAILED");
+  const blob = await res.blob();
+  const blobUrl = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = blobUrl;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(blobUrl);
+}
+
 /** Opens a same-origin authenticated URL (PDF, image, etc.) in a new tab. */
 export async function openAuthenticatedBlob(url: string): Promise<void> {
   const win = window.open("", "_blank");
