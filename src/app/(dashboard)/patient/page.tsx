@@ -24,18 +24,8 @@ import ClubDoctorBanner from "@/components/patient/ClubDoctorBanner";
 import PatientUpcomingConsultBanner from "@/components/patient/PatientUpcomingConsultBanner";
 import ConfirmAttendanceButton from "@/components/patient/ConfirmAttendanceButton";
 import PatientPostConsultReview from "@/components/patient/PatientPostConsultReview";
-import HumanitarianBanner from "@/components/humanitarian/HumanitarianBanner";
-import ScheduledVolunteerBanner from "@/components/patient/ScheduledVolunteerBanner";
-import HumanitarianAnamneseReminder from "@/components/humanitarian/HumanitarianAnamneseReminder";
-import HumanitarianAngelOptOutCard from "@/components/humanitarian/HumanitarianAngelOptOutCard";
 import PatientIncompleteRegistrationCard from "@/components/PatientIncompleteRegistrationCard";
 import { computePatientRegistrationStatus } from "@/lib/patient-registration-complete";
-import { VENEZUELA_CAMPAIGN_SLUG } from "@/lib/humanitarian/constants";
-import {
-  getActiveCampaignForRegion,
-  getPatientActiveHumanitarianEntry,
-} from "@/lib/humanitarian/notify";
-import { getPatientIntakeStatusBySlug } from "@/lib/humanitarian/intake";
 import { resolveHumanitarianPatientFlag, HUMANITARIAN_PATIENT_HOME } from "@/lib/humanitarian/patient-identity";
 import { resolveRoleHome } from "@/lib/role-home";
 import { parseAppointmentIntake } from "@/lib/appointment-intake";
@@ -145,9 +135,6 @@ export default async function PatientDashboard() {
     activeQueue,
     subscription,
     userRow,
-    humanitarianCampaign,
-    humanitarianEntry,
-    humanitarianIntake,
     unreadNotifications,
   ] = await Promise.all([
     db.message.count({
@@ -177,9 +164,6 @@ export default async function PatientDashboard() {
       where: { id: userId },
       select: { region: true, timezone: true } as never,
     }),
-    getActiveCampaignForRegion(session.user.region),
-    getPatientActiveHumanitarianEntry(userId),
-    getPatientIntakeStatusBySlug(VENEZUELA_CAMPAIGN_SLUG, userId),
     db.notification.findMany({
       where: { userId, readAt: null },
       orderBy: { createdAt: "desc" },
@@ -188,9 +172,6 @@ export default async function PatientDashboard() {
   ]);
 
   const userMeta = userRow as { region?: string | null; timezone?: string } | null;
-
-  const venezuelaOperationActive =
-    humanitarianCampaign?.active || userMeta?.region === "VE";
 
   const hasActiveClub =
     !!subscription && ["active", "trialing"].includes(subscription.status);
@@ -299,9 +280,9 @@ export default async function PatientDashboard() {
   else if (historyIncomplete) pendingBanner = "history";
   else if (!hasActiveClub) pendingBanner = "club";
 
-  const showActiveQueueCard = queueActive && !venezuelaOperationActive;
+  const showActiveQueueCard = queueActive;
   const showSoonConsultCard = !showActiveQueueCard && !!soonConsultProps;
-  const showUrgentHero = !showActiveQueueCard && !showSoonConsultCard && !venezuelaOperationActive;
+  const showUrgentHero = !showActiveQueueCard && !showSoonConsultCard;
 
   return (
     <div className="max-w-5xl mx-auto space-y-8">
@@ -390,30 +371,6 @@ export default async function PatientDashboard() {
         </Link>
       )}
 
-      {/* Humanitarian campaign — contextual, above greeting */}
-      {(humanitarianCampaign?.active || userMeta?.region === "VE") && (
-        <div className="space-y-3">
-          <HumanitarianBanner
-            lang={lang}
-            campaign={{
-              slug: humanitarianCampaign?.slug ?? "venezuela-terremoto-2026",
-              name: humanitarianCampaign?.name ?? translate(lang, "hum.banner.title"),
-            }}
-            entry={humanitarianEntry}
-            triageValid={humanitarianIntake.triageValid}
-            tcleAccepted={humanitarianIntake.tcleAccepted}
-          />
-          <ScheduledVolunteerBanner lang={lang} />
-          {humanitarianIntake.triageValid && !humanitarianIntake.anamneseComplete && (
-            <HumanitarianAnamneseReminder
-              lang={lang}
-              campaignSlug={humanitarianCampaign?.slug ?? VENEZUELA_CAMPAIGN_SLUG}
-            />
-          )}
-          <HumanitarianAngelOptOutCard lang={lang} />
-        </div>
-      )}
-
       {/* 2 — Greeting */}
       <div>
         <h1 className="text-xl sm:text-2xl font-bold text-slate-900 break-words">
@@ -422,22 +379,20 @@ export default async function PatientDashboard() {
       </div>
 
       {/* 3 — Two primary actions */}
-      <div className={`grid gap-4 ${venezuelaOperationActive ? "grid-cols-1" : "sm:grid-cols-2"}`}>
-        {!venezuelaOperationActive && (
-          <Link
-            href="/urgent"
-            className="flex items-center gap-4 rounded-2xl border border-accent-500/20 bg-accent-500 text-white shadow-sm p-5 sm:p-6 transition hover:bg-accent-600 hover:shadow-md"
-          >
-            <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
-              <Radio size={24} />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-bold text-base">{t("nav.urgent")}</p>
-              <p className="text-sm text-white/80 mt-0.5">{t("pdash.urgent.desc.available")}</p>
-            </div>
-            <ChevronRight size={18} className="shrink-0 opacity-80" />
-          </Link>
-        )}
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Link
+          href="/urgent"
+          className="flex items-center gap-4 rounded-2xl border border-accent-500/20 bg-accent-500 text-white shadow-sm p-5 sm:p-6 transition hover:bg-accent-600 hover:shadow-md"
+        >
+          <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
+            <Radio size={24} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-bold text-base">{t("nav.urgent")}</p>
+            <p className="text-sm text-white/80 mt-0.5">{t("pdash.urgent.desc.available")}</p>
+          </div>
+          <ChevronRight size={18} className="shrink-0 opacity-80" />
+        </Link>
 
         <div className="flex flex-col rounded-2xl border border-brand-200 bg-brand-500 text-white shadow-sm overflow-hidden transition hover:shadow-md">
           <Link
