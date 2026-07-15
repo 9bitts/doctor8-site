@@ -30,6 +30,8 @@ export const prescriptionMedicationItemSchema = z
     renisus: z.boolean().optional(),
     phytoProductId: z.string().optional(),
     floralProductId: z.string().optional(),
+    prescriptionType: z.string().nullable().optional(),
+    controlled: z.boolean().optional(),
   })
   .superRefine((item, ctx) => {
     const kind = item.itemKind || "medication";

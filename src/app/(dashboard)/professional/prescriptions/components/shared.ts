@@ -65,7 +65,10 @@ export const MN_RX_SEARCH_TABS: {
 ];
 
 /** Formulário de prescrição: simples, Receita B (Lista B) ou Controle Especial (Lista C). */
-export type ControlledFormKind = "simple" | "B" | "C";
+export type { ControlledFormKind, PrescriptionFormKind } from "@/lib/prescription-form-kind";
+export { defaultValidDaysForFormKind } from "@/lib/prescription-form-kind";
+
+import type { ControlledFormKind } from "@/lib/prescription-form-kind";
 
 export function prescriptionTypeMatchesFormKind(
   prescriptionType: string | null | undefined,
@@ -77,10 +80,6 @@ export function prescriptionTypeMatchesFormKind(
   if (kind === "B") return code.startsWith("B");
   if (kind === "C") return code.startsWith("C");
   return false;
-}
-
-export function defaultValidDaysForFormKind(kind: ControlledFormKind): number {
-  return kind === "B" ? 60 : 30;
 }
 
 export function controlInfo(type: string | null | undefined): {

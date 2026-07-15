@@ -88,6 +88,8 @@ import {
   defaultValidDaysForFormKind,
   prescriptionTypeMatchesFormKind,
 } from "./shared";
+import { splitPrescriptionMedications } from "@/lib/prescription-split";
+import { classifyMedicationItem } from "@/lib/prescription-item-classifier";
 import { type SavedEmission } from "@/components/professional/emissions/EmissionPostSaveFlow";
 
 export function usePrescriptionPage() {
@@ -1424,12 +1426,10 @@ export function usePrescriptionPage() {
     }
     if (
       controlledFormKind !== "simple" &&
+      drug.prescriptionType &&
       !prescriptionTypeMatchesFormKind(drug.prescriptionType, controlledFormKind)
     ) {
-      toast.error(
-        controlledFormKind === "B" ? t("rx.wrongListForReceitaB") : t("rx.wrongListForReceitaC"),
-      );
-      return;
+      toast.success(t("rx.mixedRegulatorySoftWarn"));
     }
     setFreeTextMode(false);
     const substance = drug.activeIngredient?.trim() || drug.name;
@@ -1660,6 +1660,8 @@ export function usePrescriptionPage() {
         renisus: m.renisus || undefined,
         phytoProductId: m.phytoProductId || undefined,
         floralProductId: m.floralProductId || undefined,
+        prescriptionType: m.prescriptionType || undefined,
+        controlled: m.controlled || undefined,
       }));
 
       const finalInstructions = instructions.trim();
@@ -1691,7 +1693,14 @@ export function usePrescriptionPage() {
       );
       if (res.ok) {
         const data = await res.json();
-        const prescriptionId = editingPrescriptionId || data.prescriptionId;
+        const prescriptions = (data.prescriptions || []) as {
+          id: string;
+          formKind: string;
+          label: string;
+          sncrReceiptNumber?: string | null;
+          medications: typeof cleanMeds;
+        }[];
+        const primary = prescriptions[0] || { id: data.prescriptionId, formKind: "SIMPLE", label: t("rx.newPrescription"), medications: cleanMeds };
         const label = selectedPatient
           ? `${selectedPatient.firstName} ${selectedPatient.lastName}`
           : platformTarget!.displayName;
@@ -1705,15 +1714,31 @@ export function usePrescriptionPage() {
         };
         handleEmissionSaved({
           kind: "prescription",
-          id: prescriptionId,
+          id: primary.id,
           patient: patientForSave,
-          label,
-          medications: cleanMeds,
+          label: data.isMixed ? t("rx.package.emissionLabel") : label,
+          medications: primary.medications,
           instructions: finalInstructions || undefined,
+          packageId: data.packageId || null,
+          packageDocuments: prescriptions.length > 1
+            ? prescriptions.map((p) => ({
+                id: p.id,
+                formKind: p.formKind,
+                label: p.label,
+                medications: p.medications,
+                sncrReceiptNumber: p.sncrReceiptNumber,
+              }))
+            : undefined,
         });
         setEditingPrescriptionId(null);
         setPhytoInteractionConfirmed(false);
         setCannabisTcleAccepted(false);
+      } else if (res.status === 428) {
+        const d = await res.json().catch(() => ({}));
+        setFormError(typeof d.error === "string" ? d.error : t("rx.sncrAuthRequired"));
+        if (d.sncrLoginPath) {
+          window.location.href = d.sncrLoginPath;
+        }
       } else if (isAuthFailureStatus(res.status)) {
         setFormError(t("session.expiredOnSave"));
         redirectToLoginAfterAuthFailure();
@@ -1732,16 +1757,18 @@ export function usePrescriptionPage() {
       return;
     }
 
-    if (controlledFormKind !== "simple") {
-      const invalidMed = medications.find(
-        (m) => !prescriptionTypeMatchesFormKind(m.prescriptionType, controlledFormKind),
-      );
-      if (invalidMed) {
-        setFormError(
-          controlledFormKind === "B" ? t("rx.wrongListForReceitaB") : t("rx.wrongListForReceitaC"),
-        );
-        return;
-      }
+    const splitPreview = splitPrescriptionMedications(
+      medications.map((m) => ({
+        ...m,
+        name: m.name.trim(),
+        prescriptionType: m.prescriptionType,
+        controlled: m.controlled,
+      })),
+      lang.startsWith("es") ? "es" : lang.startsWith("en") ? "en" : "pt",
+    );
+    if (!splitPreview.ok) {
+      setFormError(splitPreview.error);
+      return;
     }
 
     const cleanMeds = medications.map((m) => ({
@@ -1795,6 +1822,16 @@ export function usePrescriptionPage() {
     setCannabisTcleOpen(false);
     void executeSubmit({ cannabisTcleAccepted: true });
   }
+
+  const hasMixedRegulatoryPrescription = (() => {
+    const buckets = new Set(
+      medications.map((m) => classifyMedicationItem(m)),
+    );
+    const regulatory = ["NRB", "RCE", "SIMPLE"].filter((b) =>
+      buckets.has(b as "NRB" | "RCE" | "SIMPLE"),
+    );
+    return regulatory.length > 1;
+  })();
 
   const hasMixedPrescription =
     medicationListHasIntegrativeItems(medications) &&
@@ -1963,6 +2000,7 @@ export function usePrescriptionPage() {
     setCannabisTcleOpen,
     acceptCannabisTcle,
     hasMixedPrescription,
+    hasMixedRegulatoryPrescription,
     controlledFormKind,
   };
 }

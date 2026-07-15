@@ -20,6 +20,14 @@ export interface ReviewMedication {
   continuousUse?: boolean;
 }
 
+export interface SavedPrescriptionDoc {
+  id: string;
+  formKind: string;
+  label: string;
+  medications?: ReviewMedication[];
+  sncrReceiptNumber?: string | null;
+}
+
 export interface SavedEmission {
   kind: EmissionKind;
   id: string;
@@ -30,6 +38,9 @@ export interface SavedEmission {
   examItems?: string[];
   examNotes?: string;
   documentBody?: string;
+  /** Multiple prescriptions from a mixed regulatory split */
+  packageId?: string | null;
+  packageDocuments?: SavedPrescriptionDoc[];
 }
 
 interface EmissionPostSaveFlowProps {
@@ -83,22 +94,29 @@ export function EmissionPostSaveFlow({
     try {
       const deliverKind = emission.kind === "prescription" ? "prescription"
         : emission.kind === "exam" ? "exam" : "document";
-      const res = await fetch(`${apiBase}/emissions/deliver`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "same-origin",
-        body: JSON.stringify({
-          kind: deliverKind,
-          id: emission.id,
-          sendWhatsApp: false,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setDeliverError(typeof data.error === "string" ? data.error : t("rx.flow.deliverError"));
-        return false;
+      const ids = emission.packageDocuments?.length
+        ? emission.packageDocuments.map((d) => d.id)
+        : [emission.id];
+      let lastShareUrl = "";
+      for (const id of ids) {
+        const res = await fetch(`${apiBase}/emissions/deliver`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify({
+            kind: deliverKind,
+            id,
+            sendWhatsApp: false,
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          setDeliverError(typeof data.error === "string" ? data.error : t("rx.flow.deliverError"));
+          return false;
+        }
+        lastShareUrl = data.shareUrl || lastShareUrl;
       }
-      setShareUrl(data.shareUrl || "");
+      setShareUrl(lastShareUrl);
       setDoctor8Delivered(true);
       setStep("success");
       return true;
@@ -114,13 +132,22 @@ export function EmissionPostSaveFlow({
     await deliverToPatient();
   }
 
-  function handleSign() {
+  function handleSign(doc?: SavedPrescriptionDoc) {
+    const target = doc || {
+      id: emission.id,
+      formKind: "SIMPLE",
+      label: emission.label,
+    };
     setSignTarget({
       kind: emission.kind,
-      id: emission.id,
-      label: emission.label,
+      id: target.id,
+      label: target.label,
     });
   }
+
+  const packageDocs = emission.packageDocuments?.length
+    ? emission.packageDocuments
+    : null;
 
   async function sendInvite() {
     setInviteSending(true);
@@ -189,7 +216,45 @@ export function EmissionPostSaveFlow({
           <p className="text-xs text-slate-400 mt-2 max-w-sm">{reviewSubtitle}</p>
         </div>
 
-        {emission.medications && emission.medications.length > 0 && (
+        {packageDocs && packageDocs.length > 1 && (
+          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-3">
+            <p className="text-sm font-semibold text-blue-900">{t("rx.package.splitTitle")}</p>
+            <p className="text-xs text-blue-800">{t("rx.package.splitHint")}</p>
+            <ul className="space-y-2">
+              {packageDocs.map((doc) => (
+                <li key={doc.id} className="flex flex-wrap items-center justify-between gap-2 bg-white rounded-lg border border-blue-100 px-3 py-2">
+                  <div>
+                    <p className="text-sm font-semibold text-slate-800">{doc.label}</p>
+                    {doc.sncrReceiptNumber && (
+                      <p className="text-xs text-slate-500">SNCR: {doc.sncrReceiptNumber}</p>
+                    )}
+                    <p className="text-xs text-slate-500">{doc.medications?.length || 0} item(ns)</p>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => void openAuthenticatedPdf(`${apiBase}/prescriptions/${doc.id}/pdf?lang=${lang}`)}
+                      className="text-xs font-semibold text-brand-600 hover:underline"
+                    >
+                      PDF
+                    </button>
+                    {!deliveryOnly && signConfig?.configured && (
+                      <button
+                        type="button"
+                        onClick={() => handleSign(doc)}
+                        className="text-xs font-semibold text-emerald-700 hover:underline"
+                      >
+                        {t("rx.package.signDoc")}
+                      </button>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {emission.medications && emission.medications.length > 0 && !packageDocs && (
           <div className="bg-slate-50 rounded-xl p-4 space-y-2">
             <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">{t("rx.review.medications")}</p>
             <ul className="space-y-2">
@@ -423,7 +488,7 @@ export function EmissionPostSaveFlow({
         )}
 
         <div className="space-y-3">
-          <button onClick={handleSign} disabled={delivering}
+          <button onClick={() => handleSign()} disabled={delivering}
             className="w-full py-3.5 rounded-xl bg-brand-500 hover:bg-brand-600 text-white font-bold text-sm transition flex items-center justify-center gap-2 disabled:opacity-50">
             <PenLine size={18} /> {t("rx.flow.signNow")}
           </button>

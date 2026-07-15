@@ -18,9 +18,8 @@ import { decrypt } from "@/lib/encryption";
 import { audit } from "@/lib/audit";
 import { createSignatureSession } from "@/lib/lacuna";
 import { parseLacunaError } from "@/lib/lacuna-errors";
-import { buildPrescriptionPdf, type Lang } from "@/lib/prescription-pdf";
-import { enrichMedsForPrescriptionPdf, cannabisPdfComplianceLine } from "@/lib/medicina-natural-catalog/enrich-meds-for-pdf";
-import { formatLicense, getProfessionInfo, isDentistSpecialty } from "@/lib/profession-label";
+import type { Lang } from "@/lib/prescription-pdf";
+import { buildPrescriptionPdfBytesForRecord } from "@/lib/prescription-pdf-data";
 import { requireVerifiedProfessional } from "@/lib/professional-verified";
 import { getPublicBase, buildSignReturnUrl, assertPublicSignBase, resolveRequestLang } from "@/lib/sign-helpers";
 
@@ -32,40 +31,6 @@ function safeDecrypt(v: string | null | undefined): string {
   if (v == null) return "";
   try { return decrypt(v); } catch { return v; }
 }
-
-function computeAge(dob: Date | null): number | null {
-  if (!dob || isNaN(dob.getTime())) return null;
-  const now = new Date();
-  let age = now.getFullYear() - dob.getFullYear();
-  const m = now.getMonth() - dob.getMonth();
-  if (m < 0 || (m === 0 && now.getDate() < dob.getDate())) age--;
-  if (age < 0 || age > 130) return null;
-  return age;
-}
-
-function joinAddress(parts: (string | null | undefined)[]): string {
-  return parts.map((p) => (p || "").trim()).filter(Boolean).join(", ");
-}
-
-const FREQ: Record<Lang, Record<string, string>> = {
-  en: {}, // mantém o valor original em inglês
-  pt: {
-    "Once daily": "Uma vez ao dia", "Twice daily": "Duas vezes ao dia",
-    "Three times daily": "Três vezes ao dia", "Every 8 hours": "A cada 8 horas",
-    "Every 12 hours": "A cada 12 horas", "As needed": "Quando necessário", "Weekly": "Semanalmente",
-  },
-  es: {
-    "Once daily": "Una vez al día", "Twice daily": "Dos veces al día",
-    "Three times daily": "Tres veces al día", "Every 8 hours": "Cada 8 horas",
-    "Every 12 hours": "Cada 12 horas", "As needed": "Cuando sea necesario", "Weekly": "Semanalmente",
-  },
-};
-const CONTINUOUS_DURATION: Record<Lang, string> = {
-  en: "Continuous use",
-  pt: "Uso Contínuo",
-  es: "Uso continuo",
-};
-const LOCALE: Record<Lang, string> = { en: "en-US", pt: "pt-BR", es: "es-ES" };
 
 export async function POST(req: NextRequest) {
   const session = await auth();
@@ -141,62 +106,7 @@ export async function POST(req: NextRequest) {
     select: { language: true },
   });
   const lang = resolveRequestLang(req, viewer?.language) as Lang;
-  const locale = LOCALE[lang];
 
-  // ── Resolve dados do paciente (ficha tem prioridade) ──
-  const rec = prescription.document?.patientRecord;
-  const acc = prescription.document?.patient;
-  const src = rec || acc;
-
-  let patientName = "—", patientDob: Date | null = null, patientCpf = "";
-  let addrLine = "", city = "", state = "", country = "", zip = "";
-  if (src) {
-    patientName = `${safeDecrypt(src.firstName)} ${safeDecrypt(src.lastName)}`.trim();
-    patientDob = src.dateOfBirth ? new Date(safeDecrypt(src.dateOfBirth)) : null;
-    patientCpf = safeDecrypt((src as { cpf?: string | null }).cpf ?? null);
-    addrLine = safeDecrypt(src.addressLine1);
-    city = src.city || ""; state = src.state || "";
-    country = src.country || ""; zip = safeDecrypt(src.zipCode);
-  }
-
-  const clinicAddressFull = joinAddress([
-    (pro as { clinicName?: string | null }).clinicName,
-    (pro as { clinicAddress?: string | null }).clinicAddress,
-    (pro as { clinicCity?: string | null }).clinicCity,
-    (pro as { clinicState?: string | null }).clinicState,
-    (pro as { clinicZip?: string | null }).clinicZip,
-  ]);
-
-  const medsRaw = (prescription.medications as {
-      name: string;
-      dosage: string;
-      frequency: string;
-      duration?: string;
-      instructions?: string;
-      presentation?: string;
-      pharmaceuticalForm?: string;
-      mnSlug?: string;
-      renisus?: boolean;
-      continuousUse?: boolean;
-      itemKind?: import("@/lib/prescription-item-kind").PrescriptionItemKind;
-    }[]).map((m) => {
-      const isContinuous = m.continuousUse || m.frequency === "Continuous use";
-      return {
-        ...m,
-        frequency: isContinuous ? "" : (FREQ[lang][m.frequency] || m.frequency),
-        duration: isContinuous ? CONTINUOUS_DURATION[lang] : m.duration,
-      };
-    });
-
-  const meds = await enrichMedsForPrescriptionPdf(medsRaw, lang);
-  const cannabisComplianceLine = cannabisPdfComplianceLine(meds, lang);
-
-  const today = new Date().toLocaleDateString(locale, { year: "numeric", month: "long", day: "numeric" });
-  const validUntil = prescription.validUntil
-    ? new Date(prescription.validUntil).toLocaleDateString(locale, { year: "numeric", month: "long", day: "numeric" })
-    : (lang === "pt" ? "Sem validade" : lang === "es" ? "Sin caducidad" : "No expiry");
-
-  // ── Gera o PDF real ──
   let pdfBytes: Uint8Array;
   let pharmacyQrPng: Uint8Array | undefined;
   try {
@@ -210,34 +120,10 @@ export async function POST(req: NextRequest) {
     // optional QR at sign time
   }
   try {
-    pdfBytes = await buildPrescriptionPdf({
+    pdfBytes = await buildPrescriptionPdfBytesForRecord({
+      prescription,
       lang,
-      proFirstName: pro.firstName, proLastName: pro.lastName,
-      proSpecialty: pro.specialty,
-      proLicense: formatLicense(
-        pro.licenseNumber,
-        pro.licenseState,
-        getProfessionInfo(pro.specialty).councilKey,
-      ),
-      clinicAddressFull,
-      patientName,
-      patientAge: computeAge(patientDob),
-      patientCpf,
-      patientAddressFull: joinAddress([addrLine, city, state, zip, country]),
-      prescriptionId: prescription.id,
-      todayText: today, validUntilText: validUntil,
-      medications: meds,
-      instructions: prescription.instructions ? safeDecrypt(prescription.instructions) : "",
-      signed: false,
       pharmacyQrPng,
-      councilComplianceLine: isDentistSpecialty(pro.specialty)
-        ? (lang === "en"
-          ? "Issued per CFO Resolution 278/2025 and applicable dental practice regulations."
-          : lang === "es"
-            ? "Documento emitido conforme Resolucion CFO 278/2025 y normativa odontologica vigente."
-            : "Documento emitido conforme Resolucao CFO 278/2025 e normas vigentes do exercicio odontologico.")
-        : null,
-      cannabisComplianceLine,
     });
   } catch (e) {
     console.error("[SIGN] erro ao gerar PDF:", e);

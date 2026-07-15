@@ -909,6 +909,9 @@ model ProfessionalProfile {
   appointments        Appointment[]
   medicalDocuments    MedicalDocument[]
   prescriptions       Prescription[]
+  prescriptionPackages PrescriptionPackage[]
+  sncrCredential      SncrOAuthCredential?
+  sncrNumberPools     SncrNumberPool[]
   availabilitySlots   AvailabilitySlot[]
   virtualCard         VirtualCard?        @relation("ProfessionalVirtualCard")
   patientRecords      PatientRecord[]
@@ -1521,10 +1524,56 @@ model Prescription {
   pharmacyOrders       PharmacyOrder[]
   pharmacyPrescriptionToken PharmacyPrescriptionToken?
 
+  /// SIMPLE | NRB | RCE — tipo regulatório do receituário (Portaria 344/98)
+  prescriptionFormKind   String?
+  prescriptionPackageId  String?
+  prescriptionPackage    PrescriptionPackage? @relation(fields: [prescriptionPackageId], references: [id], onDelete: SetNull)
+  /// Numeração SNCR (Notificação de Receita ou RCE)
+  sncrReceiptNumber      String?
+  sncrReceiptType        String?
+  sncrIssuedAt           DateTime?
+  issuedViaTelemedicine  Boolean @default(false)
+
   createdAt        DateTime @default(now())
 
   @@index([professionalId])
   @@index([integrativeTherapistId])
+  @@index([prescriptionPackageId])
+  @@index([prescriptionFormKind])
+}
+
+model PrescriptionPackage {
+  id             String   @id @default(cuid())
+  professionalId String
+  professional   ProfessionalProfile @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+  prescriptions  Prescription[]
+  createdAt      DateTime @default(now())
+
+  @@index([professionalId])
+}
+
+/// Token OAuth Gov.br / SNCR por profissional (access token criptografado na aplicação)
+model SncrOAuthCredential {
+  id             String   @id @default(cuid())
+  professionalId String   @unique
+  professional   ProfessionalProfile @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+  accessToken    String   @db.Text
+  expiresAt      DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+/// Pool local de numerações SNCR ainda não vinculadas a receitas
+model SncrNumberPool {
+  id             String   @id @default(cuid())
+  professionalId String
+  professional   ProfessionalProfile @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+  receiptType    String
+  numbers        Json
+  updatedAt      DateTime @updatedAt
+
+  @@unique([professionalId, receiptType])
+  @@index([professionalId])
 }
 
 // ─────────────────────────────────────────

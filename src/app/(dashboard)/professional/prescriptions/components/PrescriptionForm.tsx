@@ -50,6 +50,7 @@ export type PrescriptionFormProps = {
   onSaveAsRxTemplate: () => void;
   onSubmit: () => void;
   hasMixedPrescription?: boolean;
+  hasMixedRegulatoryPrescription?: boolean;
   controlledFormKind?: ControlledFormKind;
 };
 
@@ -84,6 +85,7 @@ export function PrescriptionForm({
   onSaveAsRxTemplate,
   onSubmit,
   hasMixedPrescription = false,
+  hasMixedRegulatoryPrescription = false,
   controlledFormKind = "simple",
 }: PrescriptionFormProps) {
   const selectedPatient = patientPickerProps.selectedPatient;
@@ -129,6 +131,13 @@ export function PrescriptionForm({
       {templateAppliedHint && (
         <div className="bg-brand-50 border border-brand-200 rounded-2xl p-4 text-sm text-brand-700">
           {t("tmpl.templateAppliedHint")}
+        </div>
+      )}
+
+      {hasMixedRegulatoryPrescription && (
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-sm text-amber-900">
+          <p className="font-semibold">{t("rx.package.splitTitle")}</p>
+          <p className="mt-1">{t("rx.package.splitHint")}</p>
         </div>
       )}
 

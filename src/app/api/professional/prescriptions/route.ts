@@ -14,18 +14,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireProfessionalApi, isApiError } from "@/lib/api-auth";
 import { db } from "@/lib/db";
-import { audit, createAuditLog } from "@/lib/audit";
-import { encrypt, decrypt } from "@/lib/encryption";
+import { decrypt } from "@/lib/encryption";
 import { z } from "zod";
-import { AuditAction, Prisma } from "@prisma/client";
-import { createNotification } from "@/lib/notifications";
-import { hasAcceptedLink } from "@/lib/patient-professional-link";
-import { ensurePatientRecord } from "@/lib/ensure-patient-record";
-import { canEditChart, resolveChartAccess } from "@/lib/chart-access";
 import { prescriptionMedicationItemSchema } from "@/lib/prescription-medication-schema";
-import { assertCannabisPrescriptionAllowed } from "@/lib/cannabis-prescription-gate";
-import { medicationListHasCannabis } from "@/lib/integrative-medicine/integrative-prescription-utils";
-import { cannabisTcleAuditLine } from "@/lib/cannabis-medicinal-tcle";
+import { createPrescriptionBatch } from "@/lib/create-prescriptions";
 
 const medicationItemSchema = prescriptionMedicationItemSchema;
 
@@ -38,6 +30,7 @@ const prescriptionSchema = z.object({
   instructions: z.string().optional(),
   validDays: z.number().min(1).max(365).default(30),
   cannabisTcleAccepted: z.boolean().optional(),
+  issuedViaTelemedicine: z.boolean().optional(),
 }).refine(
   (d) => !!d.patientRecordId || !!d.patientUserId,
   { message: "patientRecordId or patientUserId is required" }
@@ -55,172 +48,57 @@ export async function POST(req: NextRequest) {
   const parsed = prescriptionSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
 
-  const { patientRecordId, patientUserId, appointmentId, medications, instructions, validDays, cannabisTcleAccepted } = parsed.data;
+  const { patientRecordId, patientUserId, appointmentId, medications, instructions, validDays, cannabisTcleAccepted, issuedViaTelemedicine } = parsed.data;
 
   const professional = await db.professionalProfile.findUnique({ where: { userId: ctx.userId } });
   if (!professional) {
     return NextResponse.json({ error: "Professional not found" }, { status: 404 });
   }
 
-  const cannabisGate = assertCannabisPrescriptionAllowed(professional.specialty, medications);
-  if (!cannabisGate.ok) {
-    return NextResponse.json({ error: cannabisGate.message }, { status: 403 });
-  }
+  const batch = await createPrescriptionBatch({
+    professionalId: professional.id,
+    professionalUserId: ctx.userId,
+    patientRecordId,
+    patientUserId,
+    appointmentId,
+    medications,
+    instructions,
+    validDays,
+    cannabisTcleAccepted,
+    issuedViaTelemedicine,
+    lang: "pt",
+  });
 
-  if (medicationListHasCannabis(medications) && !cannabisTcleAccepted) {
+  if (!batch.ok) {
+    const status = batch.needsSncrAuth ? 428 : 400;
     return NextResponse.json(
-      { error: "Cannabis medicinal TCLE acceptance is required before prescribing." },
-      { status: 400 },
+      {
+        error: batch.error,
+        needsSncrAuth: batch.needsSncrAuth || false,
+        sncrLoginPath: batch.needsSncrAuth ? "/api/professional/sncr/auth/login" : undefined,
+      },
+      { status },
     );
   }
 
-  const resolvedInstructions = (() => {
-    const base = instructions?.trim() || "";
-    if (!medicationListHasCannabis(medications) || !cannabisTcleAccepted) return base;
-    const audit = cannabisTcleAuditLine();
-    return base ? `${base}\n\n${audit}` : audit;
-  })();
-
-  const validUntil = new Date(Date.now() + validDays * 24 * 60 * 60 * 1000);
-
-  // Resolve the patient target: prefer the chart (PatientRecord), fall back to account.
-  let documentPatientId: string | null = null;
-  let documentPatientRecordId: string | null = null;
-  let documentOwnerProfessionalId = ctx.professional.id;
-
-  if (patientRecordId) {
-    const access = await resolveChartAccess(ctx.professional.id, patientRecordId);
-    if (!canEditChart(access)) {
-      return NextResponse.json({ error: "Patient chart not found" }, { status: 404 });
-    }
-    const record = await db.patientRecord.findUnique({ where: { id: patientRecordId } });
-    if (!record) {
-      return NextResponse.json({ error: "Patient chart not found" }, { status: 404 });
-    }
-    documentPatientRecordId = record.id;
-    documentOwnerProfessionalId = record.professionalId;
-
-    if (record.linkedUserId) {
-      const profile = await db.patientProfile.findUnique({ where: { userId: record.linkedUserId } });
-      if (profile) documentPatientId = profile.id;
-    }
-  } else if (patientUserId) {
-    const patientUser = await db.user.findUnique({
-      where: { id: patientUserId },
-      select: { role: true, deletedAt: true },
-    });
-    if (!patientUser || patientUser.role !== "PATIENT" || patientUser.deletedAt) {
-      return NextResponse.json({ error: "Patient not found" }, { status: 404 });
-    }
-
-    const patient = await db.patientProfile.findUnique({ where: { userId: patientUserId } });
-    if (!patient) {
-      return NextResponse.json({ error: "Patient not found" }, { status: 404 });
-    }
-    documentPatientId = patient.id;
-
-    // Always link emissions to the patient's chart so they appear in Registros.
-    const ensuredRecordId = await ensurePatientRecord(ctx.professional.id, patientUserId);
-    if (ensuredRecordId) documentPatientRecordId = ensuredRecordId;
-  }
-
-  if (appointmentId) {
-    const appt = await db.appointment.findFirst({
-      where: {
-        id: appointmentId,
-        professionalId: ctx.professional.id,
-        ...(documentPatientId ? { patientId: documentPatientId } : {}),
-      },
-      select: { id: true },
-    });
-    if (!appt) {
-      return NextResponse.json(
-        { error: "Appointment does not belong to this professional and patient" },
-        { status: 400 },
-      );
-    }
-  }
-
-  let emitWithoutLink = false;
-  if (patientUserId && !patientRecordId) {
-    const linked = await hasAcceptedLink(patientUserId, ctx.userId);
-    const hasAppointment = documentPatientId
-      ? await db.appointment.findFirst({
-          where: { professionalId: ctx.professional.id, patientId: documentPatientId },
-          select: { id: true },
-        })
-      : null;
-    emitWithoutLink = !linked && !hasAppointment;
-  }
-
-  // Create medical document entry (holds the link to patient and/or chart)
-  const document = await db.medicalDocument.create({
-    data: {
-      patientId: documentPatientId,
-      patientRecordId: documentPatientRecordId,
-      professionalId: documentOwnerProfessionalId,
-      appointmentId: appointmentId || null,
-      type: "PRESCRIPTION",
-      title: encrypt(`Prescription — ${new Date().toLocaleDateString("en-US")}`),
-    },
-  });
-
-  // Create prescription
-  const prescription = await db.prescription.create({
-    data: {
-      documentId: document.id,
-      professionalId: ctx.professional.id,
-      medications: medications as Prisma.InputJsonValue,
-      instructions: resolvedInstructions ? encrypt(resolvedInstructions) : null,
-      validUntil,
-    },
-  });
-
-  await audit.createRecord(ctx.userId, "Prescription", prescription.id);
-
-  if (emitWithoutLink && patientUserId) {
-    console.log(
-      "[PHI-EMIT-AUDIT]",
-      JSON.stringify({
-        professionalUserId: ctx.userId,
-        patientUserId,
-        prescriptionId: prescription.id,
-        at: new Date().toISOString(),
-      }),
-    );
-    await createAuditLog({
-      userId: ctx.userId,
-      action: AuditAction.CREATE_RECORD,
-      resource: "PrescriptionEmitWithoutLink",
-      resourceId: prescription.id,
-      details: { patientUserId },
-    });
-
-    const proFull = await db.professionalProfile.findUnique({
-      where: { id: ctx.professional.id },
-      select: { firstName: true, lastName: true, licenseNumber: true },
-    });
-    const drName = proFull
-      ? `Dr. ${proFull.firstName} ${proFull.lastName}`.trim()
-      : "Doctor";
-
-    await createNotification({
-      userId: patientUserId,
-      title: "New prescription",
-      body: `${drName} sent you a prescription. Review it and accept a connection if you know this provider.`,
-      type: "system",
-      data: {
-        url: "/patient/prescriptions",
-        prescriptionId: prescription.id,
-        professionalUserId: ctx.userId,
-        canReport: true,
-      },
-    });
-  }
-
+  const primary = batch.prescriptions[0];
   return NextResponse.json(
-    { success: true, prescriptionId: prescription.id, documentId: document.id },
-    { status: 201 }
+    {
+      success: true,
+      prescriptionId: primary.id,
+      documentId: primary.documentId,
+      packageId: batch.packageId,
+      isMixed: batch.isMixed,
+      prescriptions: batch.prescriptions.map((p) => ({
+        id: p.id,
+        documentId: p.documentId,
+        formKind: p.formKind,
+        label: p.label,
+        sncrReceiptNumber: p.sncrReceiptNumber,
+        medications: p.medications,
+      })),
+    },
+    { status: 201 },
   );
 }
 
@@ -267,6 +145,9 @@ export async function GET(req: NextRequest) {
       instructions: p.instructions ? safeDecrypt(p.instructions) : "",
       patientRecordId: p.document?.patientRecordId ?? null,
       signatureStatus: (p as { signatureStatus?: string | null }).signatureStatus ?? null,
+      prescriptionFormKind: (p as { prescriptionFormKind?: string | null }).prescriptionFormKind ?? null,
+      sncrReceiptNumber: (p as { sncrReceiptNumber?: string | null }).sncrReceiptNumber ?? null,
+      prescriptionPackageId: (p as { prescriptionPackageId?: string | null }).prescriptionPackageId ?? null,
       whatsappNotifyStatus: (p as { whatsappNotifyStatus?: string | null }).whatsappNotifyStatus ?? null,
       patientNotifiedAt: !!(p as { patientNotifiedAt?: Date | null }).patientNotifiedAt,
       digitalSignature: p.digitalSignature,
