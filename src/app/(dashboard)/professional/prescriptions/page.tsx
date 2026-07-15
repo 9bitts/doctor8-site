@@ -138,6 +138,7 @@ export default function PrescriptionsPage() {
             t: p.t,
             cfg: p.cfg,
             canPrescribeCannabis: p.canPrescribeCannabis,
+            controlledFormKind: p.controlledFormKind,
             drugQuery: p.drugQuery,
             drugResults: p.drugResults,
             drugSearching: p.drugSearching,

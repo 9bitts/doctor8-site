@@ -78,8 +78,48 @@ export function prescriptionTypeMatchesFormKind(
   if (!prescriptionType) return false;
   const code = prescriptionType.toUpperCase();
   if (kind === "B") return code.startsWith("B");
-  if (kind === "C") return code.startsWith("C");
+  if (kind === "C") {
+    if (code === "C2" || code === "C3") return false;
+    return code.startsWith("C");
+  }
   return false;
+}
+
+export function isControlledRxFormMode(
+  kind: ControlledFormKind,
+): kind is "B" | "C" {
+  return kind === "B" || kind === "C";
+}
+
+/** Validate catalog drug against dedicated Receita B / RCE form mode. */
+export function validateDrugForControlledForm(
+  prescriptionType: string | null | undefined,
+  kind: ControlledFormKind,
+): { ok: true } | { ok: false; messageKey: string } {
+  if (kind === "simple") return { ok: true };
+  const code = (prescriptionType || "").toUpperCase().trim();
+  if (!code) {
+    return {
+      ok: false,
+      messageKey: kind === "B" ? "rx.wrongListForReceitaB" : "rx.wrongListForReceitaC",
+    };
+  }
+  if (code.startsWith("A")) {
+    return { ok: false, messageKey: "rx.wrongListListaA" };
+  }
+  if (kind === "B") {
+    if (!code.startsWith("B")) {
+      return { ok: false, messageKey: "rx.wrongListForReceitaB" };
+    }
+    return { ok: true };
+  }
+  if (code === "C2" || code === "C3") {
+    return { ok: false, messageKey: "rx.wrongListC2C3" };
+  }
+  if (!code.startsWith("C")) {
+    return { ok: false, messageKey: "rx.wrongListForReceitaC" };
+  }
+  return { ok: true };
 }
 
 export function controlInfo(type: string | null | undefined): {

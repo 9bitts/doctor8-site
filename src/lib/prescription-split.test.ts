@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { expandSncrNumberRange } from "@/lib/sncr/number-range";
 import { splitPrescriptionMedications } from "@/lib/prescription-split";
 import { classifyMedicationItem } from "@/lib/prescription-item-classifier";
+import { validateDrugForControlledForm } from "@/app/(dashboard)/professional/prescriptions/components/shared";
 
 describe("expandSncrNumberRange", () => {
   it("returns single when inicio equals fim", () => {
@@ -17,6 +18,24 @@ describe("expandSncrNumberRange", () => {
   });
 });
 
+
+describe("validateDrugForControlledForm", () => {
+  it("accepts B1 for Receita B", () => {
+    expect(validateDrugForControlledForm("B1", "B").ok).toBe(true);
+  });
+
+  it("rejects C1 for Receita B", () => {
+    expect(validateDrugForControlledForm("C1", "B").ok).toBe(false);
+  });
+
+  it("accepts C1 for RCE", () => {
+    expect(validateDrugForControlledForm("C1", "C").ok).toBe(true);
+  });
+
+  it("rejects C2 for RCE", () => {
+    expect(validateDrugForControlledForm("C2", "C").ok).toBe(false);
+  });
+});
 
 describe("classifyMedicationItem", () => {
   it("maps Lista B to NRB", () => {

@@ -17,6 +17,7 @@ import {
   type Prescription,
   type RxTemplate,
   type ControlledFormKind,
+  isControlledRxFormMode,
 } from "./shared";
 
 export type PrescriptionFormProps = {
@@ -174,7 +175,7 @@ export function PrescriptionForm({
       <>
         <PatientPicker {...patientPickerProps} todayLabel={todayLabel} />
 
-        {rxTemplates.length > 0 && (() => {
+        {rxTemplates.length > 0 && !isControlledRxFormMode(controlledFormKind) && (() => {
           const visibleTemplates = floralOnlyMode
             ? rxTemplates.filter((tpl) => templateHasFloralItems(tpl.medications as MedItem[]))
             : rxTemplates;
@@ -200,7 +201,7 @@ export function PrescriptionForm({
           );
         })()}
 
-        <MedicationSearch {...medicationSearchProps} />
+        <MedicationSearch {...medicationSearchProps} controlledFormKind={controlledFormKind} />
 
         <div className="bg-white rounded-2xl border border-brand-100 shadow-sm p-5 space-y-4">
           <label className="text-sm font-semibold text-slate-800">{t("rx2.selectedMeds")}</label>
@@ -270,6 +271,11 @@ export function PrescriptionForm({
           </div>
           <div>
             <label className="block text-sm font-semibold text-slate-800 mb-1.5">{t("rx2.validFor")}</label>
+            {isControlledRxFormMode(controlledFormKind) ? (
+              <p className="text-sm text-slate-700 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3">
+                {t("rx.days30")} — {t("rx.controlledValidDaysFixed")}
+              </p>
+            ) : (
             <select value={validDays} onChange={(e) => onValidDaysChange(Number(e.target.value))} className="rx-inp">
               <option value={7}>{t("rx.days7")}</option>
               <option value={30}>{t("rx.days30")}</option>
@@ -278,6 +284,7 @@ export function PrescriptionForm({
               <option value={180}>{t("rx.days180")}</option>
               <option value={365}>{t("rx.days365")}</option>
             </select>
+            )}
           </div>
         </div>
 

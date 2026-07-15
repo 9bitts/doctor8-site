@@ -11,12 +11,13 @@ import {
 } from "@/lib/medicina-natural-catalog/prescription-search";
 import type { MedicinaNaturalListItem } from "@/lib/medicina-natural-catalog/search-server";
 import type { PrescriptionsPortalConfig } from "@/lib/prescriptions-portal-config";
-import { controlInfo, MN_RX_SEARCH_TABS, type MnAddItemKind } from "./shared";
+import { controlInfo, MN_RX_SEARCH_TABS, type MnAddItemKind, type ControlledFormKind, isControlledRxFormMode } from "./shared";
 
 export type MedicationSearchProps = {
   t: (k: string) => string;
   cfg: PrescriptionsPortalConfig;
   canPrescribeCannabis?: boolean;
+  controlledFormKind?: ControlledFormKind;
   drugQuery: string;
   drugResults: DrugSearchResult[];
   drugSearching: boolean;
@@ -58,6 +59,7 @@ export function MedicationSearch({
   t,
   cfg,
   canPrescribeCannabis = false,
+  controlledFormKind = "simple",
   drugQuery,
   drugResults,
   drugSearching,
@@ -94,12 +96,26 @@ export function MedicationSearch({
   onCloseLeafletPanel,
   onInsertLeafletPosology,
 }: MedicationSearchProps) {
+  const isControlledForm = isControlledRxFormMode(controlledFormKind);
+
   return (
     <>
       <div className="bg-white rounded-2xl border border-brand-100 shadow-sm p-5 space-y-4">
         <div className="space-y-2">
           <label className="text-sm font-semibold text-slate-800">{t("rx2.addItem")}</label>
-          {cfg.phytoOnly ? (
+          {isControlledForm ? (
+            <>
+              <p className="text-xs text-slate-500">
+                {controlledFormKind === "B"
+                  ? t("rx.controlledSearchHintB")
+                  : t("rx.controlledSearchHintC")}
+              </p>
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-brand-500 bg-brand-50 text-brand-700 text-sm font-medium ring-2 ring-brand-500/20">
+                <span className="text-lg leading-none" aria-hidden>🇧🇷</span>
+                {t("rx.controlledCatalogBrOnly")}
+              </div>
+            </>
+          ) : cfg.phytoOnly ? (
             <>
               <div className="flex flex-wrap gap-2">
                 {MN_RX_SEARCH_TABS.filter(
@@ -216,7 +232,13 @@ export function MedicationSearch({
           )}
         </div>
 
-        <div className="rounded-xl border-2 border-dashed border-brand-200 bg-brand-50/50 p-4 space-y-3">
+        <div className={`rounded-xl border-2 border-dashed p-4 space-y-3 ${
+          controlledFormKind === "B"
+            ? "border-blue-200 bg-blue-50/50"
+            : controlledFormKind === "C"
+              ? "border-red-200 bg-red-50/50"
+              : "border-brand-200 bg-brand-50/50"
+        }`}>
           <p className="flex items-center justify-center gap-2 text-sm font-semibold text-brand-700">
             <Search size={16} aria-hidden />
             {mnCatalogSearch
@@ -235,9 +257,11 @@ export function MedicationSearch({
                 }
               }}
               placeholder={
-                mnCatalogSearch
-                  ? t(mnCatalogSearchI18nKey(mnSearchModeForUi, floralOnlyMode))
-                  : t("rx2.searchDrug")
+                isControlledForm
+                  ? t("rx.controlledSearchPlaceholder")
+                  : mnCatalogSearch
+                    ? t(mnCatalogSearchI18nKey(mnSearchModeForUi, floralOnlyMode))
+                    : t("rx2.searchDrug")
               }
               className="flex-1 min-w-0 border-0 bg-transparent outline-none py-3 pl-3.5 pr-2 text-sm text-slate-800 placeholder:text-slate-400 rounded-xl"
             />
@@ -256,11 +280,15 @@ export function MedicationSearch({
           </div>
         </div>
 
-        <button type="button" onClick={onAddManual}
-          className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 font-medium text-sm transition">
-          <Plus size={16} /> {t("rx2.addManual")}
-        </button>
+        {!isControlledForm && (
+          <button type="button" onClick={onAddManual}
+            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 font-medium text-sm transition">
+            <Plus size={16} /> {t("rx2.addManual")}
+          </button>
+        )}
 
+        {!isControlledForm && (
+        <>
         <button type="button" onClick={onStartFreeTextPrescription}
           className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-sm transition">
           <FileText size={16} /> {t("rx.freeTextStart")}
@@ -307,7 +335,7 @@ export function MedicationSearch({
             </>
           )}
         </div>
-        {!cfg.phytoOnly && (
+        {!cfg.phytoOnly && !isControlledForm && (
           <div className="grid sm:grid-cols-2 gap-2">
             <button type="button" onClick={() => onAddSpecialItem("device")}
               className="flex items-center justify-center gap-2 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-medium text-sm transition">
@@ -325,7 +353,9 @@ export function MedicationSearch({
             )}
           </div>
         )}
-        {cfg.phytoOnly && (
+        </>
+        )}
+        {cfg.phytoOnly && !isControlledForm && (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-2">
             {MN_RX_SEARCH_TABS.filter(
               (tab) =>
@@ -343,7 +373,9 @@ export function MedicationSearch({
             ))}
           </div>
         )}
-        <p className="text-xs text-slate-400 text-center -mt-2">{t("rx.manualAlways")}</p>
+        {!isControlledForm && (
+          <p className="text-xs text-slate-400 text-center -mt-2">{t("rx.manualAlways")}</p>
+        )}
       </div>
 
       {drugSearchModalOpen && (
@@ -409,7 +441,9 @@ export function MedicationSearch({
                   />
                 ) : drugSearchDone ? (
                   <p className="text-sm text-slate-500 text-center py-8 px-4 border border-slate-100 rounded-xl bg-slate-50">
-                    {t("rx2.noDrugsFound")}
+                    {isControlledForm
+                      ? t("rx.controlledNoResults")
+                      : t("rx2.noDrugsFound")}
                   </p>
                 ) : null}
               </div>

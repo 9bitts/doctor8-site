@@ -87,6 +87,8 @@ import {
   type ControlledFormKind,
   defaultValidDaysForFormKind,
   prescriptionTypeMatchesFormKind,
+  validateDrugForControlledForm,
+  isControlledRxFormMode,
 } from "./shared";
 import { splitPrescriptionMedications } from "@/lib/prescription-split";
 import { classifyMedicationItem } from "@/lib/prescription-item-classifier";
@@ -1138,6 +1140,10 @@ export function usePrescriptionPage() {
     resetForm();
     setControlledFormKind("B");
     setValidDays(defaultValidDaysForFormKind("B"));
+    setDrugCountry("BR");
+    setItemSearchMode("medication");
+    setFloralOnlyMode(false);
+    setShowBulkPaste(false);
     setView("prescription");
     await loadCharts();
   }
@@ -1146,6 +1152,10 @@ export function usePrescriptionPage() {
     resetForm();
     setControlledFormKind("C");
     setValidDays(defaultValidDaysForFormKind("C"));
+    setDrugCountry("BR");
+    setItemSearchMode("medication");
+    setFloralOnlyMode(false);
+    setShowBulkPaste(false);
     setView("prescription");
     await loadCharts();
   }
@@ -1317,6 +1327,9 @@ export function usePrescriptionPage() {
   const searchDrugs = useCallback(async () => {
     const q = drugQuery.trim();
     if (q.length < 2) return;
+    if (isControlledRxFormMode(controlledFormKind) && mnSearchCategoria) {
+      return;
+    }
     setDrugSearchModalOpen(true);
     setDrugSearching(true);
     setDrugSearchDone(false);
@@ -1332,14 +1345,21 @@ export function usePrescriptionPage() {
         setMnSearchResults(items);
         setDrugResults(mapMnItemsToDrugResults(items, mnSearchModeForUi));
       } else {
-        const url = `/api/professional/drugs/search?q=${encodeURIComponent(q)}&country=${drugCountry}`;
+        const country = isControlledRxFormMode(controlledFormKind) ? "BR" : drugCountry;
+        const url = `/api/professional/drugs/search?q=${encodeURIComponent(q)}&country=${country}`;
         const res = await fetch(url);
         const d = await res.json();
         if (!res.ok) {
           toast.error(typeof d.error === "string" ? d.error : t("rx2.noDrugsFound"));
           setDrugResults([]);
         } else {
-          setDrugResults(d.drugs || []);
+          let drugs: DrugSearchResult[] = d.drugs || [];
+          if (isControlledRxFormMode(controlledFormKind)) {
+            drugs = drugs.filter((drug) =>
+              validateDrugForControlledForm(drug.prescriptionType, controlledFormKind).ok,
+            );
+          }
+          setDrugResults(drugs);
         }
       }
     } catch {
@@ -1349,7 +1369,7 @@ export function usePrescriptionPage() {
       setDrugSearching(false);
       setDrugSearchDone(true);
     }
-  }, [drugQuery, drugCountry, floralCatalogSearch, mnSearchCategoria, cfg.apiBase, t, toast]);
+  }, [drugQuery, drugCountry, controlledFormKind, floralCatalogSearch, mnSearchCategoria, mnSearchModeForUi, cfg.apiBase, t, toast]);
 
   function closeDrugSearchModal() {
     setDrugSearchModalOpen(false);
@@ -1407,6 +1427,13 @@ export function usePrescriptionPage() {
         const item = mnMedItemFromDrugResultForMode(leafletDrug, mode);
         applyMnCatalogItem({ ...item, dosage });
       } else {
+        if (isControlledRxFormMode(controlledFormKind)) {
+          const validation = validateDrugForControlledForm(leafletDrug.prescriptionType, controlledFormKind);
+          if (!validation.ok) {
+            toast.error(t(validation.messageKey));
+            return;
+          }
+        }
         setFreeTextMode(false);
         const substance = leafletDrug.activeIngredient?.trim() || leafletDrug.name;
         setMedications((prev) => [...prev, {
@@ -1448,18 +1475,17 @@ export function usePrescriptionPage() {
   }
 
   function addDrug(drug: DrugSearchResult) {
-    if (mnSearchCategoria) {
+    if (isControlledRxFormMode(controlledFormKind)) {
+      const validation = validateDrugForControlledForm(drug.prescriptionType, controlledFormKind);
+      if (!validation.ok) {
+        toast.error(t(validation.messageKey));
+        return;
+      }
+    } else if (mnSearchCategoria) {
       const mode: PrescriptionItemSearchMode =
         floralOnlyMode ? "floral" : itemSearchMode === "medication" ? "phytotherapy" : itemSearchMode;
       applyMnCatalogItem(mnMedItemFromDrugResultForMode(drug, mode));
       return;
-    }
-    if (
-      controlledFormKind !== "simple" &&
-      drug.prescriptionType &&
-      !prescriptionTypeMatchesFormKind(drug.prescriptionType, controlledFormKind)
-    ) {
-      toast.success(t("rx.mixedRegulatorySoftWarn"));
     }
     setFreeTextMode(false);
     const substance = drug.activeIngredient?.trim() || drug.name;
@@ -1487,6 +1513,10 @@ export function usePrescriptionPage() {
   }
 
   function addManual() {
+    if (isControlledRxFormMode(controlledFormKind)) {
+      toast.error(t("rx.controlledManualBlocked"));
+      return;
+    }
     setFreeTextMode(false);
     const name = drugQuery.trim();
     setMedications((prev) => [...prev, {
@@ -1504,6 +1534,10 @@ export function usePrescriptionPage() {
   }
 
   function openMnSearchForIndex(index: number) {
+    if (isControlledRxFormMode(controlledFormKind)) {
+      toast.error(t("rx.controlledIntegrativeBlocked"));
+      return;
+    }
     const med = medications[index];
     const kind = (med.itemKind || "phytotherapy") as MnAddItemKind;
     const mode: PrescriptionItemSearchMode = MN_RX_SEARCH_TABS.some((tab) => tab.mode === kind)
@@ -1519,6 +1553,10 @@ export function usePrescriptionPage() {
   }
 
   function addSpecialItem(kind: "device" | MnAddItemKind) {
+    if (isControlledRxFormMode(controlledFormKind)) {
+      toast.error(t("rx.controlledIntegrativeBlocked"));
+      return;
+    }
     if (kind === "device") {
       setFreeTextMode(true);
       setMedications((prev) => [...prev, {
@@ -1535,6 +1573,10 @@ export function usePrescriptionPage() {
   }
 
   function importBulkMedications() {
+    if (isControlledRxFormMode(controlledFormKind)) {
+      toast.error(t("rx.controlledManualBlocked"));
+      return;
+    }
     const parsed = parseBulkMedicationLines(
       bulkPasteText,
       freeTextMode ? "device" : "medication",
@@ -1550,6 +1592,10 @@ export function usePrescriptionPage() {
   }
 
   function startFreeTextPrescription() {
+    if (isControlledRxFormMode(controlledFormKind)) {
+      toast.error(t("rx.controlledManualBlocked"));
+      return;
+    }
     setFreeTextMode(true);
     setMedications([{
       name: "",
@@ -1566,6 +1612,10 @@ export function usePrescriptionPage() {
   }
 
   function applyFreeTextPrescription() {
+    if (isControlledRxFormMode(controlledFormKind)) {
+      toast.error(t("rx.controlledManualBlocked"));
+      return;
+    }
     const parsed = parseBulkMedicationLines(bulkPasteText, "device");
     if (parsed.length === 0) {
       setFormError(t("rx.bulkPaste.empty"));
@@ -1806,14 +1856,9 @@ export function usePrescriptionPage() {
 
     if (controlledFormKind === "B" || controlledFormKind === "C") {
       for (const m of medications) {
-        if (
-          m.name.trim() &&
-          (!m.prescriptionType ||
-            !prescriptionTypeMatchesFormKind(m.prescriptionType, controlledFormKind))
-        ) {
-          setFormError(
-            t(controlledFormKind === "B" ? "rx.wrongListForReceitaB" : "rx.wrongListForReceitaC"),
-          );
+        const validation = validateDrugForControlledForm(m.prescriptionType, controlledFormKind);
+        if (m.name.trim() && !validation.ok) {
+          setFormError(t(validation.messageKey));
           return;
         }
       }
