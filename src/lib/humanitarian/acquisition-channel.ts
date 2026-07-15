@@ -1,52 +1,19 @@
 import { PatientAcquisitionChannel } from "@prisma/client";
 import { VENEZUELA_CAMPAIGN_SLUG } from "@/lib/humanitarian/constants";
-import {
-  readHumOriginFlagFromCookieHeader,
-  readHumReturnPathFromCookieHeader,
-  resolveHumanitarianAuthCallback,
-} from "@/lib/humanitarian/origin-cookie";
 
 export type PatientAcquisitionInput = {
   cookieHeader?: string | null;
   callbackUrl?: string | null;
 };
 
-function pathFromCallback(callback: string): string {
-  if (callback.startsWith("http")) {
-    try {
-      return new URL(callback).pathname;
-    } catch {
-      return callback.split("?")[0] ?? callback;
-    }
-  }
-  return callback.split("?")[0] ?? callback;
-}
-
-/** Resolve acquisition channel from humanitarian auth context at patient signup. */
+/**
+ * Humanitarian acquisition is stamped only when an ACURA partner intake is linked
+ * to the patient account (see linkPartnerIntakesToPatient). Auth cookies and
+ * Doctor8 landing pages must not classify regular signups as humanitarian.
+ */
 export function resolvePatientAcquisitionChannel(
-  input: PatientAcquisitionInput,
+  _input: PatientAcquisitionInput,
 ): PatientAcquisitionChannel | null {
-  const originCookie = readHumOriginFlagFromCookieHeader(input.cookieHeader ?? undefined);
-  const returnPath = readHumReturnPathFromCookieHeader(input.cookieHeader ?? undefined);
-  const effectiveCallback = resolveHumanitarianAuthCallback(input.callbackUrl, {
-    originCookie,
-    returnPath,
-  });
-
-  if (!originCookie && !effectiveCallback) return null;
-
-  const path = effectiveCallback ? pathFromCallback(effectiveCallback) : returnPath;
-
-  if (path === "/sos-venezuela") {
-    return PatientAcquisitionChannel.DOCTOR8_SOS_LANDING;
-  }
-  if (path?.startsWith("/humanitarian/")) {
-    return PatientAcquisitionChannel.DOCTOR8_HUMANITARIAN;
-  }
-  if (originCookie) {
-    return PatientAcquisitionChannel.DOCTOR8_HUMANITARIAN;
-  }
-
   return null;
 }
 
@@ -82,11 +49,7 @@ export function acquisitionInputFromRequest(
 export function resolveAcquisitionReferrer(
   input: PatientAcquisitionInput,
 ): string | null {
-  const effectiveCallback = resolveHumanitarianAuthCallback(input.callbackUrl, {
-    originCookie: readHumOriginFlagFromCookieHeader(input.cookieHeader ?? undefined),
-    returnPath: readHumReturnPathFromCookieHeader(input.cookieHeader ?? undefined),
-  });
-  return effectiveCallback?.slice(0, 500) ?? null;
+  return input.callbackUrl?.trim().slice(0, 500) ?? null;
 }
 
 /** Display channel: stored value, or infer humanitarian vs regular from activity. */

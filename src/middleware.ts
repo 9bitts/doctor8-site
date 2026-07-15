@@ -10,10 +10,10 @@ import { resolveLoginPathForPathname } from "@/lib/auth-portals";
 import { resolvePatientPostLoginUrl } from "@/lib/patient-home";
 import { sessionProfileIncomplete } from "@/lib/user-profile-complete";
 import {
-  humanitarianReturnPathFromCallback,
   humanitarianReturnPathFromPathname,
   isHumanitarianPatientPath,
   stampHumanitarianOriginOnResponse,
+  clearHumanitarianOriginCookies,
 } from "@/lib/humanitarian/origin-cookie";
 import { isApiRoleAllowed } from "@/lib/api-route-roles";
 import {
@@ -303,6 +303,19 @@ function maybeStampHumanitarianOrigin(
   return response;
 }
 
+function isStandardPatientAuthRoute(pathname: string): boolean {
+  if (pathname === "/login" || pathname === "/register") return true;
+  return pathname.startsWith("/register/") && !pathname.startsWith("/register/angel");
+}
+
+function maybeClearHumanitarianOriginOnStandardAuth(pathname: string): NextResponse {
+  const res = NextResponse.next();
+  if (isStandardPatientAuthRoute(pathname)) {
+    clearHumanitarianOriginCookies(res);
+  }
+  return res;
+}
+
 export default auth((req) => {
   const { pathname } = req.nextUrl;
   const session = req.auth;
@@ -542,7 +555,7 @@ export default auth((req) => {
 
   if (isPublicRoute(pathname)) {
     if (pathname === "/login" || pathname === "/register" || pathname.startsWith("/register/")) {
-      return NextResponse.next();
+      return maybeClearHumanitarianOriginOnStandardAuth(pathname);
     }
     const publicHumPath = humanitarianReturnPathFromPathname(pathname);
     if (publicHumPath) {

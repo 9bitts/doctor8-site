@@ -6,8 +6,6 @@ import { translate, normalizeLang, Lang } from "@/lib/i18n/translations";
 import { LogIn } from "lucide-react";
 import { buildAuthHref } from "@/components/auth/login-shared";
 import { MAIN_LOGIN } from "@/lib/auth-portals";
-import { resolveClientAuthCallbackUrl } from "@/lib/auth-callback";
-import { syncHumanitarianOriginFromCallback } from "@/lib/humanitarian/origin-cookie";
 import {
   detectInitialLang,
   LANG_KEY,
@@ -27,9 +25,7 @@ export default function RegisterPage() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const fromQuery = params.get("callbackUrl") || "";
-    const resolved = resolveClientAuthCallbackUrl(fromQuery);
-    setCallbackUrl(resolved);
-    syncHumanitarianOriginFromCallback(fromQuery || resolved || null);
+    setCallbackUrl(fromQuery);
 
     const r = params.get("region");
     if (r) {

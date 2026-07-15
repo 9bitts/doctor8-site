@@ -26,12 +26,22 @@ export type ClientAuthCallback = {
   fromHumCookie: boolean;
 };
 
-/** Query ?callbackUrl= with humanitarian return cookie fallback (origin is httpOnly). */
-export function resolveClientAuthCallback(queryCallback?: string | null): ClientAuthCallback {
+export type ClientAuthCallbackOptions = {
+  /** Fall back to humanitarian return cookie when ?callbackUrl= is absent (SOS portal only). */
+  allowHumCookieFallback?: boolean;
+};
+
+/** Resolve post-auth callback from query param, optionally with humanitarian cookie fallback. */
+export function resolveClientAuthCallback(
+  queryCallback?: string | null,
+  options?: ClientAuthCallbackOptions,
+): ClientAuthCallback {
   const trimmed = queryCallback?.trim();
   if (trimmed) return { callback: trimmed, fromHumCookie: false };
-  const returnPath = readClientHumReturnPath();
-  if (returnPath) return { callback: returnPath, fromHumCookie: true };
+  if (options?.allowHumCookieFallback) {
+    const returnPath = readClientHumReturnPath();
+    if (returnPath) return { callback: returnPath, fromHumCookie: true };
+  }
   return { callback: "", fromHumCookie: false };
 }
 
@@ -48,7 +58,7 @@ export function resolveRegisterHref(
     registerUrl?.startsWith("/register") && !registerUrl.startsWith("//")
       ? registerUrl
       : "/register";
-  const effective = callbackUrl?.trim() || resolveClientAuthCallbackUrl(null);
+  const effective = callbackUrl?.trim();
   if (!effective) return base;
   const sep = base.includes("?") ? "&" : "?";
   return `${base}${sep}callbackUrl=${encodeURIComponent(effective)}`;

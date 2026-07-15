@@ -40,14 +40,6 @@ import {
   registerSuccessFollowUp,
 } from "@/lib/auth-flow-errors";
 import {
-  canSkipHumanitarianEmailVerification,
-} from "@/lib/humanitarian/feature-flags";
-import {
-  readClientHumOriginFlag,
-  readClientHumReturnPath,
-  resolveHumanitarianAuthCallback,
-} from "@/lib/humanitarian/origin-cookie";
-import {
   navigateAfterAuth,
   waitForAuthenticatedSession,
 } from "@/components/auth/login-shared";
@@ -240,11 +232,7 @@ export function RegisterAccountForm({
     professionSlug && !isPsychologistSignup ? professionSlug : undefined;
 
   function effectiveAuthCallback(): string {
-    const fromCookie = resolveHumanitarianAuthCallback(null, {
-      originCookie: readClientHumOriginFlag(),
-      returnPath: readClientHumReturnPath(),
-    });
-    return callbackUrl || fromCookie || "";
+    return callbackUrl || "";
   }
 
   async function handleGoogleSignUp() {
@@ -343,14 +331,7 @@ export function RegisterAccountForm({
         return;
       }
 
-      const humanitarianSkip =
-        role === "PATIENT"
-        && canSkipHumanitarianEmailVerification(
-          authCallback,
-          readClientHumOriginFlag(),
-        );
-
-      if (data.emailVerificationSkipped || humanitarianSkip) {
+      if (data.emailVerificationSkipped) {
         clearSensitiveClientState();
         await signOut({ redirect: false });
         const signInResult = await signIn("credentials", {
@@ -404,14 +385,6 @@ export function RegisterAccountForm({
     }
   }
 
-  const humanitarianPatientSkip =
-    role === "PATIENT"
-    && canSkipHumanitarianEmailVerification(
-      effectiveAuthCallback(),
-      readClientHumOriginFlag(),
-    );
-
-  return (
     <>
       {onBack && (
         <button
@@ -464,7 +437,7 @@ export function RegisterAccountForm({
         </p>
       </div>
 
-      {!humanitarianPatientSkip && <RegisterVerificationNotice lang={lang} />}
+      <RegisterVerificationNotice lang={lang} />
 
       {errors.general && (
         <div className="flex items-start gap-3 bg-red-500/10 border border-red-500/20 rounded-xl p-4 mb-6">

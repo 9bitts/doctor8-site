@@ -5,11 +5,10 @@ import { signIn, signOut } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Stethoscope, Heart } from "lucide-react";
-import { persistAuthCallback, consumeAuthCallback, resolveRegisterHref, resolveClientAuthCallback } from "@/lib/auth-callback";
+import { persistAuthCallback, consumeAuthCallback, resolveRegisterHref } from "@/lib/auth-callback";
 import { clearSensitiveClientState } from "@/lib/logout-cleanup";
 import { resolvePatientPostLoginUrl } from "@/lib/patient-home";
 import { safePostLoginUrl } from "@/lib/role-home";
-import { syncHumanitarianOriginFromCallback } from "@/lib/humanitarian/origin-cookie";
 import {
   PATIENT_LOGIN,
   PROFESSIONAL_REGISTER,
@@ -45,7 +44,7 @@ function UnifiedLoginForm() {
   const searchParams = useSearchParams();
   const queryCallback = searchParams.get("callbackUrl") || "";
   const portal = searchParams.get("portal");
-  const { callback: callbackUrl, fromHumCookie } = resolveClientAuthCallback(queryCallback);
+  const callbackUrl = queryCallback.trim();
   const { lang, changeLang, t } = useLoginLang(callbackUrl);
 
   const [email, setEmail] = useState("");
@@ -75,10 +74,6 @@ function UnifiedLoginForm() {
   useEffect(() => {
     setError(parseLoginError(searchParams.get("error")));
   }, [searchParams]);
-
-  useEffect(() => {
-    syncHumanitarianOriginFromCallback(callbackUrl || queryCallback || null);
-  }, [callbackUrl, queryCallback]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -121,7 +116,6 @@ function UnifiedLoginForm() {
             resolvePatientPostLoginUrl,
             session.user.professionalSpecialty,
             {
-              fromHumCookie,
               humanitarianPatient: session.user.humanitarianPatient === true,
             },
           ),
