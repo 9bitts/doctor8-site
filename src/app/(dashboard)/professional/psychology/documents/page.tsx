@@ -91,6 +91,7 @@ export default function PsychologyDocumentsPage() {
   async function handleSave() {
     setError("");
     setSuccess(false);
+    if (!selectedTemplate) return;
     if (!selectedPatient) { setError(t("psy.docs.needPatient")); return; }
     if (!body.trim()) { setError(t("psy.docs.needBody")); return; }
     setSaving(true);
