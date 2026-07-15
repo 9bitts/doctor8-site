@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   CheckCircle2, PenLine, Loader2, FileText, Send, MessageCircle,
 } from "lucide-react";
@@ -8,6 +8,7 @@ import { EmissionsSignModal, type EmissionKind, type SignTarget } from "./Emissi
 import Doctor8DeliverButton from "./Doctor8DeliverButton";
 import { openWhatsAppShareLink } from "./whatsapp-share-link";
 import { openAuthenticatedPdf } from "@/lib/open-url-safely";
+import { scrollDashboardToTopAfterPaint } from "@/lib/scroll-dashboard-client";
 import type { Chart } from "./types";
 
 export interface ReviewMedication {
@@ -65,6 +66,10 @@ export function EmissionPostSaveFlow({
   const [inviteError, setInviteError] = useState("");
   const [doctor8Delivered, setDoctor8Delivered] = useState(initialStep === "success" && !!initialShareUrl);
   const [pdfLoading, setPdfLoading] = useState(false);
+
+  useEffect(() => {
+    scrollDashboardToTopAfterPaint();
+  }, [step]);
 
   const patient = emission.patient;
   const savedTitleKey =

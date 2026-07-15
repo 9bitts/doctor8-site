@@ -62,6 +62,7 @@ import { isExternalHref } from "@/lib/notification-links";
 import { resolveVoicePortalFromPathname } from "@/lib/voice-assistant/portal-resolver";
 import { isValidIanaTimeZone } from "@/lib/timezone";
 import { hasAnyNaturalMedicinePractice } from "@/lib/natural-medicine/config";
+import { scrollDashboardToTop } from "@/lib/scroll-dashboard-client";
 import {
   User, Settings, LogOut, Menu, X, ChevronRight,
 } from "lucide-react";
@@ -95,7 +96,6 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
   const { t, lang } = useI18n();
   const { data: session, status } = useSession();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const mainRef = useRef<HTMLElement>(null);
   const sidebarNavScrollRef = useRef(false);
   const [unreadMessages, setUnreadMessages] = useState(0);
   const [showNaturalMedicineNav, setShowNaturalMedicineNav] = useState(true);
@@ -369,16 +369,6 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
   const avatarIcon = isAngel ? "text-rose-400" : isOrganization ? "text-indigo-400" : isEmployer ? "text-orange-400" : isOccupationalPhysician ? "text-teal-400" : isPharmacyStoreUser ? "text-emerald-400" : isLaboratoryUser ? "text-violet-400" : isPsychologist ? "text-violet-400" : isNutritionist ? "text-amber-400" : isNurse ? "text-rose-400" : isPharmacist ? "text-teal-400" : isDentist ? "text-fuchsia-300" : isProfessional ? "text-brand-400" : isPsychoanalyst ? "text-violet-400" : isIntegrativeTherapist ? "text-teal-400" : "text-emerald-400";
   const headerAvatar = isAngel ? "bg-rose-500" : isOrganization ? "bg-indigo-500" : isEmployer ? "bg-orange-600" : isOccupationalPhysician ? "bg-teal-600" : isPharmacyStoreUser ? "bg-emerald-600" : isLaboratoryUser ? "bg-violet-600" : isPsychologist ? "bg-violet-500" : isNutritionist ? "bg-amber-500" : isNurse ? "bg-rose-500" : isPharmacist ? "bg-teal-500" : isDentist ? "bg-fuchsia-500" : isProfessional ? "bg-brand-500" : isPsychoanalyst ? "bg-violet-500" : isIntegrativeTherapist ? "bg-teal-500" : "bg-emerald-500";
   const signOutHref = resolveLoginPathForSession(role, pathname, isPsychologistPortal || isNutritionistPortal || isNursePortal || isPharmacistPortal || isDentistPortal);
-
-  function scrollDashboardToTop() {
-    const main = mainRef.current;
-    if (main && main.scrollTop > 0) {
-      main.scrollTo({ top: 0 });
-    }
-    if (window.scrollY > 0) {
-      window.scrollTo({ top: 0 });
-    }
-  }
 
   function handleSidebarNavClick(href: string) {
     scrollDashboardToTop();
@@ -676,7 +666,7 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
           <Vital8ErpPromoBanner userId={userId} role={role} />
         )}
 
-        <main ref={mainRef} className="flex-1 p-4 lg:p-8 overflow-auto overflow-x-hidden min-w-0">
+        <main data-dashboard-scroll className="flex-1 p-4 lg:p-8 overflow-auto overflow-x-hidden min-w-0">
           <PushSubscribe />
           {role === "PATIENT" && userId && (
             <PwaInstallPrompt lang={lang} variant="patient" userId={userId} />

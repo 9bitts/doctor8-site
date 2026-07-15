@@ -61,6 +61,7 @@ import {
   type ClinicalDocumentPrefill,
   type ExamRequestPrefill,
 } from "@/lib/voice-assistant/types";
+import { scrollDashboardToTopAfterPaint } from "@/lib/scroll-dashboard-client";
 import {
   extendSessionForWrite,
   isAuthFailureStatus,
@@ -126,6 +127,11 @@ export function usePrescriptionPage() {
   const [postSaveShareUrl, setPostSaveShareUrl] = useState("");
   const [editingPrescriptionId, setEditingPrescriptionId] = useState<string | null>(null);
   const [editingClinicalDocId, setEditingClinicalDocId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!savedEmission) return;
+    scrollDashboardToTopAfterPaint();
+  }, [savedEmission, postSaveStep]);
 
   const [charts, setCharts] = useState<Chart[]>([]);
   const [importablePatients, setImportablePatients] = useState<ImportablePatient[]>([]);
