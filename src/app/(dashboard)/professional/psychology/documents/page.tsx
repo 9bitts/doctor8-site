@@ -5,7 +5,11 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { psychologistHubHref } from "@/lib/psychologist-portal";
-import { CFP_DOCUMENT_TEMPLATES, type CfpDocumentTemplateId } from "@/lib/psychology-templates";
+import {
+  CFP_DOCUMENT_TEMPLATES,
+  cfpDocumentSaveType,
+  type CfpDocumentTemplateId,
+} from "@/lib/psychology-templates";
 import VideoConsultReturnBanner from "@/components/professional/VideoConsultReturnBanner";
 import NoPatientChartsEmptyState from "@/components/professional/NoPatientChartsEmptyState";
 import { readChartDeepLink } from "@/lib/video-chart-nav";
@@ -96,7 +100,7 @@ export default function PsychologyDocumentsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           patientRecordId: selectedPatient.id,
-          type: selectedTemplate === "TDIC_CONSENT" ? "OTHER" : "CLINICAL_NOTE",
+          type: cfpDocumentSaveType(selectedTemplate),
           title,
           content: body,
         }),
@@ -128,7 +132,7 @@ export default function PsychologyDocumentsPage() {
         <p className="text-slate-500 text-sm mt-1">{t("psy.mod.documents.desc")}</p>
       </div>
 
-      <div className="grid sm:grid-cols-2 gap-3">
+      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
         {CFP_DOCUMENT_TEMPLATES.map((templ) => (
           <button
             key={templ.id}
@@ -194,7 +198,7 @@ export default function PsychologyDocumentsPage() {
 
           <div>
             <label className="text-sm font-semibold text-slate-800">{t("psy.docs.body")}</label>
-            <textarea value={body} onChange={(e) => setBody(e.target.value)} rows={16} className="mt-1.5 w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm font-mono resize-y" />
+            <textarea value={body} onChange={(e) => setBody(e.target.value)} rows={22} className="mt-1.5 w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm font-mono resize-y" />
           </div>
 
           {error && <p className="text-sm text-red-600">{error}</p>}
