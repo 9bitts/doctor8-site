@@ -36,6 +36,7 @@ import {
   OCCUPATIONAL_PHYSICIAN_NAV,
   PHARMACY_STORE_NAV,
   LABORATORY_NAV,
+  DISTRIBUTOR_NAV,
   PHARMACY_NETWORK_PHARMACIST_NAV,
   HUMANITARIAN_PATIENT_NAV,
   PATIENT_DASHBOARD_ENTRY,
@@ -250,6 +251,9 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
       : false;
   const isLaboratory =
     role === "LABORATORY" || (role === "ADMIN" && isLaboratoryPortal);
+  const isDistributorPortal = pathname.startsWith("/distribuidores");
+  const isDistributor =
+    role === "DISTRIBUTOR" || (role === "ADMIN" && isDistributorPortal);
   const isPharmacyNetworkPharmacist =
     (isPharmacyNetworkPharmacistPortal && (role === "PROFESSIONAL" || role === "ADMIN"))
     || (isPharmacyValidateHub && role === "PROFESSIONAL");
@@ -257,6 +261,7 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
   const navItems: NavItem[] =
     isPharmacyStore ? withNavIcons(PHARMACY_STORE_NAV)
     : isLaboratory ? withNavIcons(LABORATORY_NAV)
+    : isDistributor ? withNavIcons(DISTRIBUTOR_NAV)
     : isPharmacyNetworkPharmacist ? withNavIcons(PHARMACY_NETWORK_PHARMACIST_NAV)
     : role === "ADMIN" ? withNavIcons(ADMIN_NAV)
     : role === "ANGEL" ? withNavIcons(ANGEL_NAV)
@@ -273,6 +278,7 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
     : role === "INTEGRATIVE_THERAPIST" ? withNavIcons(INTEGRATIVE_THERAPIST_NAV)
     : role === "PHARMACY_STORE" ? withNavIcons(PHARMACY_STORE_NAV)
     : role === "LABORATORY" ? withNavIcons(LABORATORY_NAV)
+    : role === "DISTRIBUTOR" ? withNavIcons(DISTRIBUTOR_NAV)
     : withNavIcons(PATIENT_NAV);
   const providerGroupedNav = providerPortalId
     ? (PLATFORM_NAV_GROUPS_BY_PORTAL[providerPortalId] ?? []).map((group) => ({

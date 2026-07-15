@@ -86,6 +86,7 @@ export type PlatformPortalId =
   | "OCCUPATIONAL_PHYSICIAN"
   | "PHARMACY_STORE"
   | "LABORATORY"
+  | "DISTRIBUTOR"
   | "PHARMACY_NETWORK_PHARMACIST"
   | "ADMIN"
   | "ANGEL";
@@ -159,6 +160,7 @@ export const PATIENT_NAV_GROUPS: PlatformNavGroup[] = [
       { href: "/patient/prescriptions", labelKey: "nav.myPrescriptions", roles: ["PATIENT"], iconKey: "Stethoscope" },
       { href: "/patient/exam-requests", labelKey: "nav.myExamRequests", roles: ["PATIENT"], iconKey: "FlaskConical" },
       { href: "/patient/documents", labelKey: "nav.documents", roles: ["PATIENT"], iconKey: "ClipboardList" },
+      { href: "/patient/assinar-termos", labelKey: "nav.signTerms", roles: ["PATIENT"], iconKey: "ScrollText" },
       { href: "/patient/medications", labelKey: "nav.medications", roles: ["PATIENT"], iconKey: "Pill" },
       { href: "/patient/resources", labelKey: "nav.doctorResources", roles: ["PATIENT"], iconKey: "BookOpen" },
       { href: "/patient/integrative-care", labelKey: "nav.integrativeCare", roles: ["PATIENT"], iconKey: "Leaf" },
@@ -166,6 +168,7 @@ export const PATIENT_NAV_GROUPS: PlatformNavGroup[] = [
       { href: "/patient/nursing", labelKey: "nav.nursing", roles: ["PATIENT"], iconKey: "Heart" },
       { href: "/patient/pharmacy", labelKey: "nav.pharmacy", roles: ["PATIENT"], iconKey: "Pill" },
       { href: "/patient/pharmacy/orders", labelKey: "nav.pharmacyOrders", roles: ["PATIENT"], iconKey: "ShoppingBag" },
+      { href: "/patient/importacao", labelKey: "nav.importOrders", roles: ["PATIENT"], iconKey: "Package" },
     ],
   },
   {
@@ -688,6 +691,12 @@ export const LABORATORY_NAV: PlatformNavEntry[] = [
   { href: "/laboratorios/configuracoes", labelKey: "nav.account", roles: ["LABORATORY"], iconKey: "Settings" },
 ];
 
+/** US distributor / import supplier (e.g. Zephra) */
+export const DISTRIBUTOR_NAV: PlatformNavEntry[] = [
+  { href: "/distribuidores/painel", labelKey: "nav.dashboard", roles: ["DISTRIBUTOR"], iconKey: "Package" },
+  { href: "/distribuidores/pedidos", labelKey: "dist.nav.orders", roles: ["DISTRIBUTOR"], iconKey: "ShoppingBag" },
+];
+
 /** Pharmacist (CRF) on the Doctor8 pharmacy network — separate from store owner login */
 export const PHARMACY_NETWORK_PHARMACIST_NAV: PlatformNavEntry[] = [
   { href: "/farmacias/farmaceutico/painel", labelKey: "pharm.nav.networkQueue", roles: ["PROFESSIONAL"], iconKey: "ClipboardList" },
@@ -708,6 +717,8 @@ export const ADMIN_NAV: PlatformNavEntry[] = [
   { href: "/admin/clinicas", labelKey: "nav.adminClinics", roles: ["ADMIN"], iconKey: "Building2" },
   { href: "/admin/farmacias", labelKey: "nav.adminPharmacies", roles: ["ADMIN"], iconKey: "Pill" },
   { href: "/admin/laboratorios", labelKey: "nav.adminLaboratories", roles: ["ADMIN"], iconKey: "FlaskConical" },
+  { href: "/admin/distribuidores", labelKey: "nav.adminDistributors", roles: ["ADMIN"], iconKey: "Package" },
+  { href: "/admin/importacoes", labelKey: "nav.adminImports", roles: ["ADMIN"], iconKey: "Package" },
   { href: "/admin/payments", labelKey: "nav.adminPayments", roles: ["ADMIN"], iconKey: "CreditCard" },
   { href: "/admin/courses", labelKey: "nav.adminCourses", roles: ["ADMIN"], iconKey: "BookOpen" },
   { href: "/admin/jit-events", labelKey: "nav.adminJitEvents", roles: ["ADMIN"], iconKey: "Radio" },
@@ -744,6 +755,8 @@ export const ADMIN_NAV_GROUPS: PlatformNavGroup[] = [
       { href: "/admin/clinicas", labelKey: "nav.adminClinics", roles: ["ADMIN"], iconKey: "Building2" },
       { href: "/admin/farmacias", labelKey: "nav.adminPharmacies", roles: ["ADMIN"], iconKey: "Pill" },
       { href: "/admin/laboratorios", labelKey: "nav.adminLaboratories", roles: ["ADMIN"], iconKey: "FlaskConical" },
+      { href: "/admin/distribuidores", labelKey: "nav.adminDistributors", roles: ["ADMIN"], iconKey: "Package" },
+      { href: "/admin/importacoes", labelKey: "nav.adminImports", roles: ["ADMIN"], iconKey: "Package" },
     ],
   },
   {
@@ -792,6 +805,7 @@ export const PLATFORM_NAV_BY_PORTAL: Record<PlatformPortalId, PlatformNavEntry[]
   OCCUPATIONAL_PHYSICIAN: OCCUPATIONAL_PHYSICIAN_NAV,
   PHARMACY_STORE: PHARMACY_STORE_NAV,
   LABORATORY: LABORATORY_NAV,
+  DISTRIBUTOR: DISTRIBUTOR_NAV,
   PHARMACY_NETWORK_PHARMACIST: PHARMACY_NETWORK_PHARMACIST_NAV,
   ADMIN: ADMIN_NAV,
   ANGEL: ANGEL_NAV,
@@ -821,6 +835,9 @@ export const PLATFORM_PUBLIC_ROUTES: PublicRouteEntry[] = [
   { href: "/farmacias/buscar", description: "Public pharmacy network price search (no login)" },
   { href: "/laboratorios/buscar", description: "Public laboratory network price search (no login)" },
   { href: "/farmacias/farmaceutico/login", description: "Pharmacist (CRF) sign in for prescription validation on the network" },
+  { href: "/distribuidores", description: "US distributor / import supplier landing (Zephra and partners)" },
+  { href: "/distribuidores/login", description: "Distributor portal sign in (EIN)" },
+  { href: "/distribuidores/cadastro", description: "Register US distributor on Doctor8 import network" },
 ];
 
 export function allPlatformNavEntries(): PlatformNavEntry[] {

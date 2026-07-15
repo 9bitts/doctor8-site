@@ -1,0 +1,11 @@
+import { getAdminSession } from "@/lib/admin";
+import { redirect } from "next/navigation";
+import AdminImportOrdersClient from "./AdminImportOrdersClient";
+
+export const dynamic = "force-dynamic";
+
+export default async function AdminImportacoesPage() {
+  const session = await getAdminSession();
+  if (!session) redirect("/login");
+  return <AdminImportOrdersClient />;
+}

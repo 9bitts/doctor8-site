@@ -20,6 +20,7 @@ const API_ROLE_RULES: ApiRoleRule[] = [
   { prefix: "/api/occupational-physician", roles: ["OCCUPATIONAL_PHYSICIAN", "ADMIN"] },
   { prefix: "/api/pharmacy-store", roles: ["PHARMACY_STORE", "PROFESSIONAL", "ADMIN"] },
   { prefix: "/api/laboratory", roles: ["LABORATORY", "ADMIN"] },
+  { prefix: "/api/distributor", roles: ["DISTRIBUTOR", "ADMIN"] },
   { prefix: "/api/humanitarian/angel", roles: ["ANGEL", "ADMIN"] },
   {
     prefix: "/api/humanitarian",

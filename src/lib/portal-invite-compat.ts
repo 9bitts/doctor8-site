@@ -9,6 +9,7 @@ const ROLE_LABELS_PT: Record<UserRole, string> = {
   EMPLOYER: "empresa",
   PHARMACY_STORE: "farmácia",
   LABORATORY: "laboratório",
+  DISTRIBUTOR: "distribuidor",
   OCCUPATIONAL_PHYSICIAN: "médico do trabalho",
   ANGEL: "voluntário",
   ADMIN: "administrador",

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import {
   Layers, Stethoscope, Users, CreditCard, Radio, Heart, ShoppingBag, Plug, ScrollText, PieChart,
-  Building2, Pill, FlaskConical, BookOpen, UserCog, Loader2, AlertTriangle, Lock, Clock, Megaphone,
+  Building2, Pill, FlaskConical, Package, BookOpen, UserCog, Loader2, AlertTriangle, Lock, Clock, Megaphone,
   Sparkles, Globe, MessageCircle,
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
@@ -35,6 +35,8 @@ const LINK_GROUPS: LinkGroup[] = [
       { href: "/admin/clinicas", labelKey: "nav.adminClinics", icon: Building2 },
       { href: "/admin/farmacias", labelKey: "nav.adminPharmacies", icon: Pill },
       { href: "/admin/laboratorios", labelKey: "nav.adminLaboratories", icon: FlaskConical },
+      { href: "/admin/distribuidores", labelKey: "nav.adminDistributors", icon: Package },
+      { href: "/admin/importacoes", labelKey: "nav.adminImports", icon: Package },
     ],
   },
   {

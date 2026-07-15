@@ -49,6 +49,8 @@ export function resolveRoleHome(
       return "/farmacias/painel";
     case "LABORATORY":
       return "/laboratorios/painel";
+    case "DISTRIBUTOR":
+      return "/distribuidores/painel";
     case "OCCUPATIONAL_PHYSICIAN":
       return "/empresas/medico/painel";
     case "ANGEL":
@@ -99,6 +101,8 @@ const ROLE_ROUTE_CHECKS: { prefix: string; roles: string[] }[] = [
   { prefix: "/laboratorios/painel", roles: ["LABORATORY", "ADMIN"] },
   { prefix: "/laboratorios/exames", roles: ["LABORATORY", "ADMIN"] },
   { prefix: "/laboratorios/configuracoes", roles: ["LABORATORY", "ADMIN"] },
+  { prefix: "/distribuidores/painel", roles: ["DISTRIBUTOR", "ADMIN"] },
+  { prefix: "/distribuidores/pedidos", roles: ["DISTRIBUTOR", "ADMIN"] },
   { prefix: "/humanitarian/painel", roles: ["PATIENT", "ADMIN"] },
   { prefix: "/humanitarian/angel", roles: ["ANGEL", "ADMIN"] },
   {

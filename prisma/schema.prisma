@@ -30,6 +30,7 @@ enum UserRole {
   EMPLOYER
   PHARMACY_STORE
   LABORATORY
+  DISTRIBUTOR
   OCCUPATIONAL_PHYSICIAN
   ANGEL
   ADMIN
@@ -609,6 +610,8 @@ model User {
   employerMemberships   EmployerMember[]
   pharmacyStoreMemberships PharmacyStoreMember[]
   laboratoryMemberships    LaboratoryMember[]
+  distributorMemberships   DistributorMember[]
+  importOrdersAsPatient    ImportOrder[] @relation("ImportOrderPatient")
   occupationalPhysicianLinks EmployerOccupationalPhysician[]
   clubStampEntries      ClubStampEntry[]
   clubDiversityAwards   ClubDiversityAward[]
@@ -1523,6 +1526,7 @@ model Prescription {
 
   pharmacyOrders       PharmacyOrder[]
   pharmacyPrescriptionToken PharmacyPrescriptionToken?
+  importOrders         ImportOrder[]
 
   /// SIMPLE | NRB | RCE — tipo regulatório do receituário (Portaria 344/98)
   prescriptionFormKind   String?
@@ -6071,4 +6075,224 @@ model EmailCampaignRecipient {
   @@unique([campaignId, email])
   @@index([campaignId, status])
   @@index([resendEmailId])
+}
+
+// ────────────────────────────────────────────
+// DISTRIBUTOR — US supplier (e.g. Zephra) for D2C import
+// ────────────────────────────────────────────
+
+enum DistributorStatus {
+  PENDING_REVIEW
+  ACTIVE
+  SUSPENDED
+}
+
+enum DistributorMemberRole {
+  OWNER
+  ADMIN
+  STAFF
+}
+
+enum DistributorMemberStatus {
+  ACTIVE
+  INVITED
+  DISABLED
+}
+
+model Distributor {
+  id                   String            @id @default(cuid())
+  /// US Employer Identification Number — 9 digits, no punctuation
+  ein                  String            @unique
+  legalName            String
+  tradeName            String
+  slug                 String            @unique
+  brandAlias           String?           // e.g. "Zephra", historical "Rapha"
+
+  responsibleFirstName String
+  responsibleLastName  String
+  contactEmail         String?
+  contactPhone         String?
+
+  addressStreet        String?
+  addressNumber        String?
+  addressComplement    String?
+  addressCity          String?
+  addressState         String?           // US state code (2 letters)
+  addressZip           String?
+  addressCountry       String            @default("US")
+
+  status               DistributorStatus @default(PENDING_REVIEW)
+  /// Platform facilitation fee percent (e.g. 15 = 15%)
+  platformFeePercent   Int               @default(15)
+  stripeConnectAccountId String?
+
+  members              DistributorMember[]
+  products             ImportProduct[]
+  orders               ImportOrder[]
+
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
+
+  @@index([status])
+  @@index([tradeName])
+}
+
+model DistributorMember {
+  id            String                   @id @default(cuid())
+  distributorId String
+  distributor   Distributor              @relation(fields: [distributorId], references: [id], onDelete: Cascade)
+  userId        String
+  user          User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role          DistributorMemberRole
+  status        DistributorMemberStatus  @default(ACTIVE)
+
+  invitedAt     DateTime?
+  joinedAt      DateTime                 @default(now())
+
+  @@unique([distributorId, userId])
+  @@index([userId])
+  @@index([distributorId])
+}
+
+// ────────────────────────────────────────────
+// IMPORT D2C — Anvisa-gated personal import (Zephra)
+// ────────────────────────────────────────────
+
+enum ImportOrderStatus {
+  DRAFT
+  DOCUMENTS_SUBMITTED
+  DOCUMENTS_NEEDS_FIX
+  DOCUMENTS_APPROVED
+  ANVISA_PENDING
+  ANVISA_AUTHORIZED
+  ANVISA_REJECTED
+  PAYMENT_PENDING
+  PAID
+  READY_TO_SHIP
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+enum ImportDocumentKind {
+  ID_DOCUMENT
+  ADDRESS_PROOF
+  MEDICAL_REPORT
+  ANVISA_AUTHORIZATION
+  OTHER
+}
+
+model ImportProduct {
+  id              String   @id @default(cuid())
+  slug            String   @unique
+  name            String
+  activeIngredient String  @default("tirzepatide")
+  strengthMg      Int
+  presentationMl  Float    @default(3)
+  priceUsdCents   Int
+  shippingUsdCents Int     @default(500)
+  active          Boolean  @default(true)
+  sortOrder       Int      @default(0)
+  /// Max treatment days covered per unit (approx.), for qty checks
+  daysPerUnit     Int      @default(28)
+
+  distributorId   String?
+  distributor     Distributor? @relation(fields: [distributorId], references: [id], onDelete: SetNull)
+
+  orders          ImportOrder[]
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([active, sortOrder])
+  @@index([distributorId])
+}
+
+model ImportOrder {
+  id                 String            @id @default(cuid())
+  patientUserId      String
+  patientUser        User              @relation("ImportOrderPatient", fields: [patientUserId], references: [id], onDelete: Cascade)
+  prescriptionId     String?
+  prescription       Prescription?     @relation(fields: [prescriptionId], references: [id], onDelete: SetNull)
+  productId          String
+  product            ImportProduct     @relation(fields: [productId], references: [id], onDelete: Restrict)
+  distributorId      String?
+  distributor        Distributor?      @relation(fields: [distributorId], references: [id], onDelete: SetNull)
+
+  status             ImportOrderStatus @default(DRAFT)
+  quantity           Int               @default(1)
+  treatmentDays      Int               @default(90)
+
+  /// Snapshot pricing at order time
+  productUsdCents    Int
+  shippingUsdCents   Int               @default(0)
+  feePercent         Int               @default(15)
+  feeBrlCents        Int               @default(0)
+
+  shipName           String
+  shipCpf            String?
+  shipPhone          String?
+  shipLine1          String
+  shipLine2          String?
+  shipCity           String
+  shipState          String
+  shipZip            String
+  shipCountry        String            @default("BR")
+
+  anvisaInstrumentType   String?
+  anvisaAuthorizationNumber String?
+  anvisaAuthorizedAt     DateTime?
+  anvisaExpiresAt        DateTime?
+  anvisaRejectReason     String?
+
+  patientNotes       String?           @db.Text
+  adminNotes         String?           @db.Text
+  paymentNotes       String?           @db.Text
+
+  courierName        String?
+  trackingNumber     String?
+  shippedAt          DateTime?
+  deliveredAt        DateTime?
+
+  paidAt             DateTime?
+  stripePaymentIntentId    String? @unique
+  stripeCheckoutSessionId  String? @unique
+
+  documents          ImportOrderDocument[]
+  events             ImportOrderEvent[]
+
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+
+  @@index([patientUserId, status])
+  @@index([distributorId, status])
+  @@index([status, createdAt])
+  @@index([prescriptionId])
+}
+
+model ImportOrderDocument {
+  id          String             @id @default(cuid())
+  orderId     String
+  order       ImportOrder        @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  kind        ImportDocumentKind
+  fileKey     String
+  fileName    String?
+  mimeType    String?
+  uploadedBy  String?
+  createdAt   DateTime           @default(now())
+
+  @@index([orderId])
+}
+
+model ImportOrderEvent {
+  id          String   @id @default(cuid())
+  orderId     String
+  order       ImportOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  fromStatus  String?
+  toStatus    String
+  note        String?
+  actorUserId String?
+  createdAt   DateTime @default(now())
+
+  @@index([orderId, createdAt])
 }

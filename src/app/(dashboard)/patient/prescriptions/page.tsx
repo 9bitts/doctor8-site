@@ -15,8 +15,9 @@ import PatientPharmacyBuyPanel from "@/components/patient/PatientPharmacyBuyPane
 import { downloadAuthenticatedPdf } from "@/lib/open-url-safely";
 import {
   FileText, Download, Loader2, Pill, Calendar, AlertCircle, RefreshCw,
-  ShieldCheck, Clock, XCircle, MessageCircle, Search, ShoppingBag,
+  ShieldCheck, Clock, XCircle, MessageCircle, Search, ShoppingBag, Package,
 } from "lucide-react";
+import Link from "next/link";
 
 interface MedItem {
   name: string;
@@ -236,6 +237,13 @@ export default function PatientPrescriptionsPage() {
                             ? t("myrx.hideBuy")
                             : t("myrx.buyNetwork")}
                         </button>
+                        <Link
+                          href={`/patient/importacao/nova?prescriptionId=${p.id}`}
+                          className="inline-flex items-center gap-1.5 text-sm font-semibold text-sky-700 hover:text-sky-900"
+                        >
+                          <Package size={14} />
+                          Solicitar importação Zephra
+                        </Link>
                       </div>
                     )}
                   </div>

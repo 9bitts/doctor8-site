@@ -44,6 +44,9 @@ export const PHARMACY_STORE_REGISTER = "/farmacias/cadastro";
 export const LABORATORY_LOGIN = "/laboratorios/login";
 export const LABORATORY_REGISTER = "/laboratorios/cadastro";
 
+export const DISTRIBUTOR_LOGIN = "/distribuidores/login";
+export const DISTRIBUTOR_REGISTER = "/distribuidores/cadastro";
+
 /** Registration URL when user arrived via ?portal= on the unified login screen. */
 export function resolveProfessionalRegisterForPortal(portal: string | null | undefined): string {
   switch (portal) {
@@ -86,6 +89,7 @@ export function resolveLoginPathForPathname(pathname: string): string {
   if (pathname.startsWith("/farmacias/farmaceutico")) return "/farmacias/farmaceutico/login";
   if (pathname.startsWith("/farmacias")) return PHARMACY_STORE_LOGIN;
   if (pathname.startsWith("/laboratorios")) return LABORATORY_LOGIN;
+  if (pathname.startsWith("/distribuidores")) return DISTRIBUTOR_LOGIN;
   return LOGIN;
 }
 
@@ -105,6 +109,7 @@ const ALLOWED_LOGIN_FROM_PATHS = new Set<string>([
   EMPLOYER_LOGIN,
   PHARMACY_STORE_LOGIN,
   LABORATORY_LOGIN,
+  DISTRIBUTOR_LOGIN,
 ]);
 
 /** Accent + back link for forgot-password / verify-email flows. */
@@ -118,6 +123,9 @@ export function resolveForgotPasswordContext(from: string | null | undefined): {
   }
   if (safeFrom === PHARMACY_STORE_LOGIN) {
     return { loginPath: PHARMACY_STORE_LOGIN, accent: "emerald" };
+  }
+  if (safeFrom === DISTRIBUTOR_LOGIN) {
+    return { loginPath: DISTRIBUTOR_LOGIN, accent: "sky" };
   }
   if (safeFrom === EMPLOYER_LOGIN) {
     return { loginPath: EMPLOYER_LOGIN, accent: "indigo" };
@@ -170,6 +178,7 @@ export function resolveVerifyFrom(opts: {
   const callback = opts.callbackUrl?.trim();
   if (callback?.startsWith("/laboratorios")) return LABORATORY_LOGIN;
   if (callback?.startsWith("/farmacias")) return PHARMACY_STORE_LOGIN;
+  if (callback?.startsWith("/distribuidores")) return DISTRIBUTOR_LOGIN;
   if (callback?.startsWith("/empresas")) return EMPLOYER_LOGIN;
   return LOGIN;
 }
@@ -250,6 +259,8 @@ export function resolveLoginPathForRegistration(
       return LABORATORY_LOGIN;
     case "PHARMACY_STORE":
       return PHARMACY_STORE_LOGIN;
+    case "DISTRIBUTOR":
+      return DISTRIBUTOR_LOGIN;
     case "EMPLOYER":
       return EMPLOYER_LOGIN;
     default:

@@ -23,6 +23,7 @@ function resolveUserDetailHref(user: AdminUserSearchRow): string | null {
   if (user.role === "ORGANIZATION") return "/admin/clinicas";
   if (user.role === "PHARMACY_STORE") return "/admin/farmacias";
   if (user.role === "LABORATORY") return "/admin/laboratorios";
+  if (user.role === "DISTRIBUTOR") return "/admin/distribuidores";
   return null;
 }
 
