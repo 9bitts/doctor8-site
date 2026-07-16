@@ -22,6 +22,7 @@ import {
 import { buildPublicSearchConvenioPath } from "@/lib/public-slugs";
 import LandingMarketingSections from "@/components/public/LandingMarketingSections";
 import CookieBanner from "@/components/public/CookieBanner";
+import HomeHumanitarianBanner from "@/components/public/HomeHumanitarianBanner";
 import LandingOptionPicker from "@/components/public/LandingOptionPicker";
 import SymptomMatchPicker, { type SymptomMatchOption } from "@/components/public/SymptomMatchPicker";
 import { formatProfessionCount, type Lang } from "@/lib/i18n/translations";
@@ -378,9 +379,17 @@ export default function EspecialistasLandingClient() {
     <div className={`${sora.className} min-h-screen bg-d8-dark overflow-x-hidden`}>
       <CookieBanner />
 
-      <nav className="sticky top-0 z-50 border-b border-white/10 bg-d8-dark/95 backdrop-blur-md">
-        <div className="mx-auto flex h-[68px] max-w-6xl items-center gap-2 sm:gap-4 px-4 sm:px-6 min-w-0">
-          <BrandLogoLink href="/" variant="on-dark" size="md" className="shrink-0" />
+      <div className="sticky top-0 z-50">
+        <HomeHumanitarianBanner
+          eyebrow={lc.humanitarianBanner.eyebrow}
+          title={lc.humanitarianBanner.title}
+          body={lc.humanitarianBanner.body}
+          cta={lc.humanitarianBanner.cta}
+        />
+
+        <nav className="border-b border-white/10 bg-d8-dark/95 backdrop-blur-md">
+          <div className="mx-auto flex h-[68px] max-w-6xl items-center gap-2 sm:gap-4 px-4 sm:px-6 min-w-0">
+            <BrandLogoLink href="/" variant="on-dark" size="md" className="shrink-0" />
 
           <ul
             className="hidden md:flex flex-1 items-center justify-center gap-2 lg:gap-4"
@@ -450,6 +459,7 @@ export default function EspecialistasLandingClient() {
           </ul>
         )}
       </nav>
+      </div>
 
       <section className="relative overflow-x-hidden bg-d8-hero px-4 pb-14 pt-10 sm:px-6">
         <div className="pointer-events-none absolute -right-16 top-0 h-80 w-80 rounded-full bg-accent-500/20 blur-3xl" />

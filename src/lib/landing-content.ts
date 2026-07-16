@@ -50,6 +50,12 @@ export type LandingContent = {
     copyright: string;
   };
   cookie: { text: string; accept: string; decline: string };
+  humanitarianBanner: {
+    eyebrow: string;
+    title: string;
+    body: string;
+    cta: string;
+  };
   platform: {
     eyebrow: string; title: string; sub: string; footerNote: string; loginLink: string;
     items: Record<string, { labelKey: string; desc: string }>;
@@ -237,6 +243,12 @@ const pt: LandingContent = {
   cookie: {
     text: "Usamos cookies para melhorar sua experi\u00eancia. Ao continuar, voc\u00ea concorda com nossa",
     accept: "Aceitar", decline: "Recusar",
+  },
+  humanitarianBanner: {
+    eyebrow: "Atendimento voluntário",
+    title: "Ajuda gratuita para venezuelanos afetados pelas perdas",
+    body: "Se você é venezuelano(a) sofrendo com as perdas recentes, ou familiar de venezuelanos no Brasil, peça atendimento médico e psicológico voluntário — sem custo.",
+    cta: "Pedir atendimento humanitário",
   },
   platform: {
     eyebrow: "Sua \u00e1rea do paciente",
@@ -444,6 +456,12 @@ const en: LandingContent = {
     text: "We use cookies to improve your experience. By continuing, you agree to our",
     accept: "Accept", decline: "Decline",
   },
+  humanitarianBanner: {
+    eyebrow: "Volunteer care",
+    title: "Free help for Venezuelans affected by recent losses",
+    body: "If you are Venezuelan facing recent losses, or a family member of Venezuelans in Brazil, request volunteer medical and psychological care — at no cost.",
+    cta: "Request humanitarian care",
+  },
   platform: {
     eyebrow: "Your patient area",
     title: "Everything you need to manage your health",
@@ -636,6 +654,12 @@ const es: LandingContent = {
     copyright: "\u00a9 2026 Doctor8. Todos los derechos reservados.",
   },
   cookie: { text: "Usamos cookies para mejorar tu experiencia. Al continuar, aceptas nuestra", accept: "Aceptar", decline: "Rechazar" },
+  humanitarianBanner: {
+    eyebrow: "Atención voluntaria",
+    title: "Ayuda gratuita para venezolanos afectados por las pérdidas",
+    body: "Si eres venezolano(a) sufriendo por las pérdidas recientes, o familiar de venezolanos en Brasil, solicita atención médica y psicológica voluntaria — sin costo.",
+    cta: "Pedir atención humanitaria",
+  },
   platform: {
     eyebrow: "Tu \u00e1rea de paciente",
     title: "Todo lo que necesitas para cuidar tu salud",
