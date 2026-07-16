@@ -2,7 +2,15 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { ChevronRight, FileText, FlaskConical, MessageSquare, Radio, Stethoscope } from "lucide-react";
+import {
+  ChevronRight,
+  FileText,
+  FlaskConical,
+  MessageCircle,
+  MessageSquare,
+  Radio,
+  Stethoscope,
+} from "lucide-react";
 import { Lang, translate } from "@/lib/i18n/translations";
 import HumanitarianPatientShell from "@/components/humanitarian/HumanitarianPatientShell";
 import HumanitarianBanner from "@/components/humanitarian/HumanitarianBanner";
@@ -11,6 +19,7 @@ import HumanitarianScheduledAppointmentsPanel from "@/components/humanitarian/Hu
 import HumanitarianAnamneseReminder from "@/components/humanitarian/HumanitarianAnamneseReminder";
 import HumanitarianAngelOptOutCard from "@/components/humanitarian/HumanitarianAngelOptOutCard";
 import { VENEZUELA_CAMPAIGN_SLUG } from "@/lib/humanitarian/constants";
+import { doctor8ContactWhatsAppHref } from "@/lib/doctor8-contact-whatsapp";
 import "@/app/humanitarian/painel/painel.css";
 
 type Props = {
@@ -124,6 +133,24 @@ export default function HumanitarianPatientDashboard({
             </div>
           </Link>
         </div>
+      </div>
+
+      <div className="hum-painel-actions hum-painel-section">
+        <a
+          href={doctor8ContactWhatsAppHref(t("hum.painel.contactTeam.message"))}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="hum-painel-action"
+        >
+          <div className="hum-painel-action-icon bg-emerald-100 text-emerald-700">
+            <MessageCircle size={22} />
+          </div>
+          <div className="hum-painel-action-text flex-1">
+            <h2>{t("hum.painel.contactTeam.title")}</h2>
+            <p>{t("hum.painel.contactTeam.desc")}</p>
+          </div>
+          <ChevronRight size={18} className="text-emerald-600 shrink-0" />
+        </a>
       </div>
 
       <div className="hum-painel-section space-y-3">
