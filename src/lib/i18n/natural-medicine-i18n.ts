@@ -1,7 +1,7 @@
 /** Natural medicine module translations — merged into main dictionaries. */
 
 export const naturalMedicineEn: Record<string, string> = {
-  "nav.naturalMedicine": "Natural Medicine",
+  "nav.naturalMedicine": "Integrative Practices",
   "nav.naturalMedicineHint": "Monograph catalog · 5 practices",
   "nav.integrative": "Integrative",
   "nav.integrativeHint": "Catalog · prescribing · 6 practices",
@@ -368,7 +368,7 @@ export const naturalMedicineEn: Record<string, string> = {
 };
 
 export const naturalMedicinePt: Record<string, string> = {
-  "nav.naturalMedicine": "Medicina Natural",
+  "nav.naturalMedicine": "Práticas Integrativas",
   "nav.naturalMedicineHint": "Catálogo monográfico · 5 práticas",
   "nav.integrative": "Integrativa",
   "nav.integrativeHint": "Catálogo · prescrição · 6 práticas",
@@ -736,7 +736,7 @@ export const naturalMedicinePt: Record<string, string> = {
 
 export const naturalMedicineEs: Record<string, string> = {
   ...naturalMedicineEn,
-  "nav.naturalMedicine": "Medicina Natural",
+  "nav.naturalMedicine": "Prácticas Integrativas",
   "nav.naturalMedicineHint": "Catálogo monográfico · 5 prácticas",
   "nav.integrative": "Integrativa",
   "nav.integrativeHint": "Catálogo · prescripción · 6 prácticas",
