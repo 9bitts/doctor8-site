@@ -4,14 +4,26 @@ import { VENEZUELA_CAMPAIGN_SLUG } from "@/lib/humanitarian/constants";
 
 export const HUMANITARIAN_PATIENT_HOME = "/humanitarian/painel";
 
-/** Only patients acquired via the ACURA SOS form belong in the humanitarian patient portal. */
+/** ACURA SOS form — always belongs in the humanitarian patient portal. */
 export const ACURA_HUMANITARIAN_ACQUISITION_CHANNEL =
   PatientAcquisitionChannel.ACURA_SOS_FORM;
+
+/**
+ * Channels that permanently route the patient to the humanitarian portal
+ * (`/humanitarian/painel`) on every login.
+ */
+export const HUMANITARIAN_PORTAL_ACQUISITION_CHANNELS: readonly PatientAcquisitionChannel[] = [
+  PatientAcquisitionChannel.ACURA_SOS_FORM,
+  PatientAcquisitionChannel.DOCTOR8_HUMANITARIAN,
+];
 
 export function isHumanitarianAcquisitionChannel(
   channel: PatientAcquisitionChannel | null | undefined,
 ): boolean {
-  return channel === ACURA_HUMANITARIAN_ACQUISITION_CHANNEL;
+  return (
+    channel === PatientAcquisitionChannel.ACURA_SOS_FORM ||
+    channel === PatientAcquisitionChannel.DOCTOR8_HUMANITARIAN
+  );
 }
 
 export async function patientHasHumanitarianActivity(userId: string): Promise<boolean> {

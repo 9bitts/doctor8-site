@@ -12,6 +12,8 @@ import {
   encryptIdentificationData,
 } from "@/lib/humanitarian/intake-encryption";
 import { VENEZUELA_CAMPAIGN_SLUG } from "@/lib/humanitarian/constants";
+import { resolveAcquisitionChannelUpdate } from "@/lib/humanitarian/acquisition-channel";
+import { linkPartnerIntakesToPatient } from "@/lib/partner/acura-intake";
 import {
   checkRateLimits,
   clientIp,
@@ -20,6 +22,7 @@ import {
 } from "@/lib/rate-limit";
 import { normalizeLang } from "@/lib/i18n/translations";
 import { resolveRegistrationRegionForSignup } from "@/lib/detect-registration-region";
+import { PatientAcquisitionChannel } from "@prisma/client";
 
 export const runtime = "nodejs";
 
@@ -201,22 +204,28 @@ export async function POST(req: NextRequest) {
             firstName: encrypt(firstName),
             lastName: encrypt(lastName),
             country: region,
-            acquisitionChannel: "DOCTOR8_HUMANITARIAN",
+            acquisitionChannel: PatientAcquisitionChannel.DOCTOR8_HUMANITARIAN,
             acquisitionCampaign: campaignSlug,
             acquisitionRecordedAt: now,
             acquisitionReferrer: "/atendimentohumanitario",
           },
         });
-      } else if (!profile.acquisitionChannel) {
-        await tx.patientProfile.update({
-          where: { userId: user.id },
-          data: {
-            acquisitionChannel: "DOCTOR8_HUMANITARIAN",
-            acquisitionCampaign: campaignSlug,
-            acquisitionRecordedAt: now,
-            acquisitionReferrer: "/atendimentohumanitario",
-          },
-        });
+      } else {
+        const channelToSet = resolveAcquisitionChannelUpdate(
+          profile.acquisitionChannel,
+          PatientAcquisitionChannel.DOCTOR8_HUMANITARIAN,
+        );
+        if (channelToSet) {
+          await tx.patientProfile.update({
+            where: { userId: user.id },
+            data: {
+              acquisitionChannel: channelToSet,
+              acquisitionCampaign: campaignSlug,
+              acquisitionRecordedAt: now,
+              acquisitionReferrer: "/atendimentohumanitario",
+            },
+          });
+        }
       }
 
       await createRegisterConsents(tx, user.id, ip, userAgent, {
@@ -287,6 +296,9 @@ export async function POST(req: NextRequest) {
       userAgent,
       campaignId: campaign.id,
     });
+
+    // Link any pending ACURA intakes for the same email (may promote channel to ACURA).
+    await linkPartnerIntakesToPatient(created.id, email);
 
     return NextResponse.json({ success: true, userId: created.id }, { status: 201 });
   } catch (error) {

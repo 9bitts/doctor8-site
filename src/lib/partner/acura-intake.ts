@@ -9,6 +9,7 @@ import {
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { encrypt, decrypt } from "@/lib/encryption";
+import { resolveAcquisitionChannelUpdate } from "@/lib/humanitarian/acquisition-channel";
 
 const ACURA_STATUS_FROM_API: Record<string, PartnerIntakeStatus> = {
   nova: PartnerIntakeStatus.NOVA,
@@ -280,15 +281,21 @@ export async function linkPartnerIntakesToPatient(
     }
 
     const profile = await tx.patientProfile.findUnique({ where: { userId } });
-    if (profile && profile.acquisitionChannel !== PatientAcquisitionChannel.ACURA_SOS_FORM) {
-      await tx.patientProfile.update({
-        where: { userId },
-        data: {
-          acquisitionChannel: PatientAcquisitionChannel.ACURA_SOS_FORM,
-          acquisitionCampaign: profile.acquisitionCampaign ?? "sos_venezuela",
-          acquisitionRecordedAt: profile.acquisitionRecordedAt ?? now,
-        },
-      });
+    if (profile) {
+      const channelToSet = resolveAcquisitionChannelUpdate(
+        profile.acquisitionChannel,
+        PatientAcquisitionChannel.ACURA_SOS_FORM,
+      );
+      if (channelToSet) {
+        await tx.patientProfile.update({
+          where: { userId },
+          data: {
+            acquisitionChannel: channelToSet,
+            acquisitionCampaign: profile.acquisitionCampaign ?? "sos_venezuela",
+            acquisitionRecordedAt: profile.acquisitionRecordedAt ?? now,
+          },
+        });
+      }
     }
   });
 

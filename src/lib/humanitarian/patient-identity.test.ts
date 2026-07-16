@@ -9,9 +9,9 @@ import {
 import { PatientAcquisitionChannel } from "@prisma/client";
 
 describe("patient-identity", () => {
-  it("detects ACURA humanitarian acquisition channel only", () => {
+  it("detects ACURA and Doctor8 portal humanitarian acquisition channels", () => {
     expect(isHumanitarianAcquisitionChannel(PatientAcquisitionChannel.ACURA_SOS_FORM)).toBe(true);
-    expect(isHumanitarianAcquisitionChannel(PatientAcquisitionChannel.DOCTOR8_HUMANITARIAN)).toBe(false);
+    expect(isHumanitarianAcquisitionChannel(PatientAcquisitionChannel.DOCTOR8_HUMANITARIAN)).toBe(true);
     expect(isHumanitarianAcquisitionChannel(PatientAcquisitionChannel.DOCTOR8_SOS_LANDING)).toBe(false);
     expect(isHumanitarianAcquisitionChannel(PatientAcquisitionChannel.REGULAR)).toBe(false);
     expect(isHumanitarianAcquisitionChannel(null)).toBe(false);

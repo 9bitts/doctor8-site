@@ -7,14 +7,36 @@ export type PatientAcquisitionInput = {
 };
 
 /**
- * Humanitarian acquisition is stamped only when an ACURA partner intake is linked
- * to the patient account (see linkPartnerIntakesToPatient). Auth cookies and
- * Doctor8 landing pages must not classify regular signups as humanitarian.
+ * Regular signups must not inherit humanitarian classification from cookies or
+ * landing URLs. Humanitarian channels are stamped only by:
+ * - `/atendimentohumanitario` → register-humanitarian (`DOCTOR8_HUMANITARIAN`)
+ * - ACURA partner intake link (`ACURA_SOS_FORM`)
  */
 export function resolvePatientAcquisitionChannel(
   _input: PatientAcquisitionInput,
 ): PatientAcquisitionChannel | null {
   return null;
+}
+
+/**
+ * Promote-only acquisition channel updates.
+ * Once a patient is humanitarian (portal or ACURA), they never demote to regular.
+ * ACURA may promote over `DOCTOR8_HUMANITARIAN`; the reverse never happens.
+ *
+ * @returns the channel to write, or `null` if the current value must be kept.
+ */
+export function resolveAcquisitionChannelUpdate(
+  current: PatientAcquisitionChannel | null | undefined,
+  next: PatientAcquisitionChannel,
+): PatientAcquisitionChannel | null {
+  if (current === next) return null;
+  if (current === PatientAcquisitionChannel.ACURA_SOS_FORM) return null;
+  if (current === PatientAcquisitionChannel.DOCTOR8_HUMANITARIAN) {
+    return next === PatientAcquisitionChannel.ACURA_SOS_FORM
+      ? PatientAcquisitionChannel.ACURA_SOS_FORM
+      : null;
+  }
+  return next;
 }
 
 export function patientAcquisitionProfileFields(

@@ -532,6 +532,18 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               });
               return null;
             }
+            if (token.role === "PATIENT") {
+              try {
+                token.humanitarianPatient = await resolveHumanitarianPatientFlag(
+                  token.id as string,
+                );
+              } catch (humErr) {
+                console.error(
+                  "[auth.jwt] humanitarianPatient periodic refresh failed — keeping cached value",
+                  { userId: token.id, err: humErr },
+                );
+              }
+            }
             token.tvCheckedAt = Date.now();
           } catch (err) {
             // Transient DB errors must not kill active sessions; retry on next check.
