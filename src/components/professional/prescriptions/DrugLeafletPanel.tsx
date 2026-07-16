@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   BookOpen,
   ChevronDown,
@@ -117,39 +117,50 @@ export default function DrugLeafletPanel({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const fetchLeaflet = useCallback(async () => {
+  useEffect(() => {
     if (!target) {
       setLeaflet(null);
       setError("");
+      setLoading(false);
       return;
     }
 
-    setLoading(true);
+    let cancelled = false;
+    setLeaflet(null);
     setError("");
-    try {
-      const params = new URLSearchParams();
-      if (target.kind === "drug") params.set("drugId", target.drugId);
-      else params.set("mnSlug", target.slug);
+    setLoading(true);
 
-      const res = await fetch(`${apiBase}/drugs/leaflet?${params}`);
-      if (!res.ok) {
-        setLeaflet(null);
-        setError(t("rx.leaflet.notFound"));
-        return;
+    const params = new URLSearchParams();
+    if (target.kind === "drug") params.set("drugId", target.drugId);
+    else params.set("mnSlug", target.slug);
+
+    void (async () => {
+      try {
+        const res = await fetch(`${apiBase}/drugs/leaflet?${params}`);
+        if (cancelled) return;
+
+        if (!res.ok) {
+          setError(t("rx.leaflet.notFound"));
+          return;
+        }
+
+        const data = (await res.json()) as { leaflet?: DrugLeafletPayload | null };
+        if (data.leaflet) {
+          setLeaflet(data.leaflet);
+        } else {
+          setError(t("rx.leaflet.notFound"));
+        }
+      } catch {
+        if (!cancelled) setError(t("rx.leaflet.loadError"));
+      } finally {
+        if (!cancelled) setLoading(false);
       }
-      const data = await res.json();
-      setLeaflet(data.leaflet ?? null);
-    } catch {
-      setLeaflet(null);
-      setError(t("rx.leaflet.loadError"));
-    } finally {
-      setLoading(false);
-    }
-  }, [apiBase, target, t]);
+    })();
 
-  useEffect(() => {
-    void fetchLeaflet();
-  }, [fetchLeaflet]);
+    return () => {
+      cancelled = true;
+    };
+  }, [apiBase, target, t]);
 
   if (!target) {
     return (
@@ -170,7 +181,7 @@ export default function DrugLeafletPanel({
         : t("rx.leaflet.sourceCatalog");
 
   return (
-    <div className={`flex flex-col h-full min-h-0 bg-slate-50/50 max-lg:border-0 lg:border-l lg:border-slate-100 ${className ?? ""}`}>
+    <div className={`flex flex-col flex-1 min-h-0 bg-slate-50/50 max-lg:border-0 lg:border-l lg:border-slate-100 ${className ?? ""}`}>
       <div className="flex items-start justify-between gap-2 p-3 border-b border-slate-100 bg-white shrink-0">
         <div className="min-w-0 flex-1">
           <p className="text-xs font-semibold text-brand-600 uppercase tracking-wide">

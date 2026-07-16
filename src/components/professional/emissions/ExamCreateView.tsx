@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
+import { usePathname } from "next/navigation";
 import {
   Trash2, Loader2, ArrowLeft, FileText,
 } from "lucide-react";
@@ -10,6 +11,12 @@ import type { SavedEmission } from "./EmissionPostSaveFlow";
 import ExamSearchInput, { formatExamItem, parseExamItemLine } from "@/components/ExamSearchInput";
 import CidSearchInput, { type CidSelection } from "@/components/CidSearchInput";
 import { PatientSearchCombobox } from "@/components/professional/PatientSearchCombobox";
+import {
+  clearExamDraft,
+  loadExamDraft,
+  saveExamDraft,
+  type ExamFormDraft,
+} from "@/lib/emission-form-draft";
 import {
   extendSessionForWrite,
   isAuthFailureStatus,
@@ -30,6 +37,7 @@ interface ExamCreateViewProps {
   initialCid: string;
   initialTitle: string;
   editingDocumentId?: string | null;
+  portal?: string;
   onBack: () => void;
   onSaved: (emission: SavedEmission) => void;
 }
@@ -37,9 +45,27 @@ interface ExamCreateViewProps {
 export function ExamCreateView({
   t, charts, chartsLoading = false, reuseHint, templateHint, initialPatient, lockPatient = false, initialItems, initialNotes, initialCid, initialTitle,
   editingDocumentId = null,
+  portal: portalProp,
   onBack, onSaved,
 }: ExamCreateViewProps) {
-  const { update: updateSession } = useSession();
+  const { data: session, update: updateSession } = useSession();
+  const userId = session?.user?.id ?? "";
+  const pathname = usePathname();
+  const portal =
+    portalProp ||
+    (pathname.startsWith("/integrative-therapist")
+      ? "integrative-therapist"
+      : "professional");
+
+  const hasSeedContent =
+    !!initialPatient ||
+    initialItems.length > 0 ||
+    !!initialNotes.trim() ||
+    !!initialCid.trim() ||
+    !!editingDocumentId ||
+    !!reuseHint ||
+    !!templateHint;
+
   const [selectedPatient, setSelectedPatient] = useState<Chart | null>(initialPatient);
   const [title, setTitle] = useState(initialTitle || t("rx.examDefaultTitle"));
   const [items, setItems] = useState<string[]>(
@@ -53,6 +79,82 @@ export function ExamCreateView({
   const [error, setError] = useState("");
   const [examSearchOpen, setExamSearchOpen] = useState(false);
   const [cidSearchOpen, setCidSearchOpen] = useState(false);
+  const [draftRestoredHint, setDraftRestoredHint] = useState(false);
+  const [effectiveLockPatient, setEffectiveLockPatient] = useState(lockPatient);
+  const [effectiveEditingId, setEffectiveEditingId] = useState(editingDocumentId);
+  const draftHydratedRef = useRef(false);
+  const suppressDraftSaveRef = useRef(false);
+
+  useEffect(() => {
+    if (!userId || draftHydratedRef.current || hasSeedContent) {
+      draftHydratedRef.current = true;
+      return;
+    }
+    draftHydratedRef.current = true;
+    const draft = loadExamDraft(userId, portal);
+    if (!draft) return;
+
+    suppressDraftSaveRef.current = true;
+    if (draft.selectedPatient) {
+      setSelectedPatient({
+        id: draft.selectedPatient.id,
+        firstName: draft.selectedPatient.firstName,
+        lastName: draft.selectedPatient.lastName,
+        email: draft.selectedPatient.email,
+        hasAccount: draft.selectedPatient.hasAccount,
+      });
+    }
+    if (draft.title) setTitle(draft.title);
+    setItems(draft.items.length ? draft.items : []);
+    setNotes(draft.notes || "");
+    setCid(
+      draft.cidCode
+        ? { code: draft.cidCode, description: draft.cidDescription || "" }
+        : null,
+    );
+    setEffectiveEditingId(draft.editingDocumentId);
+    setEffectiveLockPatient(!!draft.lockPatient);
+    setDraftRestoredHint(true);
+    queueMicrotask(() => {
+      suppressDraftSaveRef.current = false;
+    });
+  }, [userId, portal, hasSeedContent]);
+
+  useEffect(() => {
+    if (!userId || suppressDraftSaveRef.current) return;
+    const draft: ExamFormDraft = {
+      selectedPatient: selectedPatient
+        ? {
+            id: selectedPatient.id,
+            firstName: selectedPatient.firstName,
+            lastName: selectedPatient.lastName,
+            email: selectedPatient.email,
+            hasAccount: selectedPatient.hasAccount,
+          }
+        : null,
+      title,
+      items,
+      notes,
+      cidCode: cid?.code || "",
+      cidDescription: cid?.description || "",
+      editingDocumentId: effectiveEditingId,
+      lockPatient: effectiveLockPatient,
+    };
+    const timer = window.setTimeout(() => {
+      saveExamDraft(userId, portal, draft);
+    }, 400);
+    return () => window.clearTimeout(timer);
+  }, [
+    userId,
+    portal,
+    selectedPatient,
+    title,
+    items,
+    notes,
+    cid,
+    effectiveEditingId,
+    effectiveLockPatient,
+  ]);
 
   function addExam(exam: { code?: string; name: string }) {
     const line = formatExamItem(exam);
@@ -78,15 +180,15 @@ export function ExamCreateView({
         cidLabel: cid?.description || "",
       };
       const res = await fetch(
-        editingDocumentId
-          ? `/api/professional/documents/${editingDocumentId}`
+        effectiveEditingId
+          ? `/api/professional/documents/${effectiveEditingId}`
           : "/api/professional/documents",
         {
-          method: editingDocumentId ? "PATCH" : "POST",
+          method: effectiveEditingId ? "PATCH" : "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "same-origin",
           body: JSON.stringify(
-            editingDocumentId
+            effectiveEditingId
               ? { title, examItems: cleanItems, notes, cid: cid?.code || "" }
               : payload,
           ),
@@ -94,9 +196,10 @@ export function ExamCreateView({
       );
       if (res.ok) {
         const data = await res.json();
+        if (userId) clearExamDraft(userId, portal);
         onSaved({
           kind: "exam",
-          id: editingDocumentId || data.id,
+          id: effectiveEditingId || data.id,
           patient: selectedPatient,
           label: title,
           examItems: cleanItems,
@@ -130,6 +233,12 @@ export function ExamCreateView({
         <p className="text-slate-500 text-sm mt-1">{t("rx.examFormSubtitle")}</p>
       </div>
 
+      {draftRestoredHint && (
+        <div className="bg-brand-50 border border-brand-200 rounded-xl px-4 py-3 text-sm text-brand-800">
+          {t("rx.draftRestored")}
+        </div>
+      )}
+
       {(templateHint || reuseHint) && (
         <div className="bg-brand-50 border border-brand-200 rounded-2xl p-4 text-sm text-brand-700">
           {templateHint ? t("tmpl.templateAppliedHint") : t("rx.reuseHint")}
@@ -142,7 +251,7 @@ export function ExamCreateView({
         chartsLoading={chartsLoading}
         selectedPatient={selectedPatient}
         onSelectPatient={setSelectedPatient}
-        lockPatient={lockPatient}
+        lockPatient={effectiveLockPatient}
       />
 
       <Card title={t("rx2.addItem")} elevated={examSearchOpen}>
@@ -225,23 +334,6 @@ function Card({ title, children, elevated }: { title: string; children: React.Re
     <div className={`bg-white rounded-2xl border border-brand-100 shadow-sm p-5 space-y-3 ${elevated ? "relative z-50" : ""}`}>
       <label className="text-sm font-semibold text-slate-800">{title}</label>
       {children}
-    </div>
-  );
-}
-
-function PatientChip({ patient, t, onClear }: { patient: Chart; t: (k: string) => string; onClear?: () => void }) {
-  return (
-    <div className="flex items-center gap-3 bg-brand-50 border border-brand-100 rounded-xl p-3">
-      <div className="w-10 h-10 rounded-xl bg-brand-100 flex items-center justify-center font-bold text-brand-500 text-sm">
-        {patient.firstName[0]}{patient.lastName[0]}
-      </div>
-      <div className="flex-1">
-        <p className="font-semibold text-sm">{patient.firstName} {patient.lastName}</p>
-        <p className="text-xs text-slate-500">{patient.hasAccount ? t("rx2.hasAccountBadge") : t("rx2.noAccountBadge")}</p>
-      </div>
-      {onClear && (
-        <button onClick={onClear} className="text-xs text-brand-500 font-semibold">{t("rx2.changePatient")}</button>
-      )}
     </div>
   );
 }

@@ -1,6 +1,9 @@
 const LOCAL_STORAGE_PREFIXES = [
   "doctor8:record-draft:",
   "doctor8:recordDraft:",
+  "doctor8:prescription-draft:",
+  "doctor8:exam-draft:",
+  "doctor8:document-draft:",
   "doctor8:hum:",
   "doctor8.patient.checklist.",
   "doctor8.pro.checklist.",
@@ -19,7 +22,14 @@ const SCOPE_COOKIES = [
   HUM_RETURN_COOKIE,
 ] as const;
 
-const DRAFT_STORAGE_PREFIXES = ["doctor8:record-draft:", "doctor8:recordDraft:", "doctor8:hum:"] as const;
+const DRAFT_STORAGE_PREFIXES = [
+  "doctor8:record-draft:",
+  "doctor8:recordDraft:",
+  "doctor8:prescription-draft:",
+  "doctor8:exam-draft:",
+  "doctor8:document-draft:",
+  "doctor8:hum:",
+] as const;
 
 const HUM_STORAGE_PREFIX = "doctor8:hum:";
 const HUM_DRAFT_KINDS = new Set(["triage", "anamnese"]);
@@ -71,6 +81,15 @@ function extractRecordDraftUserId(key: string): string | null {
   if (key.startsWith("doctor8:record-draft:")) {
     return extractScopedUserId(key, "doctor8:record-draft:");
   }
+  if (key.startsWith("doctor8:prescription-draft:")) {
+    return extractScopedUserId(key, "doctor8:prescription-draft:");
+  }
+  if (key.startsWith("doctor8:exam-draft:")) {
+    return extractScopedUserId(key, "doctor8:exam-draft:");
+  }
+  if (key.startsWith("doctor8:document-draft:")) {
+    return extractScopedUserId(key, "doctor8:document-draft:");
+  }
   if (key.startsWith("doctor8:recordDraft:")) {
     return null;
   }
@@ -105,7 +124,14 @@ function extractHumDraftUserId(key: string): string | null {
 
 function draftKeyUserId(key: string): string | null {
   const recordUserId = extractRecordDraftUserId(key);
-  if (recordUserId !== null || key.startsWith("doctor8:record-draft:") || key.startsWith("doctor8:recordDraft:")) {
+  if (
+    recordUserId !== null ||
+    key.startsWith("doctor8:record-draft:") ||
+    key.startsWith("doctor8:recordDraft:") ||
+    key.startsWith("doctor8:prescription-draft:") ||
+    key.startsWith("doctor8:exam-draft:") ||
+    key.startsWith("doctor8:document-draft:")
+  ) {
     return recordUserId;
   }
 

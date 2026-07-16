@@ -54,6 +54,7 @@ export type PrescriptionFormProps = {
   hasMixedRegulatoryPrescription?: boolean;
   controlledPrescriptionsAvailable?: boolean;
   controlledFormKind?: ControlledFormKind;
+  draftRestoredHint?: boolean;
 };
 
 export function PrescriptionForm({
@@ -90,6 +91,7 @@ export function PrescriptionForm({
   hasMixedRegulatoryPrescription = false,
   controlledPrescriptionsAvailable = true,
   controlledFormKind = "simple",
+  draftRestoredHint = false,
 }: PrescriptionFormProps) {
   const selectedPatient = patientPickerProps.selectedPatient;
   const todayLabel = patientPickerProps.todayLabel;
@@ -97,6 +99,11 @@ export function PrescriptionForm({
   return (
     <div className="max-w-3xl mx-auto space-y-5 pb-24">
       <VideoConsultReturnBanner returnUrl={consultReturnUrl} patientName={selectedPatient ? `${selectedPatient.firstName} ${selectedPatient.lastName}` : undefined} lang={lang as "pt" | "en" | "es"} />
+      {draftRestoredHint && (
+        <div className="bg-brand-50 border border-brand-200 rounded-xl px-4 py-3 text-sm text-brand-800">
+          {t("rx.draftRestored")}
+        </div>
+      )}
       <button onClick={onClose}
         className="flex items-center gap-2 text-sm text-slate-500 hover:text-brand-500 transition font-medium">
         <ArrowLeft size={16} /> {t("rx.backToList")}

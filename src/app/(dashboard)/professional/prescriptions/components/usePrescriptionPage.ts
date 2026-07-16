@@ -93,10 +93,25 @@ import {
 import { splitPrescriptionMedications } from "@/lib/prescription-split";
 import { classifyMedicationItem } from "@/lib/prescription-item-classifier";
 import { type SavedEmission } from "@/components/professional/emissions/EmissionPostSaveFlow";
+import {
+  clearPrescriptionDraft,
+  hasPrescriptionDraft,
+  isPrescriptionDraftEmpty,
+  loadPrescriptionDraft,
+  savePrescriptionDraft,
+  type PrescriptionFormDraft,
+} from "@/lib/prescription-draft";
+import {
+  clearDocumentDraft,
+  clearExamDraft,
+  hasDocumentDraft,
+  hasExamDraft,
+} from "@/lib/emission-form-draft";
 
 export function usePrescriptionPage() {
   const { t, lang } = useI18n();
   const { data: session, update: updateSession } = useSession();
+  const userId = session?.user?.id ?? "";
   const canPrescribeCannabis = canPrescribeCannabisMedicinal(
     session?.user?.professionalSpecialty,
   );
@@ -220,6 +235,12 @@ export function usePrescriptionPage() {
   const [phytoInteractionConfirmed, setPhytoInteractionConfirmed] = useState(false);
   const [cannabisTcleOpen, setCannabisTcleOpen] = useState(false);
   const [cannabisTcleAccepted, setCannabisTcleAccepted] = useState(false);
+  const [draftPending, setDraftPending] = useState(false);
+  const [examDraftPending, setExamDraftPending] = useState(false);
+  const [documentDraftPending, setDocumentDraftPending] = useState(false);
+  const [draftRestoredHint, setDraftRestoredHint] = useState(false);
+  const draftHydratedRef = useRef(false);
+  const suppressDraftSaveRef = useRef(false);
   const [sncrStatus, setSncrStatus] = useState<{
     enabled: boolean;
     platformReady: boolean;
@@ -1019,9 +1040,199 @@ export function usePrescriptionPage() {
     setPostSaveShareUrl("");
     setFreeTextMode(false);
     setBulkPasteText("");
+    setDraftRestoredHint(false);
   }
 
+  function buildPrescriptionDraft(): PrescriptionFormDraft {
+    return {
+      medications,
+      instructions,
+      validDays,
+      controlledFormKind,
+      freeTextMode,
+      itemSearchMode,
+      floralOnlyMode,
+      bulkPasteText,
+      showBulkPaste,
+      drugCountry,
+      selectedPatient: selectedPatient
+        ? {
+            id: selectedPatient.id,
+            firstName: selectedPatient.firstName,
+            lastName: selectedPatient.lastName,
+            email: selectedPatient.email,
+            hasAccount: selectedPatient.hasAccount,
+          }
+        : null,
+      platformTarget,
+      editingPrescriptionId,
+      lockPatient,
+      consultReturnUrl,
+    };
+  }
+
+  function applyPrescriptionDraft(draft: PrescriptionFormDraft) {
+    suppressDraftSaveRef.current = true;
+    setMedications(draft.medications.map((m) => ({ ...m })));
+    setInstructions(draft.instructions || "");
+    setValidDays(typeof draft.validDays === "number" ? draft.validDays : 30);
+    setControlledFormKind(draft.controlledFormKind || "simple");
+    setFreeTextMode(!!draft.freeTextMode);
+    setItemSearchMode(draft.itemSearchMode || "medication");
+    setFloralOnlyMode(!!draft.floralOnlyMode);
+    setBulkPasteText(draft.bulkPasteText || "");
+    setShowBulkPaste(!!draft.showBulkPaste);
+    setDrugCountry(draft.drugCountry || "BR");
+    setSelectedPatient(
+      draft.selectedPatient
+        ? {
+            id: draft.selectedPatient.id,
+            firstName: draft.selectedPatient.firstName,
+            lastName: draft.selectedPatient.lastName,
+            email: draft.selectedPatient.email,
+            hasAccount: draft.selectedPatient.hasAccount,
+          }
+        : null,
+    );
+    setPlatformTarget(draft.platformTarget);
+    setEditingPrescriptionId(draft.editingPrescriptionId);
+    setEditingClinicalDocId(null);
+    setLockPatient(!!draft.lockPatient);
+    setConsultReturnUrl(draft.consultReturnUrl);
+    setFormError("");
+    setDraftPending(false);
+    setDraftRestoredHint(true);
+    queueMicrotask(() => {
+      suppressDraftSaveRef.current = false;
+    });
+  }
+
+  function discardPrescriptionDraft() {
+    if (userId) clearPrescriptionDraft(userId, portal);
+    setDraftPending(false);
+    setDraftRestoredHint(false);
+  }
+
+  function discardExamDraft() {
+    if (userId) clearExamDraft(userId, portal);
+    setExamDraftPending(false);
+  }
+
+  function discardDocumentDraft() {
+    if (userId) clearDocumentDraft(userId, portal);
+    setDocumentDraftPending(false);
+  }
+
+  function refreshPendingDrafts() {
+    if (!userId) return;
+    setDraftPending(hasPrescriptionDraft(userId, portal));
+    setExamDraftPending(hasExamDraft(userId, portal));
+    setDocumentDraftPending(hasDocumentDraft(userId, portal));
+  }
+
+  function continuePrescriptionDraft() {
+    if (!userId) return;
+    const draft = loadPrescriptionDraft(userId, portal);
+    if (!draft || isPrescriptionDraftEmpty(draft)) {
+      setDraftPending(false);
+      return;
+    }
+    applyPrescriptionDraft(draft);
+    setView("prescription");
+    void loadCharts();
+  }
+
+  async function continueExamDraft() {
+    setReuseClinical(null);
+    setReusePatient(null);
+    setExamTemplatePrefill(null);
+    setTemplateAppliedHint(false);
+    setExamDraftPending(false);
+    setView("exam");
+    await loadCharts();
+  }
+
+  async function continueDocumentDraft() {
+    setReuseClinical(null);
+    setReusePatient(null);
+    setDocTemplatePrefill(null);
+    setTemplateAppliedHint(false);
+    setDocumentDraftPending(false);
+    setView("document");
+    await loadCharts();
+  }
+
+  useEffect(() => {
+    if (!userId || draftHydratedRef.current) return;
+    draftHydratedRef.current = true;
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const hasDeepLink = !!(
+        params.get("patientRecordId") ||
+        params.get("returnUrl") ||
+        params.get("reuse") ||
+        params.get("reuseDoc") ||
+        params.get("add") ||
+        params.get("protocol") ||
+        params.get("starter") ||
+        params.get("templateId") ||
+        params.get("floralProduct") ||
+        params.get("view")
+      );
+      if (hasDeepLink) return;
+      refreshPendingDrafts();
+    } catch {
+      /* ignore */
+    }
+  }, [userId, portal]);
+
+  useEffect(() => {
+    if (!userId || suppressDraftSaveRef.current) return;
+    if (view !== "prescription" || savedEmission) return;
+
+    const draft = buildPrescriptionDraft();
+    const timer = window.setTimeout(() => {
+      savePrescriptionDraft(userId, portal, draft);
+      setDraftPending(!isPrescriptionDraftEmpty(draft));
+    }, 400);
+    return () => window.clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- snapshot fields listed below
+  }, [
+    userId,
+    portal,
+    view,
+    savedEmission,
+    medications,
+    instructions,
+    validDays,
+    controlledFormKind,
+    freeTextMode,
+    itemSearchMode,
+    floralOnlyMode,
+    bulkPasteText,
+    showBulkPaste,
+    drugCountry,
+    selectedPatient,
+    platformTarget,
+    editingPrescriptionId,
+    lockPatient,
+    consultReturnUrl,
+  ]);
+
   function handleEmissionSaved(emission: SavedEmission) {
+    if (userId) {
+      if (emission.kind === "prescription") {
+        clearPrescriptionDraft(userId, portal);
+        setDraftPending(false);
+      } else if (emission.kind === "exam") {
+        clearExamDraft(userId, portal);
+        setExamDraftPending(false);
+      } else if (emission.kind === "document") {
+        clearDocumentDraft(userId, portal);
+        setDocumentDraftPending(false);
+      }
+    }
+    setDraftRestoredHint(false);
     setSavedEmission(emission);
     setEditingPrescriptionId(null);
     setEditingClinicalDocId(null);
@@ -1041,6 +1252,12 @@ export function usePrescriptionPage() {
   }
 
   function finishPostSave() {
+    if (userId) {
+      // Only the emission that was just completed was cleared on save;
+      // refresh banners for any other in-progress drafts.
+      refreshPendingDrafts();
+    }
+    setDraftRestoredHint(false);
     setSavedEmission(null);
     setPostSaveStep("choose");
     setPostSaveShareUrl("");
@@ -1131,6 +1348,15 @@ export function usePrescriptionPage() {
   }
 
   async function openCreate() {
+    if (userId) {
+      const draft = loadPrescriptionDraft(userId, portal);
+      if (draft && !isPrescriptionDraftEmpty(draft)) {
+        applyPrescriptionDraft(draft);
+        setView("prescription");
+        await loadCharts();
+        return;
+      }
+    }
     resetForm();
     setShowBulkPaste(true);
     setControlledFormKind("simple");
@@ -1143,6 +1369,7 @@ export function usePrescriptionPage() {
       toast.error(t("rx.sncrAuthPlatformUnavailable"));
       return;
     }
+    discardPrescriptionDraft();
     resetForm();
     setControlledFormKind("B");
     setValidDays(defaultValidDaysForFormKind("B"));
@@ -1159,6 +1386,7 @@ export function usePrescriptionPage() {
       toast.error(t("rx.sncrAuthPlatformUnavailable"));
       return;
     }
+    discardPrescriptionDraft();
     resetForm();
     setControlledFormKind("C");
     setValidDays(defaultValidDaysForFormKind("C"));
@@ -1173,6 +1401,9 @@ export function usePrescriptionPage() {
   async function openExamCreate() {
     setReuseClinical(null);
     setReusePatient(null);
+    setExamTemplatePrefill(null);
+    setTemplateAppliedHint(false);
+    setExamDraftPending(false);
     setView("exam");
     await loadCharts();
   }
@@ -1180,6 +1411,9 @@ export function usePrescriptionPage() {
   async function openDocumentCreate() {
     setReuseClinical(null);
     setReusePatient(null);
+    setDocTemplatePrefill(null);
+    setTemplateAppliedHint(false);
+    setDocumentDraftPending(false);
     setView("document");
     await loadCharts();
   }
@@ -1200,6 +1434,11 @@ export function usePrescriptionPage() {
   }
 
   async function openReuseClinical(d: ClinicalDocument) {
+    if (isExamDocType(d.type)) {
+      discardExamDraft();
+    } else {
+      discardDocumentDraft();
+    }
     setReuseClinical(d);
     const chart = await resolvePatientChart(d.patientRecordId, d.document?.patient);
     setReusePatient(chart);
@@ -1207,6 +1446,14 @@ export function usePrescriptionPage() {
   }
 
   function closeCreate() {
+    // Draft already autosaved — keep it so the professional can continue later.
+    if (userId) {
+      if (view === "prescription") {
+        const draft = buildPrescriptionDraft();
+        savePrescriptionDraft(userId, portal, draft);
+      }
+      refreshPendingDrafts();
+    }
     setView("hub");
     resetForm();
     setReuseClinical(null);
@@ -1232,6 +1479,7 @@ export function usePrescriptionPage() {
   }
 
   async function openReuse(p: Prescription) {
+    discardPrescriptionDraft();
     resetForm();
     setReuseSource(p);
     setView("prescription");
@@ -2100,6 +2348,16 @@ export function usePrescriptionPage() {
     openDocumentCreate,
     openReuse,
     openReuseClinical,
+    draftPending,
+    examDraftPending,
+    documentDraftPending,
+    draftRestoredHint,
+    continuePrescriptionDraft,
+    discardPrescriptionDraft,
+    continueExamDraft,
+    discardExamDraft,
+    continueDocumentDraft,
+    discardDocumentDraft,
     signPrescription,
     signClinicalDoc,
     fetchPrescriptions,

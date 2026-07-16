@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useSession } from "next-auth/react";
+import { usePathname } from "next/navigation";
 import {
   ArrowLeft, FileText, Loader2, LayoutTemplate,
 } from "lucide-react";
@@ -13,6 +14,12 @@ import { PatientSearchCombobox } from "@/components/professional/PatientSearchCo
 import CategorySearchSelect from "@/components/professional/CategorySearchSelect";
 import { getCategoryLabel } from "@/lib/category-i18n";
 import { inferRecordKindFromCategory } from "@/lib/record-kind";
+import {
+  clearDocumentDraft,
+  loadDocumentDraft,
+  saveDocumentDraft,
+  type DocumentFormDraft,
+} from "@/lib/emission-form-draft";
 import {
   extendSessionForWrite,
   isAuthFailureStatus,
@@ -49,6 +56,7 @@ interface DocumentCreateViewProps {
   initialType: string;
   initialTemplateId?: string | null;
   editingDocumentId?: string | null;
+  portal?: string;
   onBack: () => void;
   onSaved: (emission: SavedEmission) => void;
 }
@@ -57,11 +65,27 @@ export function DocumentCreateView({
   t, charts, chartsLoading = false, reuseHint, templateHint, initialPatient, lockPatient = false, initialBody, initialType,
   initialTemplateId = null,
   editingDocumentId = null,
+  portal: portalProp,
   onBack, onSaved,
 }: DocumentCreateViewProps) {
   const { lang } = useI18n();
-  const { update: updateSession } = useSession();
+  const { data: session, update: updateSession } = useSession();
+  const userId = session?.user?.id ?? "";
+  const pathname = usePathname();
+  const portal =
+    portalProp ||
+    (pathname.startsWith("/integrative-therapist")
+      ? "integrative-therapist"
+      : "professional");
   const locale = localeOf(lang);
+
+  const hasSeedContent =
+    !!initialPatient ||
+    !!initialBody.trim() ||
+    !!editingDocumentId ||
+    !!initialTemplateId ||
+    !!reuseHint ||
+    !!templateHint;
 
   const [selectedPatient, setSelectedPatient] = useState<Chart | null>(initialPatient);
   const [categoryId, setCategoryId] = useState("");
@@ -70,11 +94,49 @@ export function DocumentCreateView({
   const [body, setBody] = useState(initialBody);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [draftRestoredHint, setDraftRestoredHint] = useState(false);
+  const [effectiveLockPatient, setEffectiveLockPatient] = useState(lockPatient);
+  const [effectiveEditingId, setEffectiveEditingId] = useState(editingDocumentId);
+  const [draftInitialType, setDraftInitialType] = useState(initialType);
 
   const [templates, setTemplates] = useState<DocTemplate[]>([]);
   const [templatesLoading, setTemplatesLoading] = useState(true);
   const [applyingTemplate, setApplyingTemplate] = useState(false);
   const lastTemplateId = useRef<string | null>(null);
+  const draftHydratedRef = useRef(false);
+  const suppressDraftSaveRef = useRef(false);
+  const skipInitialTemplateRef = useRef(false);
+
+  useEffect(() => {
+    if (!userId || draftHydratedRef.current || hasSeedContent) {
+      draftHydratedRef.current = true;
+      return;
+    }
+    draftHydratedRef.current = true;
+    const draft = loadDocumentDraft(userId, portal);
+    if (!draft) return;
+
+    suppressDraftSaveRef.current = true;
+    skipInitialTemplateRef.current = true;
+    if (draft.selectedPatient) {
+      setSelectedPatient({
+        id: draft.selectedPatient.id,
+        firstName: draft.selectedPatient.firstName,
+        lastName: draft.selectedPatient.lastName,
+        email: draft.selectedPatient.email,
+        hasAccount: draft.selectedPatient.hasAccount,
+      });
+    }
+    if (draft.categoryId) setCategoryId(draft.categoryId);
+    if (draft.body) setBody(draft.body);
+    if (draft.initialType) setDraftInitialType(draft.initialType);
+    setEffectiveEditingId(draft.editingDocumentId);
+    setEffectiveLockPatient(!!draft.lockPatient);
+    setDraftRestoredHint(true);
+    queueMicrotask(() => {
+      suppressDraftSaveRef.current = false;
+    });
+  }, [userId, portal, hasSeedContent]);
 
   useEffect(() => {
     let active = true;
@@ -103,7 +165,7 @@ export function DocumentCreateView({
   }, []);
 
   const sortedCategories = useMemo(() => {
-    const locale = lang === "pt" ? "pt-BR" : lang === "es" ? "es" : "en";
+    const sortLocale = lang === "pt" ? "pt-BR" : lang === "es" ? "es" : "en";
     const items = groups.flatMap((g) =>
       g.items.map((c) => ({
         id: c.id,
@@ -113,17 +175,52 @@ export function DocumentCreateView({
         label: getCategoryLabel(lang, { slug: c.slug, name: c.name }),
       })),
     );
-    items.sort((a, b) => a.label.localeCompare(b.label, locale, { sensitivity: "base" }));
+    items.sort((a, b) => a.label.localeCompare(b.label, sortLocale, { sensitivity: "base" }));
     return items;
   }, [groups, lang]);
 
   useEffect(() => {
     if (categoryId || !sortedCategories.length) return;
-    if (initialType) {
-      const match = sortedCategories.find((c) => c.legacyType === initialType);
+    const type = draftInitialType || initialType;
+    if (type) {
+      const match = sortedCategories.find((c) => c.legacyType === type);
       if (match) setCategoryId(match.id);
     }
-  }, [sortedCategories, initialType, categoryId]);
+  }, [sortedCategories, initialType, draftInitialType, categoryId]);
+
+  useEffect(() => {
+    if (!userId || suppressDraftSaveRef.current) return;
+    const draft: DocumentFormDraft = {
+      selectedPatient: selectedPatient
+        ? {
+            id: selectedPatient.id,
+            firstName: selectedPatient.firstName,
+            lastName: selectedPatient.lastName,
+            email: selectedPatient.email,
+            hasAccount: selectedPatient.hasAccount,
+          }
+        : null,
+      categoryId,
+      body,
+      initialType: draftInitialType || initialType || "",
+      editingDocumentId: effectiveEditingId,
+      lockPatient: effectiveLockPatient,
+    };
+    const timer = window.setTimeout(() => {
+      saveDocumentDraft(userId, portal, draft);
+    }, 400);
+    return () => window.clearTimeout(timer);
+  }, [
+    userId,
+    portal,
+    selectedPatient,
+    categoryId,
+    body,
+    draftInitialType,
+    initialType,
+    effectiveEditingId,
+    effectiveLockPatient,
+  ]);
 
   async function applyTemplate(tpl: DocTemplate) {
     lastTemplateId.current = tpl.id;
@@ -151,12 +248,12 @@ export function DocumentCreateView({
   }
 
   useEffect(() => {
-    if (!initialTemplateId) return;
+    if (!initialTemplateId || skipInitialTemplateRef.current) return;
     lastTemplateId.current = initialTemplateId;
   }, [initialTemplateId]);
 
   useEffect(() => {
-    if (!initialTemplateId || !templates.length) return;
+    if (!initialTemplateId || !templates.length || skipInitialTemplateRef.current) return;
     const tpl = templates.find((x) => x.id === initialTemplateId);
     if (tpl) void applyTemplate(tpl);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -164,6 +261,7 @@ export function DocumentCreateView({
 
   useEffect(() => {
     if (!selectedPatient?.id || !lastTemplateId.current) return;
+    if (skipInitialTemplateRef.current && draftRestoredHint) return;
     const tpl = templates.find((x) => x.id === lastTemplateId.current);
     if (tpl) void applyTemplate(tpl);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -188,15 +286,15 @@ export function DocumentCreateView({
     try {
       await extendSessionForWrite(updateSession);
       const res = await fetch(
-        editingDocumentId
-          ? `/api/professional/documents/${editingDocumentId}`
+        effectiveEditingId
+          ? `/api/professional/documents/${effectiveEditingId}`
           : "/api/professional/documents",
         {
-          method: editingDocumentId ? "PATCH" : "POST",
+          method: effectiveEditingId ? "PATCH" : "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "same-origin",
           body: JSON.stringify(
-            editingDocumentId
+            effectiveEditingId
               ? { title, content: body, ...(categoryId ? { categoryId } : {}) }
               : {
                   patientRecordId: selectedPatient.id,
@@ -210,9 +308,10 @@ export function DocumentCreateView({
       );
       if (res.ok) {
         const data = await res.json();
+        if (userId) clearDocumentDraft(userId, portal);
         onSaved({
           kind: "document",
-          id: editingDocumentId || data.id,
+          id: effectiveEditingId || data.id,
           patient: selectedPatient,
           label: title,
           documentBody: body.trim(),
@@ -246,6 +345,12 @@ export function DocumentCreateView({
         <p className="text-slate-500 text-sm mt-1">{t("rx.documentFormSubtitle")}</p>
       </div>
 
+      {draftRestoredHint && (
+        <div className="bg-brand-50 border border-brand-200 rounded-xl px-4 py-3 text-sm text-brand-800">
+          {t("rx.draftRestored")}
+        </div>
+      )}
+
       {(templateHint || reuseHint) && (
         <div className="bg-brand-50 border border-brand-200 rounded-2xl p-4 text-sm text-brand-700">
           {templateHint ? t("tmpl.templateAppliedHint") : t("rx.reuseHint")}
@@ -258,7 +363,7 @@ export function DocumentCreateView({
         chartsLoading={chartsLoading}
         selectedPatient={selectedPatient}
         onSelectPatient={setSelectedPatient}
-        lockPatient={lockPatient}
+        lockPatient={effectiveLockPatient}
       />
 
       <div className="bg-white rounded-2xl border border-brand-100 shadow-sm p-5 space-y-4">

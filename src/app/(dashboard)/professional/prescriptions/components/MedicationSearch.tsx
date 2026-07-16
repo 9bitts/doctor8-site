@@ -386,7 +386,7 @@ export function MedicationSearch({
           <div
             className={`bg-white rounded-2xl shadow-xl w-full flex flex-col overflow-hidden ${
               leafletTarget
-                ? "max-w-5xl h-[min(92dvh,100%)] max-h-[92dvh]"
+                ? "max-w-5xl h-[92dvh] max-h-[92dvh]"
                 : "max-w-lg max-h-[90vh]"
             }`}
             onClick={(e) => e.stopPropagation()}
@@ -410,10 +410,10 @@ export function MedicationSearch({
               </button>
             </div>
 
-            <div className="flex flex-col lg:flex-row flex-1 min-h-0 overflow-hidden">
+            <div className="relative flex flex-col lg:flex-row flex-1 min-h-0 overflow-hidden">
               <div
-                className={`p-4 overflow-y-auto flex-1 min-h-0 lg:max-w-md lg:border-r lg:border-slate-100 ${
-                  leafletTarget ? "hidden lg:block" : ""
+                className={`p-4 overflow-y-auto overscroll-contain flex-1 min-h-0 lg:max-w-md lg:shrink-0 lg:border-r lg:border-slate-100 ${
+                  leafletTarget ? "max-lg:hidden" : ""
                 }`}
               >
                 {drugSearching ? (
@@ -426,7 +426,7 @@ export function MedicationSearch({
                     results={mnSearchResults}
                     onSelect={onMnListItemSelect}
                     onViewLeaflet={onViewMnLeaflet}
-                    className="lg:max-h-[60vh]"
+                    className="max-h-none overflow-visible"
                     t={t}
                   />
                 ) : drugResults.length > 0 ? (
@@ -435,7 +435,7 @@ export function MedicationSearch({
                     onSelect={onAddDrug}
                     onViewLeaflet={onViewDrugLeaflet}
                     controlInfo={mnCatalogSearch ? () => null : controlInfo}
-                    className="lg:max-h-[60vh]"
+                    className="max-h-none overflow-visible"
                     viewLeafletLabel={t("rx.leaflet.viewButton")}
                     addLabel={t("rx.leaflet.addButton")}
                   />
@@ -449,11 +449,11 @@ export function MedicationSearch({
               </div>
 
               <div
-                className={`min-h-0 flex flex-col ${
+                className={
                   leafletTarget
-                    ? "flex-1 lg:flex-1 lg:min-w-[320px]"
-                    : "hidden lg:flex lg:flex-1 lg:min-w-[280px]"
-                }`}
+                    ? "max-lg:absolute max-lg:inset-0 max-lg:z-10 max-lg:bg-white max-lg:shadow-[-8px_0_24px_rgba(15,23,42,0.08)] flex min-h-0 flex-col flex-1 lg:min-w-[320px]"
+                    : "hidden lg:flex lg:min-h-0 lg:flex-1 lg:min-w-[280px] lg:flex-col"
+                }
               >
                 <DrugLeafletPanel
                   target={leafletTarget}
@@ -461,7 +461,7 @@ export function MedicationSearch({
                   t={t}
                   onClose={onCloseLeafletPanel}
                   onInsertPosology={onInsertLeafletPosology}
-                  className="flex-1 min-h-0"
+                  className="flex-1 min-h-0 w-full"
                 />
               </div>
             </div>

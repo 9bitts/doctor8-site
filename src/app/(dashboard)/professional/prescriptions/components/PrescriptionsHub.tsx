@@ -61,6 +61,15 @@ export type PrescriptionsHubProps = {
     loginPath: string;
   } | null;
   onSncrLogin?: () => void;
+  draftPending?: boolean;
+  onContinueDraft?: () => void;
+  onDiscardDraft?: () => void;
+  examDraftPending?: boolean;
+  onContinueExamDraft?: () => void;
+  onDiscardExamDraft?: () => void;
+  documentDraftPending?: boolean;
+  onContinueDocumentDraft?: () => void;
+  onDiscardDocumentDraft?: () => void;
 };
 
 export function PrescriptionsHub({
@@ -100,6 +109,15 @@ export function PrescriptionsHub({
   onCloseSignModal,
   sncrStatus = null,
   onSncrLogin,
+  draftPending = false,
+  onContinueDraft,
+  onDiscardDraft,
+  examDraftPending = false,
+  onContinueExamDraft,
+  onDiscardExamDraft,
+  documentDraftPending = false,
+  onContinueDocumentDraft,
+  onDiscardDocumentDraft,
 }: PrescriptionsHubProps) {
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -127,6 +145,87 @@ export function PrescriptionsHub({
           )}
         </div>
       </div>
+
+      {draftPending && onContinueDraft && (
+        <div className="bg-brand-50 border border-brand-200 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-brand-900">{t("rx.draftPending")}</p>
+            <p className="text-sm text-brand-800 mt-0.5">{t("rx.draftPendingHint")}</p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={onContinueDraft}
+              className="px-4 py-2 rounded-lg bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold transition"
+            >
+              {t("rx.draftContinue")}
+            </button>
+            {onDiscardDraft && (
+              <button
+                type="button"
+                onClick={onDiscardDraft}
+                className="px-4 py-2 rounded-lg border border-brand-200 bg-white hover:bg-brand-50 text-brand-800 text-sm font-semibold transition"
+              >
+                {t("rx.draftDiscard")}
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {examDraftPending && onContinueExamDraft && (
+        <div className="bg-brand-50 border border-brand-200 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-brand-900">{t("rx.examDraftPending")}</p>
+            <p className="text-sm text-brand-800 mt-0.5">{t("rx.examDraftPendingHint")}</p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={onContinueExamDraft}
+              className="px-4 py-2 rounded-lg bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold transition"
+            >
+              {t("rx.draftContinue")}
+            </button>
+            {onDiscardExamDraft && (
+              <button
+                type="button"
+                onClick={onDiscardExamDraft}
+                className="px-4 py-2 rounded-lg border border-brand-200 bg-white hover:bg-brand-50 text-brand-800 text-sm font-semibold transition"
+              >
+                {t("rx.draftDiscard")}
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {documentDraftPending && onContinueDocumentDraft && (
+        <div className="bg-brand-50 border border-brand-200 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-brand-900">{t("rx.documentDraftPending")}</p>
+            <p className="text-sm text-brand-800 mt-0.5">{t("rx.documentDraftPendingHint")}</p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={onContinueDocumentDraft}
+              className="px-4 py-2 rounded-lg bg-brand-500 hover:bg-brand-600 text-white text-sm font-semibold transition"
+            >
+              {t("rx.draftContinue")}
+            </button>
+            {onDiscardDocumentDraft && (
+              <button
+                type="button"
+                onClick={onDiscardDocumentDraft}
+                className="px-4 py-2 rounded-lg border border-brand-200 bg-white hover:bg-brand-50 text-brand-800 text-sm font-semibold transition"
+              >
+                {t("rx.draftDiscard")}
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       {!cfg.phytoOnly && sncrStatus && !sncrStatus.controlledAvailable && (
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">

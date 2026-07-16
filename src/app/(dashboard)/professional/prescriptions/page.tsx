@@ -50,6 +50,7 @@ export default function PrescriptionsPage() {
           initialCid={p.examTemplatePrefill?.cid || p.reuseClinical?.cid || ""}
           initialTitle={p.examTemplatePrefill?.title || p.reuseClinical?.title || ""}
           editingDocumentId={p.editingClinicalDocId}
+          portal={p.cfg.portal}
           onBack={p.closeCreate}
           onSaved={p.handleEmissionSaved}
         />
@@ -72,6 +73,7 @@ export default function PrescriptionsPage() {
           initialType={p.docTemplatePrefill?.documentType || p.reuseClinical?.type || "CERTIFICATE"}
           initialTemplateId={p.docTemplatePrefill?.templateId || null}
           editingDocumentId={p.editingClinicalDocId}
+          portal={p.cfg.portal}
           onBack={p.closeCreate}
           onSaved={p.handleEmissionSaved}
         />
@@ -210,6 +212,7 @@ export default function PrescriptionsPage() {
           hasMixedRegulatoryPrescription={p.hasMixedRegulatoryPrescription}
           controlledPrescriptionsAvailable={p.sncrStatus?.controlledAvailable ?? false}
           controlledFormKind={p.controlledFormKind}
+          draftRestoredHint={p.draftRestoredHint}
         />
         <PhytoInteractionConfirmModal
           open={p.phytoConfirmOpen}
@@ -266,6 +269,15 @@ export default function PrescriptionsPage() {
         onCloseSignModal={() => p.setSignTarget(null)}
         sncrStatus={p.sncrStatus}
         onSncrLogin={p.openSncrLogin}
+        draftPending={p.draftPending}
+        onContinueDraft={p.continuePrescriptionDraft}
+        onDiscardDraft={p.discardPrescriptionDraft}
+        examDraftPending={p.examDraftPending}
+        onContinueExamDraft={() => void p.continueExamDraft()}
+        onDiscardExamDraft={p.discardExamDraft}
+        documentDraftPending={p.documentDraftPending}
+        onContinueDocumentDraft={() => void p.continueDocumentDraft()}
+        onDiscardDocumentDraft={p.discardDocumentDraft}
       />
       <style>{RX_STYLES}</style>
     </>
