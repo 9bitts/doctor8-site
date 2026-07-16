@@ -71,7 +71,7 @@ export default function IntegrativeTherapistSettingsPage() {
   const [clinicState, setClinicState] = useState("");
   const [clinicCountry, setClinicCountry] = useState("");
   const [clinicZip, setClinicZip] = useState("");
-  const [accountRegion, setAccountRegion] = useState<RegistrationRegionCode>("US");
+  const [accountRegion, setAccountRegion] = useState<RegistrationRegionCode>("BR");
   const [regionError, setRegionError] = useState("");
   const [doctorImageOpen, setDoctorImageOpen] = useState(false);
 

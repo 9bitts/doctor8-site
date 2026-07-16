@@ -316,6 +316,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                 firstName,
                 lastName,
                 avatarUrl: user.image || null,
+                country: signupRegion,
               });
 
               if (phoneE164) {

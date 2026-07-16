@@ -143,6 +143,14 @@ export const PROVIDER_HUMANITARIAN_VOLUNTEER_ENTRY: PlatformNavEntry = {
   iconKey: "Heart",
 };
 
+/** Pinned below BR/VE solidarity badge in admin sidebar (not in a nav group). */
+export const ADMIN_HUMANITARIAN_ENTRY: PlatformNavEntry = {
+  href: "/admin/humanitarian",
+  labelKey: "nav.adminHumanitarian",
+  roles: ["ADMIN"],
+  iconKey: "Heart",
+};
+
 /** Patient sidebar groups — flat PATIENT_NAV is derived for support-knowledge index. */
 export const PATIENT_NAV_GROUPS: PlatformNavGroup[] = [
   {
@@ -711,6 +719,7 @@ export const PHARMACY_NETWORK_PHARMACIST_NAV: PlatformNavEntry[] = [
 ];
 
 export const ADMIN_NAV: PlatformNavEntry[] = [
+  { href: "/admin/humanitarian", labelKey: "nav.adminHumanitarian", roles: ["ADMIN"], iconKey: "Heart" },
   { href: "/admin", labelKey: "admin.home.title", roles: ["ADMIN"], iconKey: "Shield" },
   { href: "/admin/users", labelKey: "nav.adminUsers", roles: ["ADMIN"], iconKey: "UserCog" },
   { href: "/admin/categories", labelKey: "nav.adminCategories", roles: ["ADMIN"], iconKey: "Layers" },
@@ -728,7 +737,6 @@ export const ADMIN_NAV: PlatformNavEntry[] = [
   { href: "/admin/payments", labelKey: "nav.adminPayments", roles: ["ADMIN"], iconKey: "CreditCard" },
   { href: "/admin/courses", labelKey: "nav.adminCourses", roles: ["ADMIN"], iconKey: "BookOpen" },
   { href: "/admin/jit-events", labelKey: "nav.adminJitEvents", roles: ["ADMIN"], iconKey: "Radio" },
-  { href: "/admin/humanitarian", labelKey: "nav.adminHumanitarian", roles: ["ADMIN"], iconKey: "Heart" },
   { href: "/admin/buying-clubs", labelKey: "nav.adminBuyingClubs", roles: ["ADMIN"], iconKey: "ShoppingBag" },
   { href: "/admin/campaigns", labelKey: "nav.adminCampaigns", roles: ["ADMIN"], iconKey: "Megaphone" },
   { href: "/admin/integrations", labelKey: "nav.adminIntegrations", roles: ["ADMIN"], iconKey: "Plug" },
@@ -750,7 +758,6 @@ export const ADMIN_NAV_GROUPS: PlatformNavGroup[] = [
   { href: "/admin/mensagens", labelKey: "nav.adminMessages", roles: ["ADMIN"], iconKey: "MessageCircle" },
       { href: "/admin/doctors", labelKey: "nav.adminDoctors", roles: ["ADMIN"], iconKey: "Stethoscope" },
       { href: "/admin/medicos-ocupacionais", labelKey: "nav.adminOccupational", roles: ["ADMIN"], iconKey: "Stethoscope" },
-      { href: "/admin/humanitarian", labelKey: "nav.adminHumanitarian", roles: ["ADMIN"], iconKey: "Heart" },
       { href: "/admin/jit-events", labelKey: "nav.adminJitEvents", roles: ["ADMIN"], iconKey: "Radio" },
     ],
   },

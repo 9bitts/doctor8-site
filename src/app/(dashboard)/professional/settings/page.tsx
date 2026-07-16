@@ -103,7 +103,7 @@ export default function ProfessionalSettings() {
   const [clinicState, setClinicState] = useState("");
   const [clinicCountry, setClinicCountry] = useState("");
   const [clinicZip, setClinicZip] = useState("");
-  const [accountRegion, setAccountRegion] = useState<RegistrationRegionCode>("US");
+  const [accountRegion, setAccountRegion] = useState<RegistrationRegionCode>("BR");
   const regionReadyRef = useRef(false);
 
   const { providerChecklist, refresh: refreshRegistration } = useRegistrationChecklist();
@@ -174,13 +174,13 @@ export default function ProfessionalSettings() {
         if (sessionRes.ok) {
           const session = await sessionRes.json();
           const r = session?.user?.region;
-          if (r) setAccountRegion(parseRegistrationRegion(r, "US"));
+          if (r) setAccountRegion(parseRegistrationRegion(r, "BR"));
         }
         const regionRes = await fetch("/api/user/region");
         if (regionRes.ok) {
           const regionData = await regionRes.json();
           const r = regionData?.region;
-          if (r) setAccountRegion(parseRegistrationRegion(r, "US"));
+          if (r) setAccountRegion(parseRegistrationRegion(r, "BR"));
         }
         if (profileRes.ok) {
           const d = await profileRes.json();

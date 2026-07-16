@@ -551,7 +551,7 @@ model User {
   phoneVerified   DateTime?
   passwordHash    String?    // null for OAuth users
   role            UserRole
-  region          String     @default("US") @db.VarChar(2)
+  region          String     @default("BR") @db.VarChar(2)
   language        String     @default("en")
   timezone        String     @default("America/Sao_Paulo")
   jitQueueEntries   JitQueue[]  @relation("JitQueuePatient")
@@ -715,7 +715,7 @@ model PatientProfile {
   addressLine2  String?  // @encrypted
   city          String?
   state         String?
-  country       String?  @default("US")
+  country       String?  @default("BR")
   zipCode       String?  // @encrypted
 
   // P1-e: extra registration fields (match PatientRecord)

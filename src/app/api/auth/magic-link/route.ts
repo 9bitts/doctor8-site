@@ -119,6 +119,7 @@ export async function POST(req: NextRequest) {
           userId: newUser.id,
           firstName: encrypt(parsed.data.firstName),
           lastName: encrypt(parsed.data.lastName),
+          country: "BR",
           ...acquisitionFields,
         },
       });

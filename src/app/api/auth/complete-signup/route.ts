@@ -39,6 +39,7 @@ export async function POST(req: NextRequest) {
       id: true,
       role: true,
       email: true,
+      region: true,
       patientProfile: { select: { id: true } },
       professionalProfile: { select: { id: true } },
       psychoanalystProfile: { select: { id: true } },
@@ -84,6 +85,8 @@ export async function POST(req: NextRequest) {
       profession: profession ?? null,
       firstName: profileFirstName,
       lastName: profileLastName,
+      email: user.email,
+      country: user.region,
     });
 
     if (phoneE164) {

@@ -50,7 +50,7 @@ function signupAccentForRole(role: ProSignupRole): LoginAccent {
 
 export default function RegisterProfessionalSignupPage() {
   const [callbackUrl, setCallbackUrl] = useState("");
-  const [initialRegion, setInitialRegion] = useState<Region>("US");
+  const [initialRegion, setInitialRegion] = useState<Region>("BR");
   const [lang, setLang] = useState<Lang>("en");
   const [step, setStep] = useState<1 | 2>(1);
   const [role, setRole] = useState<ProSignupRole>("PROFESSIONAL");
@@ -83,7 +83,7 @@ export default function RegisterProfessionalSignupPage() {
 
     const r = params.get("region");
     if (r) {
-      setInitialRegion(parseRegistrationRegion(r, "US"));
+      setInitialRegion(parseRegistrationRegion(r, "BR"));
     } else {
       const detectedLang = langParam ? normalizeLang(langParam) : detectInitialLang();
       fetch(`/api/auth/detect-region?lang=${encodeURIComponent(detectedLang)}`)
@@ -133,7 +133,7 @@ export default function RegisterProfessionalSignupPage() {
   const angelHref = (() => {
     const params = new URLSearchParams();
     if (callbackUrl) params.set("callbackUrl", callbackUrl);
-    if (initialRegion !== "US") params.set("region", initialRegion);
+    if (initialRegion !== "BR") params.set("region", initialRegion);
     const qs = params.toString();
     return qs ? `${ANGEL_REGISTER}?${qs}` : ANGEL_REGISTER;
   })();

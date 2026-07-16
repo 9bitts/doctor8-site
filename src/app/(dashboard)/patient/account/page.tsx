@@ -95,7 +95,7 @@ export default function AccountPage() {
   const [emailLoading, setEmailLoading] = useState(false);
   const [emailSuccess, setEmailSuccess] = useState(false);
   const [emailError, setEmailError] = useState("");
-  const [accountRegion, setAccountRegion] = useState<RegistrationRegionCode>("US");
+  const [accountRegion, setAccountRegion] = useState<RegistrationRegionCode>("BR");
   const [regionSaving, setRegionSaving] = useState(false);
   const [regionSaved, setRegionSaved] = useState(false);
   const [regionError, setRegionError] = useState("");

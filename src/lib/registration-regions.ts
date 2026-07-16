@@ -95,7 +95,7 @@ export function isValidRegistrationRegion(value: unknown): value is Registration
 
 export function parseRegistrationRegion(
   value: unknown,
-  fallback: RegistrationRegionCode = "US",
+  fallback: RegistrationRegionCode = "BR",
 ): RegistrationRegionCode {
   return isValidRegistrationRegion(value) ? value : fallback;
 }
@@ -134,5 +134,5 @@ export function requiresLgpd(code: RegistrationRegionCode | string): boolean {
 export function defaultRegistrationRegionForLang(lang: Lang): RegistrationRegionCode {
   if (lang === "pt") return "BR";
   if (lang === "es") return "VE";
-  return "US";
+  return "BR";
 }

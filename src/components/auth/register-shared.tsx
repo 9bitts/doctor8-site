@@ -132,7 +132,7 @@ export function RegisterAccountForm({
   accent = "emerald",
   lang,
   callbackUrl,
-  initialRegion = "US",
+  initialRegion = "BR",
   inviteToken,
   onBack,
 }: {

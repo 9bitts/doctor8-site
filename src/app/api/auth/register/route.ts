@@ -68,7 +68,7 @@ const registerSchema = z.object({
   email: z.string().email("Invalid email address"),
   password: passwordSchema,
   role: z.enum(["PATIENT", "PROFESSIONAL", "PSYCHOANALYST", "INTEGRATIVE_THERAPIST"]),
-  region: z.enum(REGISTRATION_REGION_CODES as [typeof REGISTRATION_REGION_CODES[number], ...typeof REGISTRATION_REGION_CODES[number][]]).default("US"),
+  region: z.enum(REGISTRATION_REGION_CODES as [typeof REGISTRATION_REGION_CODES[number], ...typeof REGISTRATION_REGION_CODES[number][]]).default("BR"),
   firstName: z.string().min(1).max(100),
   lastName: z.string().min(1).max(100),
   phoneDdi: z.string().min(1).max(4),
@@ -107,6 +107,7 @@ type RegisterProfileInput = {
   firstName: string;
   lastName: string;
   email: string;
+  region?: string;
   professionalKind?: "psychologist";
   profession?: "medico" | "psicologo" | "fisioterapeuta" | "nutricionista" | "enfermeiro" | "farmaceutico" | "dentista" | "cuidados_paliativos";
   acquisitionFields?: ReturnType<typeof patientAcquisitionProfileFields>;
@@ -116,7 +117,7 @@ async function createRegisterProfile(
   tx: Parameters<Parameters<typeof db.$transaction>[0]>[0],
   input: RegisterProfileInput,
 ): Promise<void> {
-  const { userId, role, firstName, lastName, email, professionalKind, profession, acquisitionFields } =
+  const { userId, role, firstName, lastName, email, region, professionalKind, profession, acquisitionFields } =
     input;
 
   if (role === "PATIENT") {
@@ -126,6 +127,7 @@ async function createRegisterProfile(
         firstName: encrypt(firstName),
         lastName: encrypt(lastName),
         searchText: buildPatientProfileSearchText(firstName, lastName, email),
+        ...(region ? { country: region } : {}),
         ...(acquisitionFields ?? {}),
       },
     });
@@ -154,6 +156,8 @@ async function createRegisterProfile(
     professionalKind: professionalKind ?? null,
     firstName,
     lastName,
+    email,
+    country: region,
   });
 }
 
@@ -346,6 +350,7 @@ export async function POST(req: NextRequest) {
           firstName,
           lastName,
           email: normalizedEmail,
+          region,
           professionalKind,
           profession,
           acquisitionFields,
@@ -446,6 +451,7 @@ export async function POST(req: NextRequest) {
         firstName,
         lastName,
         email: email.toLowerCase(),
+        region,
         professionalKind,
         profession,
         acquisitionFields,

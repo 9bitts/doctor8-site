@@ -132,7 +132,6 @@ export async function POST(req: NextRequest) {
     }
 
     const region = resolveRegistrationRegionForSignup({
-      explicit: "US",
       phoneDdi: parsed.data.phoneDdi,
       language: normalizedLang,
       headers: req.headers,
@@ -201,6 +200,7 @@ export async function POST(req: NextRequest) {
             userId: user.id,
             firstName: encrypt(firstName),
             lastName: encrypt(lastName),
+            country: region,
             acquisitionChannel: "DOCTOR8_HUMANITARIAN",
             acquisitionCampaign: campaignSlug,
             acquisitionRecordedAt: now,

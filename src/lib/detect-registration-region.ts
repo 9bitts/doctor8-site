@@ -93,12 +93,12 @@ export function resolveRegistrationRegion(opts: {
     return defaultRegistrationRegionForLang(lang);
   }
 
-  return "US";
+  return "BR";
 }
 
 /**
- * Resolves region for signup: honors an explicit non-US choice; when the client
- * still has the generic US default, prefers phone DDI and geo headers.
+ * Resolves region for signup: honors an explicit non-BR choice; when the client
+ * still has the generic BR default, prefers phone DDI and geo headers.
  */
 export function resolveRegistrationRegionForSignup(opts: {
   explicit?: string | null;
@@ -110,7 +110,7 @@ export function resolveRegistrationRegionForSignup(opts: {
   const explicit =
     opts.explicit && isValidRegistrationRegion(opts.explicit) ? opts.explicit : null;
 
-  if (explicit && explicit !== "US") {
+  if (explicit && explicit !== "BR") {
     return explicit;
   }
 
@@ -121,7 +121,7 @@ export function resolveRegistrationRegionForSignup(opts: {
     headers: opts.headers,
   });
 
-  if (explicit === "US" && auto !== "US") {
+  if (explicit === "BR" && auto !== "BR") {
     return auto;
   }
 

@@ -19,7 +19,7 @@ import { parseRegistrationRegion, defaultRegistrationRegionForLang } from "@/lib
 
 export default function RegisterPage() {
   const [callbackUrl, setCallbackUrl] = useState("");
-  const [initialRegion, setInitialRegion] = useState<Region>("US");
+  const [initialRegion, setInitialRegion] = useState<Region>("BR");
   const [lang, setLang] = useState<Lang>("en");
 
   useEffect(() => {
@@ -29,7 +29,7 @@ export default function RegisterPage() {
 
     const r = params.get("region");
     if (r) {
-      setInitialRegion(parseRegistrationRegion(r, "US"));
+      setInitialRegion(parseRegistrationRegion(r, "BR"));
       return;
     }
 

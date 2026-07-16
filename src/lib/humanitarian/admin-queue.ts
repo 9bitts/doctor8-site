@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { assignNextInPool } from "@/lib/humanitarian/dispatcher";
+import { assignNextInPool, releaseVolunteer } from "@/lib/humanitarian/dispatcher";
 import type { HumanitarianPriority } from "@prisma/client";
 
 const PRIORITY_SORT: HumanitarianPriority[] = ["CRISIS", "URGENT", "ROUTINE"];
@@ -80,5 +80,75 @@ export async function adminRepositionInQueue(
     ),
   );
 
+  return true;
+}
+
+export async function adminMarkEntryProblem(
+  entryId: string,
+  adminUserId: string,
+  note: string,
+): Promise<boolean> {
+  const entry = await db.humanitarianQueueEntry.findUnique({
+    where: { id: entryId },
+    select: { id: true },
+  });
+  if (!entry) return false;
+
+  await db.humanitarianQueueEntry.update({
+    where: { id: entryId },
+    data: {
+      adminProblemAt: new Date(),
+      adminProblemNote: note,
+      adminProblemById: adminUserId,
+    },
+  });
+  return true;
+}
+
+/** Force-release a stuck volunteer (returns patient to WAITING if in consult). */
+export async function adminForceReleaseVolunteer(volunteerId: string): Promise<boolean> {
+  const vol = await db.humanitarianVolunteer.findUnique({
+    where: { id: volunteerId },
+    select: { id: true },
+  });
+  if (!vol) return false;
+  await releaseVolunteer(volunteerId);
+  return true;
+}
+
+/** Close a stale IN_PROGRESS consult as DONE and free the volunteer. */
+export async function adminCloseStaleConsult(
+  entryId: string,
+  adminUserId: string,
+  reason: string,
+): Promise<boolean> {
+  const entry = await db.humanitarianQueueEntry.findUnique({
+    where: { id: entryId },
+    select: { id: true, status: true, volunteerId: true, poolId: true },
+  });
+  if (!entry || entry.status !== "IN_PROGRESS") return false;
+
+  const now = new Date();
+  await db.$transaction(async (tx) => {
+    await tx.humanitarianQueueEntry.update({
+      where: { id: entry.id },
+      data: {
+        status: "DONE",
+        endedAt: now,
+        completionChannel: "VIDEO",
+        adminProblemAt: now,
+        adminProblemNote: reason,
+        adminProblemById: adminUserId,
+      },
+    });
+    if (entry.volunteerId) {
+      await tx.humanitarianVolunteer.update({
+        where: { id: entry.volunteerId },
+        data: { status: "ONLINE", currentEntryId: null },
+      });
+    }
+  });
+
+  await assignNextInPool(entry.poolId);
   return true;
 }

@@ -30,6 +30,7 @@ export async function createSignupProfile(
     lastName: string;
     email?: string | null;
     avatarUrl?: string | null;
+    country?: string | null;
     acquisitionChannel?: PatientAcquisitionChannel | null;
     acquisitionCampaign?: string | null;
     acquisitionRecordedAt?: Date | null;
@@ -45,6 +46,7 @@ export async function createSignupProfile(
     lastName,
     avatarUrl,
     email,
+    country,
     acquisitionChannel,
     acquisitionCampaign,
     acquisitionRecordedAt,
@@ -93,6 +95,7 @@ export async function createSignupProfile(
         lastName: encrypt(lastName),
         searchText: buildPatientProfileSearchText(firstName, lastName, email),
         avatarUrl: avatarUrl ?? null,
+        ...(country ? { country } : {}),
         ...(acquisitionChannel
           ? {
               acquisitionChannel,

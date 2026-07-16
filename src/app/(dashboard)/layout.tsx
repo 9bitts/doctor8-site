@@ -43,6 +43,7 @@ import {
   PATIENT_HUMANITARIAN_ENTRY,
   PATIENT_SCHEDULED_VOLUNTEER_ENTRY,
   PROVIDER_HUMANITARIAN_VOLUNTEER_ENTRY,
+  ADMIN_HUMANITARIAN_ENTRY,
   PATIENT_NAV,
   PATIENT_NAV_GROUPS,
   PLATFORM_NAV_GROUPS_BY_PORTAL,
@@ -330,10 +331,12 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
   const patientScheduledVolunteerItem = withNavIcons([PATIENT_SCHEDULED_VOLUNTEER_ENTRY])[0];
   const humanitarianPatientNav = withNavIcons(HUMANITARIAN_PATIENT_NAV);
   const providerHumanitarianVolunteerItem = withNavIcons([PROVIDER_HUMANITARIAN_VOLUNTEER_ENTRY])[0];
+  const adminHumanitarianItem = withNavIcons([ADMIN_HUMANITARIAN_ENTRY])[0];
   const showProviderHumanitarianVolunteer =
     (role === "PROFESSIONAL" || role === "PSYCHOANALYST" || role === "INTEGRATIVE_THERAPIST")
     && !isPharmacyStoreUser
     && !isPharmacyNetworkPharmacist;
+  const showAdminHumanitarian = role === "ADMIN";
   const patientGroupedNav = PATIENT_NAV_GROUPS.map((group) => ({
     ...group,
     items: withNavIcons(group.items),
@@ -531,6 +534,12 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
         {showProviderHumanitarianVolunteer && (
           <div className="px-3 pb-2">
             {renderNavLink(providerHumanitarianVolunteerItem, undefined, true)}
+          </div>
+        )}
+
+        {showAdminHumanitarian && (
+          <div className="px-3 pb-2">
+            {renderNavLink(adminHumanitarianItem, undefined, true)}
           </div>
         )}
 

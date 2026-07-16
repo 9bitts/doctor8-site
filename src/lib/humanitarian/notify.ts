@@ -5,6 +5,7 @@ import { storedNotificationText } from "@/lib/notification-i18n";
 import { buildClinicalDocumentWaMeUrl, sendHumanitarianYourTurnWhatsApp } from "@/lib/whatsapp";
 import { VENEZUELA_CAMPAIGN_SLUG } from "@/lib/humanitarian/constants";
 import type { HumanitarianCampaignReportDto } from "@/lib/humanitarian/types";
+import { presenceCutoff } from "@/lib/humanitarian/volunteer-presence";
 
 function safeDecrypt(v: string | null | undefined): string {
   if (!v) return "";
@@ -38,7 +39,11 @@ export async function buildCampaignReport(campaignId: string): Promise<Humanitar
           where: { poolId: pool.id, status: { in: ["WAITING", "CALLED"] } },
         }),
         db.humanitarianVolunteer.count({
-          where: { poolId: pool.id, status: "ONLINE" },
+          where: {
+            poolId: pool.id,
+            status: "ONLINE",
+            lastSeenAt: { gte: presenceCutoff() },
+          },
         }),
         db.humanitarianVolunteer.count({
           where: { poolId: pool.id, status: "BUSY" },
@@ -81,7 +86,11 @@ export async function buildCampaignReport(campaignId: string): Promise<Humanitar
         where: { campaignId, status: "NO_SHOW", endedAt: { gte: today } },
       }),
       db.humanitarianVolunteer.count({
-        where: { campaignId, status: "ONLINE" },
+        where: {
+          campaignId,
+          status: "ONLINE",
+          lastSeenAt: { gte: presenceCutoff() },
+        },
       }),
       db.humanitarianVolunteer.count({
         where: { campaignId, status: "BUSY" },

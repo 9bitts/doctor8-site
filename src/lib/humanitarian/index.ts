@@ -42,6 +42,31 @@ export { seedVenezuelaCampaign } from "@/lib/humanitarian/seed-venezuela";
 export { buildHumanitarianCsv } from "@/lib/humanitarian/export-csv";
 export { createHumanitarianDailyRoom } from "@/lib/humanitarian/daily-room";
 export {
+  adminRemoveFromQueue,
+  adminRepositionInQueue,
+  adminMarkEntryProblem,
+  adminForceReleaseVolunteer,
+  adminCloseStaleConsult,
+} from "@/lib/humanitarian/admin-queue";
+export { buildCampaignLiveOps } from "@/lib/humanitarian/admin-live";
+export type {
+  HumanitarianLiveOpsDto,
+  LiveAlertDto,
+  LiveQueueRowDto,
+  LiveConsultRowDto,
+  LiveVolunteerRowDto,
+} from "@/lib/humanitarian/admin-live";
+export { buildHumanitarianAgenda, agendaToCsv } from "@/lib/humanitarian/admin-agenda";
+export type { AgendaItemDto } from "@/lib/humanitarian/admin-agenda";
+export {
+  buildHumanitarianHistory,
+  listHumanitarianAuditLogs,
+} from "@/lib/humanitarian/admin-history";
+export type {
+  HumanitarianHistoryDto,
+  HumanitarianAuditRowDto,
+} from "@/lib/humanitarian/admin-history";
+export {
   ANAMNESE_SERVICE_TYPES,
   MEDICO_SYMPTOMS,
   PSICO_SYMPTOMS,
