@@ -439,10 +439,12 @@ export default function DocumentsClient({ initialItems }: { initialItems: Item[]
                           <button
                             onClick={() => handleDownload(it.id, it.sharedBy)}
                             disabled={downloadingId === it.id}
-                            className="text-slate-400 hover:text-emerald-500 transition p-2 rounded-lg hover:bg-emerald-50 disabled:opacity-50"
-                            aria-label={t("docs.openAttachment")}
+                            className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-emerald-600 transition px-2.5 py-1.5 rounded-lg hover:bg-emerald-50 disabled:opacity-50"
+                            aria-label={t("docs.viewDownload")}
+                            title={t("docs.viewDownload")}
                           >
                             {downloadingId === it.id ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />}
+                            <span>{t("docs.viewDownload")}</span>
                           </button>
                         )}
                         {isOwn && (
