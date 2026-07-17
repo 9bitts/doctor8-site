@@ -22,7 +22,7 @@ import {
   ACURA_CATEGORY_ORDER,
   type AcuraVolunteerAdminList,
   type AcuraVolunteerAdminRow,
-} from "@/lib/acura-volunteer-admin";
+} from "@/lib/acura-volunteer-admin-types";
 import AdminViewPhoneButton from "@/components/admin/AdminViewPhoneButton";
 import AdminViewLicenseDocsButton from "@/components/admin/AdminViewLicenseDocsButton";
 import { useI18n } from "@/lib/i18n/I18nProvider";

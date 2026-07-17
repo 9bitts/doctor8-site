@@ -6,54 +6,21 @@ import {
   acuraVolunteerWriteData,
   type AcuraVolunteerKind,
 } from "@/lib/acura-volunteer";
-import {
-  resolveAdminTabForProfessional,
-  type AdminProfessionCategory,
-} from "@/lib/admin-provider-categories";
+import { resolveAdminTabForProfessional } from "@/lib/admin-provider-categories";
 import { PSYCHOANALYSIS_SPECIALTY } from "@/lib/professions";
 import { INTEGRATIVE_THERAPY_SPECIALTY } from "@/lib/integrative-therapy-specialty";
+import type {
+  AcuraCategoryCounts,
+  AcuraVolunteerAdminList,
+  AcuraVolunteerAdminRow,
+} from "@/lib/acura-volunteer-admin-types";
 
-export type AcuraVolunteerAdminRow = {
-  id: string;
-  userId: string;
-  kind: AcuraVolunteerKind;
-  category: AdminProfessionCategory;
-  name: string;
-  email: string | null;
-  specialty: string | null;
-  verified: boolean;
-  emailVerified: boolean;
-  licenseDocCount: number;
-  status: AcuraVolunteerStatus;
-  acuraVolunteer: boolean;
-  approvedAt: string | null;
-  createdAt: string;
-};
-
-export type AcuraCategoryCounts = Record<AdminProfessionCategory, number>;
-
-export type AcuraVolunteerAdminList = {
-  totals: {
-    pending: number;
-    active: number;
-    activeVerified: number;
-    revoked: number;
-    byCategory: AcuraCategoryCounts;
-  };
-  rows: AcuraVolunteerAdminRow[];
-};
-
-export const ACURA_CATEGORY_ORDER: AdminProfessionCategory[] = [
-  "medicos",
-  "psicologos",
-  "psicanalistas",
-  "terapeutas",
-  "nutricionistas",
-  "fisioterapeutas",
-  "enfermeiros",
-  "farmaceuticos",
-  "odontologistas",
-];
+export type {
+  AcuraCategoryCounts,
+  AcuraVolunteerAdminList,
+  AcuraVolunteerAdminRow,
+} from "@/lib/acura-volunteer-admin-types";
+export { ACURA_CATEGORY_ORDER } from "@/lib/acura-volunteer-admin-types";
 
 function emptyCategoryCounts(): AcuraCategoryCounts {
   return {
