@@ -213,12 +213,12 @@ function AnalysandsPageInner({ timeZone }: { timeZone: string }) {
             {search.trim() ? t("pa.analysands.noResults") : t("pa.analysands.empty")}
           </p>
         ) : (
-          <div className="divide-y divide-slate-100">
+          <div className="p-3 sm:p-4 space-y-3 bg-slate-50/60">
             {filtered.map((a) => (
               <Link
                 key={a.id}
                 href={`/psychoanalyst/analysands/${a.id}`}
-                className="flex items-center gap-4 px-5 py-4 hover:bg-slate-50 transition"
+                className="flex items-center gap-4 px-4 py-4 bg-white rounded-2xl border border-slate-200/80 shadow-sm hover:border-slate-300 transition"
               >
                 <div className="w-10 h-10 rounded-xl bg-violet-100 text-violet-700 font-bold flex items-center justify-center text-sm">
                   {initials(a.firstName, a.lastName)}

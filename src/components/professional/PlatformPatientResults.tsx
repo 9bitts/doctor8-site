@@ -42,7 +42,7 @@ export function PlatformPatientResults({
           type="button"
           onMouseDown={keepFocusOnPointerDown}
           onClick={() => onImportPatient(item)}
-          className="w-full flex items-center gap-3 px-4 py-3 hover:bg-emerald-50 transition text-left disabled:opacity-50"
+          className="w-full flex items-center gap-3 px-4 py-3 bg-white rounded-2xl border border-emerald-200/80 shadow-sm hover:border-emerald-300 transition text-left disabled:opacity-50"
         >
           <div className="w-9 h-9 rounded-lg bg-emerald-100 flex items-center justify-center font-bold text-emerald-700 text-xs shrink-0">
             {item.firstName[0]}{item.lastName[0]}
@@ -63,7 +63,7 @@ export function PlatformPatientResults({
       {platformMatches.map((match) => (
         <div
           key={match.patientProfileId}
-          className="px-4 py-3 hover:bg-slate-50 transition flex flex-col sm:flex-row sm:items-center gap-2"
+          className="px-4 py-3 bg-white rounded-2xl border border-slate-200/80 shadow-sm flex flex-col sm:flex-row sm:items-center gap-2"
         >
           <div className="flex items-center gap-3 flex-1 min-w-0">
             <div className="w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center font-bold text-slate-500 text-xs shrink-0">

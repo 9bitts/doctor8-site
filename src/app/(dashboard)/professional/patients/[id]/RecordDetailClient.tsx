@@ -48,7 +48,6 @@ import {
   PinnedAnamnesisCard,
   AnamnesisPromptBanner,
   RecordKindBadge,
-  RecordTimelineDot,
 } from "@/components/professional/PatientRecordTimeline";
 import { consumeVoiceFormPrefill } from "@/lib/voice-assistant/prefill-storage";
 import { VOICE_FORM_PREFILL_EVENT } from "@/lib/voice-assistant/types";
@@ -1735,8 +1734,7 @@ export default function RecordDetailClient({
             </p>
           </div>
         ) : (
-          <div className="relative pl-8 pr-2 py-2">
-            <div className="absolute left-[15px] top-4 bottom-4 w-px bg-slate-200" aria-hidden />
+          <div className="p-3 sm:p-4 space-y-3 bg-slate-50/60">
             {filteredDocs.map((d) => {
               const label = d.categoryName
                 ? getCategoryLabel(lang, { name: d.categoryName })
@@ -1766,11 +1764,13 @@ export default function RecordDetailClient({
               }
 
               return (
-                <div key={d.id} id={`record-${d.id}`} className={`relative px-3 py-4 border-b border-slate-50 last:border-0 ${
-                  pinnedAnamnesis?.id === d.id ? "bg-accent-50/50 rounded-xl ring-1 ring-accent-100" : ""
+                <div key={d.id} id={`record-${d.id}`} className={`relative px-4 py-4 rounded-2xl border shadow-sm ${
+                  pinnedAnamnesis?.id === d.id
+                    ? "bg-accent-50/50 border-accent-200 ring-1 ring-accent-100"
+                    : "bg-white border-slate-200/80"
                 }`}>
-                  <RecordTimelineDot />
                   <div className="flex items-center gap-2 mb-1 flex-wrap">
+                    <span className="inline-block w-2 h-2 rounded-full bg-brand-400 shrink-0" aria-hidden />
                     {d.type === "PRESCRIPTION" ? (
                       <span className="inline-flex text-[10px] font-bold px-2 py-0.5 rounded-full border bg-emerald-50 text-emerald-700 border-emerald-200">
                         {t("timeline.filter.prescription")}

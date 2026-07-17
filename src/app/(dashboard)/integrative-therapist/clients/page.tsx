@@ -263,12 +263,12 @@ export default function IntegrativeClientsPage() {
         ) : clients.length === 0 ? (
           <p className="text-center text-slate-400 text-sm py-16">{t("it.clients.noSearchResults")}</p>
         ) : (
-          <div className="divide-y divide-slate-100">
+          <div className="p-3 sm:p-4 space-y-3 bg-slate-50/60">
             {clients.map((c) => (
               <Link
                 key={c.id}
                 href={`/integrative-therapist/clients/${c.id}`}
-                className="flex items-center gap-4 px-5 py-4 hover:bg-slate-50 transition"
+                className="flex items-center gap-4 px-4 py-4 bg-white rounded-2xl border border-slate-200/80 shadow-sm hover:border-slate-300 transition"
               >
                 <div className="w-10 h-10 rounded-xl bg-teal-100 text-teal-700 font-bold flex items-center justify-center text-sm">
                   {initials(c.firstName, c.lastName)}

@@ -344,9 +344,11 @@ export default function ProfessionalAppointmentsView({
       <div
         key={apt.id}
         id={`appt-${apt.id}`}
-        className={`px-5 py-4 hover:bg-slate-50 transition scroll-mt-24 ${
-          highlightIntake && apt.intakeVisitReason ? "bg-amber-50/40" : ""
-        } ${!apt.hasNotes && apt.status === "COMPLETED" ? "ring-1 ring-inset ring-violet-100" : ""}`}
+        className={`px-4 py-4 rounded-2xl border shadow-sm scroll-mt-24 transition ${
+          highlightIntake && apt.intakeVisitReason
+            ? "bg-amber-50/50 border-amber-200"
+            : "bg-white border-slate-200/80"
+        } ${!apt.hasNotes && apt.status === "COMPLETED" ? "ring-1 ring-violet-100" : ""}`}
       >
         <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:gap-4">
           <div className="flex items-start gap-4 flex-1 min-w-0">
@@ -754,7 +756,7 @@ export default function ProfessionalAppointmentsView({
               <div className="px-5 py-3 border-b border-amber-100 bg-amber-50/60">
                 <p className="text-sm font-semibold text-amber-900">{t("proappt.upcoming")}</p>
               </div>
-              <div className="divide-y divide-slate-100">
+              <div className="p-3 sm:p-4 space-y-3 bg-amber-50/30">
                 {upcoming.map((apt) => renderRow(apt, true))}
               </div>
             </div>
@@ -767,7 +769,7 @@ export default function ProfessionalAppointmentsView({
                 <p className="text-slate-400 text-sm">{t("proappt.empty")}</p>
               </div>
             ) : rest.length > 0 ? (
-              <div className="divide-y divide-slate-100">{rest.map((apt) => renderRow(apt))}</div>
+              <div className="p-3 sm:p-4 space-y-3 bg-slate-50/60">{rest.map((apt) => renderRow(apt))}</div>
             ) : null}
           </div>
         </>
@@ -830,7 +832,7 @@ export default function ProfessionalAppointmentsView({
 
           {selectedApt && (
             <div className="bg-white rounded-2xl border border-brand-200 shadow-sm overflow-hidden">
-              <div className="divide-y divide-slate-100">{renderRow(selectedApt, true)}</div>
+              <div className="p-3 sm:p-4 space-y-3 bg-slate-50/60">{renderRow(selectedApt, true)}</div>
             </div>
           )}
         </div>

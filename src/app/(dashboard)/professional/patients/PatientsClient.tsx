@@ -241,12 +241,12 @@ export default function PatientsClient({ initialCharts }: { initialCharts: Chart
             )}
           </div>
         ) : (
-          <div className="divide-y divide-slate-100">
+          <div className="p-3 sm:p-4 space-y-3 bg-slate-50/60">
             {filteredCharts.map((c) => (
               <Link
                 key={c.id}
                 href={professionalPatientsHref(pathname, c.id)}
-                className="flex items-center gap-4 px-5 py-4 hover:bg-slate-50 transition"
+                className="flex items-center gap-4 px-4 py-4 bg-white rounded-2xl border border-slate-200/80 shadow-sm hover:border-slate-300 transition"
               >
                 <div className="w-11 h-11 rounded-xl bg-brand-100 flex items-center justify-center font-bold text-brand-500 text-sm shrink-0">
                   {c.firstName[0] || "?"}{c.lastName[0] || ""}

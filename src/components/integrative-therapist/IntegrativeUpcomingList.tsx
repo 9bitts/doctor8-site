@@ -47,13 +47,13 @@ export default function IntegrativeUpcomingList({
   }
 
   return (
-    <div className="divide-y divide-slate-100">
+    <div className="p-3 sm:p-4 space-y-3 bg-slate-50/60">
       {rows.map((apt) => {
         const isUpcoming = new Date(apt.scheduledAt).getTime() >= Date.now();
         return (
           <div
             key={apt.id}
-            className="px-5 py-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
+            className="px-4 py-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between bg-white rounded-2xl border border-slate-200/80 shadow-sm"
           >
             <div className="min-w-0">
               <p className="font-medium text-slate-800 text-sm truncate">{apt.patientName}</p>

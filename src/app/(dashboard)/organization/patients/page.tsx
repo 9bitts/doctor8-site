@@ -76,9 +76,9 @@ export default function OrganizationPatientsPage() {
           <p className="text-slate-500">{t("org.patients.empty")}</p>
         </div>
       ) : (
-        <div className="bg-white rounded-2xl border border-slate-200 divide-y divide-slate-100">
+        <div className="p-3 sm:p-4 space-y-3 bg-slate-50/60 rounded-2xl border border-slate-200">
           {patients.map((p) => (
-            <div key={p.id} className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between px-4 sm:px-6 py-4">
+            <div key={p.id} className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between px-4 sm:px-5 py-4 bg-white rounded-2xl border border-slate-200/80 shadow-sm">
               <div className="min-w-0">
                 <p className="font-medium text-slate-900">
                   {p.firstName} {p.lastName}

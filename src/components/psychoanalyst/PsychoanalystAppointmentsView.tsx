@@ -161,14 +161,14 @@ export default function PsychoanalystAppointmentsView({
         </div>
       ) : (
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-          <div className="divide-y divide-slate-100">
+          <div className="p-3 sm:p-4 space-y-3 bg-slate-50/60">
             {filtered.map((apt) => {
               const firstName = apt.patientFirstName;
               const lastName = apt.patientLastName;
               return (
                 <div
                   key={apt.id}
-                  className="flex flex-wrap items-center gap-3 sm:gap-4 px-5 py-4 hover:bg-slate-50 transition"
+                  className="flex flex-wrap items-center gap-3 sm:gap-4 px-4 py-4 bg-white rounded-2xl border border-slate-200/80 shadow-sm"
                 >
                   <div className="w-11 h-11 rounded-xl bg-violet-100 flex items-center justify-center font-bold text-violet-600 text-sm shrink-0">
                     {initials(firstName, lastName)}

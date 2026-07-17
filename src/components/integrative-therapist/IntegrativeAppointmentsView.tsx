@@ -182,7 +182,7 @@ export default function IntegrativeAppointmentsView({
     return (
       <div
         key={apt.id}
-        className="px-5 py-4 flex flex-col sm:flex-row sm:items-center gap-3"
+        className="px-4 py-4 flex flex-col sm:flex-row sm:items-center gap-3 bg-white rounded-2xl border border-slate-200/80 shadow-sm"
       >
         <div className="flex-1 min-w-0">
           <p className="font-semibold text-slate-800 text-sm">{apt.patientName}</p>
@@ -310,7 +310,7 @@ export default function IntegrativeAppointmentsView({
             </p>
           </div>
         ) : viewMode === "list" ? (
-          <div className="divide-y divide-slate-100">{filtered.map(renderRow)}</div>
+          <div className="p-3 sm:p-4 space-y-3 bg-slate-50/60">{filtered.map(renderRow)}</div>
         ) : (
           <div className="overflow-x-auto">
             <div className="grid grid-cols-7 min-w-[42rem] divide-x divide-slate-100">

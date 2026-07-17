@@ -160,9 +160,9 @@ export default function SharedWithMeClient({ initialItems }: { initialItems: Ite
             </h2>
             <p className="text-xs text-slate-500 mt-1">{t("shared.teamChartsHint")}</p>
           </div>
-          <ul className="divide-y divide-slate-100">
+          <ul className="p-3 sm:p-4 space-y-3 bg-slate-50/60">
             {teamCharts.map((c) => (
-              <li key={c.shareId} className="px-5 py-4 flex items-center gap-4 hover:bg-slate-50">
+              <li key={c.shareId} className="px-4 py-4 flex items-center gap-4 bg-white rounded-2xl border border-slate-200/80 shadow-sm">
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-slate-800">{c.patientName}</p>
                   <p className="text-xs text-slate-500 mt-0.5">
@@ -195,14 +195,15 @@ export default function SharedWithMeClient({ initialItems }: { initialItems: Ite
           <p className="text-slate-400 text-xs mt-1">{t("shared.emptyHint")}</p>
         </div>
       ) : (
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden divide-y divide-slate-100">
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+          <div className="p-3 sm:p-4 space-y-3 bg-slate-50/60">
           {items.map((it) => {
             const label = it.categoryName
               ? getCategoryLabel(lang, { name: it.categoryName })
               : legacyLabel(it.type);
             const isBusy = busyId === it.shareId;
             return (
-              <div id={`shared-doc-${it.documentId}`} key={it.shareId} className="px-5 py-4 hover:bg-slate-50 transition">
+              <div id={`shared-doc-${it.documentId}`} key={it.shareId} className="px-4 py-4 bg-white rounded-2xl border border-slate-200/80 shadow-sm">
                 <div className="flex items-center gap-4">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap mb-1">
@@ -270,6 +271,7 @@ export default function SharedWithMeClient({ initialItems }: { initialItems: Ite
               </div>
             );
           })}
+          </div>
         </div>
       )}
     </div>

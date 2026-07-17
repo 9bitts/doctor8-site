@@ -174,9 +174,9 @@ export default async function PsychoanalystDashboard() {
         {upcoming.length === 0 ? (
           <p className="text-center text-slate-400 text-sm py-10">{t("proappt.empty")}</p>
         ) : (
-          <div className="divide-y divide-slate-100">
+          <div className="p-3 sm:p-4 space-y-3 bg-slate-50/60">
             {upcoming.map((apt) => (
-              <div key={apt.id} className="px-5 py-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div key={apt.id} className="px-4 py-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between bg-white rounded-2xl border border-slate-200/80 shadow-sm">
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
                     <p className="font-medium text-slate-800 text-sm truncate">

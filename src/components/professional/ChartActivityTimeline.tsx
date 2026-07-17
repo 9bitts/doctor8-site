@@ -177,8 +177,7 @@ export default function ChartActivityTimeline({
             <p className="text-slate-400 text-sm">{t("activityTimeline.emptyFilter")}</p>
           </div>
         ) : (
-          <div className="relative pl-8 pr-2 py-2">
-            <div className="absolute left-[15px] top-4 bottom-4 w-px bg-slate-200" aria-hidden />
+          <div className="p-3 sm:p-4 space-y-3 bg-slate-50/60">
             {filtered.map((ev) => {
               const isExpanded = expandedIds.has(ev.id);
               const displayText = ev.detail ?? ev.summary ?? "";
@@ -193,12 +192,10 @@ export default function ChartActivityTimeline({
               return (
                 <div
                   key={ev.id}
-                  className="relative px-3 py-4 border-b border-slate-50 last:border-0"
+                  className="relative px-4 py-4 bg-white rounded-2xl border border-slate-200/80 shadow-sm"
                 >
-                  <div
-                    className={`absolute left-[11px] top-5 w-2.5 h-2.5 rounded-full border-2 border-white shadow-sm z-10 ${dotClass}`}
-                  />
                   <div className="flex items-center gap-2 mb-1 flex-wrap">
+                    <span className={`inline-block w-2 h-2 rounded-full shrink-0 ${dotClass}`} aria-hidden />
                     <span className={`inline-flex text-[10px] font-bold px-2 py-0.5 rounded-full border ${badgeClass}`}>
                       {t(activityCategoryLabelKey(ev.category))}
                     </span>

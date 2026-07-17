@@ -407,54 +407,43 @@ export default function AcuraVolunteersAdminPanel() {
                 Nenhum voluntário neste filtro.
               </p>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="text-left text-xs text-slate-500 border-b border-slate-100">
-                      <th className="px-5 py-2.5">Nome</th>
-                      <th className="px-5 py-2.5">Tipo</th>
-                      <th className="px-5 py-2.5">Especialidade</th>
-                      <th className="px-5 py-2.5">Status</th>
-                      <th className="px-5 py-2.5">Ações</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.rows.map((v) => {
-                      const key = `${v.kind}-${v.id}`;
-                      const busy = busyKey === key;
-                      return (
-                        <tr key={key} className="border-b border-slate-50">
-                          <td className="px-5 py-2.5">
-                            <p className="font-medium text-slate-800">{v.name}</p>
-                            {v.email && (
-                              <p className="text-xs text-slate-400 truncate max-w-[220px]">{v.email}</p>
-                            )}
-                          </td>
-                          <td className="px-5 py-2.5">
-                            <span className="inline-flex items-center gap-1 text-xs text-slate-600">
-                              {KIND_ICON[v.kind]} {KIND_LABEL[v.kind]}
-                            </span>
-                          </td>
-                          <td className="px-5 py-2.5 text-slate-600 text-xs">{v.specialty || "—"}</td>
-                          <td className="px-5 py-2.5">
-                            <StatusBadge status={v.status} verified={v.verified} />
-                          </td>
-                          <td className="px-5 py-2.5 align-top">
-                            <ProviderCommandCtas
-                              row={v}
-                              busy={busy}
-                              verifyingEmail={verifyingEmailUserId === v.userId}
-                              onToggleListing={() => toggleListing(v)}
-                              onVerifyEmail={() => verifyUserEmail(v.userId)}
-                              onResetPassword={() => resetUserPassword(v.userId)}
-                              onAcuraAction={(action) => runAction(v, action)}
-                            />
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+              <div className="p-4 sm:p-5 space-y-3 bg-slate-50/60">
+                {data.rows.map((v) => {
+                  const key = `${v.kind}-${v.id}`;
+                  const busy = busyKey === key;
+                  return (
+                    <article
+                      key={key}
+                      className="bg-white rounded-2xl border border-slate-200/80 shadow-sm px-4 py-4 sm:px-5 sm:py-4 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4"
+                    >
+                      <div className="min-w-0 flex-1 space-y-2">
+                        <div>
+                          <p className="font-semibold text-slate-900">{v.name}</p>
+                          {v.email && (
+                            <p className="text-xs text-slate-400 mt-0.5 truncate">{v.email}</p>
+                          )}
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2 text-xs text-slate-600">
+                          <span className="inline-flex items-center gap-1">
+                            {KIND_ICON[v.kind]} {KIND_LABEL[v.kind]}
+                          </span>
+                          <span className="text-slate-300">·</span>
+                          <span>{v.specialty || "—"}</span>
+                        </div>
+                        <StatusBadge status={v.status} verified={v.verified} />
+                      </div>
+                      <ProviderCommandCtas
+                        row={v}
+                        busy={busy}
+                        verifyingEmail={verifyingEmailUserId === v.userId}
+                        onToggleListing={() => toggleListing(v)}
+                        onVerifyEmail={() => verifyUserEmail(v.userId)}
+                        onResetPassword={() => resetUserPassword(v.userId)}
+                        onAcuraAction={(action) => runAction(v, action)}
+                      />
+                    </article>
+                  );
+                })}
               </div>
             )}
           </>
@@ -485,28 +474,38 @@ export default function AcuraVolunteersAdminPanel() {
             </p>
           )}
           {includeResults.length > 0 && (
-            <ul className="divide-y divide-slate-50 border border-slate-100 rounded-xl overflow-hidden">
+            <ul className="space-y-3">
               {includeResults.map((r) => {
                 const key = `${r.kind}-${r.id}`;
                 const busy = busyKey === key;
                 return (
-                  <li key={key} className="flex items-start justify-between gap-3 px-4 py-3 text-sm">
-                    <div className="min-w-0">
-                      <p className="font-medium text-slate-800">{r.name}</p>
-                      <p className="text-xs text-slate-400 mb-2">
-                        {r.email} · {KIND_LABEL[r.kind]} ·{" "}
-                        <StatusBadge status={r.status} verified={r.verified} />
-                      </p>
-                      <ProviderCommandCtas
-                        row={r}
-                        busy={busy}
-                        verifyingEmail={verifyingEmailUserId === r.userId}
-                        onToggleListing={() => toggleListing(r)}
-                        onVerifyEmail={() => verifyUserEmail(r.userId)}
-                        onResetPassword={() => resetUserPassword(r.userId)}
-                        onAcuraAction={(action) => runAction(r, action)}
-                      />
+                  <li
+                    key={key}
+                    className="bg-slate-50/80 rounded-2xl border border-slate-200/80 px-4 py-4 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4"
+                  >
+                    <div className="min-w-0 flex-1 space-y-2">
+                      <div>
+                        <p className="font-semibold text-slate-900">{r.name}</p>
+                        <p className="text-xs text-slate-400 mt-0.5">{r.email}</p>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2 text-xs text-slate-600">
+                        <span className="inline-flex items-center gap-1">
+                          {KIND_ICON[r.kind]} {KIND_LABEL[r.kind]}
+                        </span>
+                        <span className="text-slate-300">·</span>
+                        <span>{r.specialty || "—"}</span>
+                      </div>
+                      <StatusBadge status={r.status} verified={r.verified} />
                     </div>
+                    <ProviderCommandCtas
+                      row={r}
+                      busy={busy}
+                      verifyingEmail={verifyingEmailUserId === r.userId}
+                      onToggleListing={() => toggleListing(r)}
+                      onVerifyEmail={() => verifyUserEmail(r.userId)}
+                      onResetPassword={() => resetUserPassword(r.userId)}
+                      onAcuraAction={(action) => runAction(r, action)}
+                    />
                   </li>
                 );
               })}

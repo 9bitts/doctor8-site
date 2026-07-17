@@ -225,14 +225,15 @@ export default function AnalysandDetailClient({
         </button>
       </form>
 
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm divide-y divide-slate-100">
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
         {loading ? (
           <div className="flex justify-center py-12"><Loader2 className="animate-spin text-slate-400" /></div>
         ) : notes.length === 0 ? (
           <p className="text-center text-slate-400 text-sm py-12">{t("pa.sessions.empty")}</p>
         ) : (
-          notes.map((n) => (
-            <div key={n.id} className="p-5">
+          <div className="p-3 sm:p-4 space-y-3 bg-slate-50/60">
+          {notes.map((n) => (
+            <div key={n.id} className="p-4 sm:p-5 bg-white rounded-2xl border border-slate-200/80 shadow-sm">
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="font-semibold text-slate-800 text-sm">{n.title}</p>
@@ -293,7 +294,8 @@ export default function AnalysandDetailClient({
                 <p className="text-xs text-red-600 mt-2">{t("pa.sessions.shareError")}</p>
               )}
             </div>
-          ))
+          ))}
+          </div>
         )}
       </div>
 
