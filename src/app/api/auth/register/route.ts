@@ -30,7 +30,7 @@ import { saveRegistrationPhone } from "@/lib/save-registration-phone";
 import { isAccountVerified } from "@/lib/account-verified";
 import { userHasAnyProfile } from "@/lib/user-profile-complete";
 import { createSignupProfile } from "@/lib/signup-profile-create";
-import { PROFESSION_SIGNUP, isProfessionSignupSlug } from "@/lib/profession-signup";
+import { isProfessionSignupSlug } from "@/lib/profession-signup";
 import {
   canSkipHumanitarianEmailVerification,
   isHumanitarianContext,
@@ -97,8 +97,22 @@ const registerSchema = z.object({
     "dentista",
     "cuidados_paliativos",
   ] as const).optional(),
+  /** Required for clinical providers: interest in AcuraBrasil volunteer program. */
+  acuraVolunteerInterest: z.enum(["yes", "no"]).optional(),
   callbackUrl: z.string().optional(),
   inviteToken: z.string().optional(),
+}).superRefine((val, ctx) => {
+  const isProvider =
+    val.role === "PROFESSIONAL" ||
+    val.role === "PSYCHOANALYST" ||
+    val.role === "INTEGRATIVE_THERAPIST";
+  if (isProvider && val.acuraVolunteerInterest !== "yes" && val.acuraVolunteerInterest !== "no") {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Select whether you are an AcuraBrasil volunteer",
+      path: ["acuraVolunteerInterest"],
+    });
+  }
 });
 
 type RegisterProfileInput = {
@@ -111,14 +125,25 @@ type RegisterProfileInput = {
   professionalKind?: "psychologist";
   profession?: "medico" | "psicologo" | "fisioterapeuta" | "nutricionista" | "enfermeiro" | "farmaceutico" | "dentista" | "cuidados_paliativos";
   acquisitionFields?: ReturnType<typeof patientAcquisitionProfileFields>;
+  acuraVolunteerInterest?: "yes" | "no";
 };
 
 async function createRegisterProfile(
   tx: Parameters<Parameters<typeof db.$transaction>[0]>[0],
   input: RegisterProfileInput,
 ): Promise<void> {
-  const { userId, role, firstName, lastName, email, region, professionalKind, profession, acquisitionFields } =
-    input;
+  const {
+    userId,
+    role,
+    firstName,
+    lastName,
+    email,
+    region,
+    professionalKind,
+    profession,
+    acquisitionFields,
+    acuraVolunteerInterest,
+  } = input;
 
   if (role === "PATIENT") {
     await tx.patientProfile.create({
@@ -135,29 +160,16 @@ async function createRegisterProfile(
     return;
   }
 
-  if (role === "PROFESSIONAL" && profession && isProfessionSignupSlug(profession)) {
-    const specialty = PROFESSION_SIGNUP[profession].specialty ?? "";
-    await tx.professionalProfile.create({
-      data: {
-        userId,
-        firstName,
-        lastName,
-        licenseNumber: "",
-        specialty,
-        consultPrice: 0,
-      },
-    });
-    return;
-  }
-
   await createSignupProfile(tx, {
     userId,
     role: role as import("@/lib/oauth-signup-intent").SignupRole,
     professionalKind: professionalKind ?? null,
+    profession: profession && isProfessionSignupSlug(profession) ? profession : null,
     firstName,
     lastName,
     email,
     country: region,
+    acuraVolunteerInterest: acuraVolunteerInterest ?? null,
   });
 }
 
@@ -197,6 +209,7 @@ export async function POST(req: NextRequest) {
       acceptedLgpd,
       professionalKind,
       profession,
+      acuraVolunteerInterest,
       callbackUrl,
       inviteToken,
     } = data.data;
@@ -354,6 +367,7 @@ export async function POST(req: NextRequest) {
           professionalKind,
           profession,
           acquisitionFields,
+          acuraVolunteerInterest,
         });
 
         await createRegisterConsents(tx, existing.id, ip, userAgent, {
@@ -455,6 +469,7 @@ export async function POST(req: NextRequest) {
         professionalKind,
         profession,
         acquisitionFields,
+        acuraVolunteerInterest,
       });
 
       await createRegisterConsents(tx, newUser.id, ip, userAgent, {

@@ -175,6 +175,8 @@ export function RegisterAccountForm({
   const [acceptedHipaa, setAcceptedHipaa] = useState(false);
   const [acceptedGdpr, setAcceptedGdpr] = useState(false);
   const [acceptedLgpd, setAcceptedLgpd] = useState(false);
+  /** "" until chosen — required for clinical provider signups. */
+  const [acuraVolunteerInterest, setAcuraVolunteerInterest] = useState<"" | "yes" | "no">("");
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string[]>>({});
@@ -199,12 +201,24 @@ export function RegisterAccountForm({
     return () => { cancelled = true; };
   }, [inviteToken]);
 
+  const isProfessional = role === "PROFESSIONAL";
+  const isPsychologistSignup = isProfessional && professionalKind === "psychologist";
+  const isNutritionistSignup = professionSlug === "nutricionista";
+  const isNurseSignup = professionSlug === "enfermeiro";
+  const isPharmacistSignup = professionSlug === "farmaceutico";
+  const isDentistSignup = professionSlug === "dentista";
+  const isPsychoanalyst = role === "PSYCHOANALYST";
+  const isIntegrativeTherapist = role === "INTEGRATIVE_THERAPIST";
+  const isClinicalProvider = isProfessional || isPsychoanalyst || isIntegrativeTherapist;
+  const acuraInterestOk = !isClinicalProvider || acuraVolunteerInterest === "yes" || acuraVolunteerInterest === "no";
+
   const passwordStrength = PASSWORD_RULES.filter((r) => r.test(password)).length;
   const isPasswordValid = passwordStrength === PASSWORD_RULES.length;
   const isPhoneValid = validateRegistrationPhone(phone.ddi, phone.nationalNumber).ok;
   const canSubmit =
     isPasswordValid &&
     isPhoneValid &&
+    acuraInterestOk &&
     acceptedTerms &&
     acceptedPrivacy &&
     (!requiresHipaa(region) || acceptedHipaa) &&
@@ -214,19 +228,11 @@ export function RegisterAccountForm({
   const missingFields: string[] = [];
   if (!isPhoneValid) missingFields.push(t("reg.missing.phone"));
   if (!isPasswordValid) missingFields.push(t("reg.missing.password"));
+  if (!acuraInterestOk) missingFields.push(t("reg.missing.acuraVolunteer"));
   if (!acceptedTerms || !acceptedPrivacy) missingFields.push(t("reg.missing.terms"));
   if (requiresHipaa(region) && !acceptedHipaa) missingFields.push(t("reg.missing.hipaa"));
   if (requiresGdpr(region) && !acceptedGdpr) missingFields.push(t("reg.missing.gdpr"));
   if (requiresLgpd(region) && !acceptedLgpd) missingFields.push(t("reg.missing.lgpd"));
-
-  const isProfessional = role === "PROFESSIONAL";
-  const isPsychologistSignup = isProfessional && professionalKind === "psychologist";
-  const isNutritionistSignup = professionSlug === "nutricionista";
-  const isNurseSignup = professionSlug === "enfermeiro";
-  const isPharmacistSignup = professionSlug === "farmaceutico";
-  const isDentistSignup = professionSlug === "dentista";
-  const isPsychoanalyst = role === "PSYCHOANALYST";
-  const isIntegrativeTherapist = role === "INTEGRATIVE_THERAPIST";
 
   const oauthProfession =
     professionSlug && !isPsychologistSignup ? professionSlug : undefined;
@@ -238,6 +244,10 @@ export function RegisterAccountForm({
   async function handleGoogleSignUp() {
     if (!isPhoneValid) {
       setErrors({ phoneNational: [t("reg.phoneInvalid")] });
+      return;
+    }
+    if (!acuraInterestOk) {
+      setErrors({ acuraVolunteerInterest: [t("reg.missing.acuraVolunteer")] });
       return;
     }
     setGoogleLoading(true);
@@ -253,6 +263,7 @@ export function RegisterAccountForm({
           phoneNational: phone.nationalNumber,
           region,
           language: lang,
+          acuraVolunteerInterest: isClinicalProvider ? acuraVolunteerInterest : undefined,
         }),
       });
       if (!intentRes.ok) {
@@ -308,6 +319,7 @@ export function RegisterAccountForm({
           language: lang,
           professionalKind: isPsychologistSignup ? "psychologist" : undefined,
           profession: professionSlug,
+          acuraVolunteerInterest: isClinicalProvider ? acuraVolunteerInterest : undefined,
           acceptedTerms,
           acceptedPrivacy,
           acceptedHipaa: requiresHipaa(region) ? acceptedHipaa : undefined,
@@ -596,6 +608,34 @@ export function RegisterAccountForm({
           <p className="text-xs text-slate-400 bg-white/5 border border-white/10 rounded-xl p-3">
             {t("reg.psychoanalystNote")}
           </p>
+        )}
+
+        {isClinicalProvider && (
+          <div>
+            <label className="block text-sm font-medium text-slate-300 mb-2">
+              {t("reg.acuraVolunteer.label")}
+            </label>
+            <select
+              value={acuraVolunteerInterest}
+              onChange={(e) => setAcuraVolunteerInterest(e.target.value as "" | "yes" | "no")}
+              required
+              className={`w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 ${styles.ring} transition`}
+            >
+              <option value="" className="bg-slate-900 text-slate-300">
+                {t("reg.acuraVolunteer.placeholder")}
+              </option>
+              <option value="no" className="bg-slate-900 text-white">
+                {t("reg.acuraVolunteer.no")}
+              </option>
+              <option value="yes" className="bg-slate-900 text-white">
+                {t("reg.acuraVolunteer.yes")}
+              </option>
+            </select>
+            <p className="text-xs text-slate-500 mt-1.5">{t("reg.acuraVolunteer.hint")}</p>
+            {errors.acuraVolunteerInterest && (
+              <p className="text-red-400 text-xs mt-1">{errors.acuraVolunteerInterest[0]}</p>
+            )}
+          </div>
         )}
 
         <div className="border-t border-white/10 pt-5 space-y-3">

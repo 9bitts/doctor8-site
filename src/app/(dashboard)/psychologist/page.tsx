@@ -15,7 +15,6 @@ import HumanitarianVolunteerBanner from "@/components/humanitarian/HumanitarianV
 import PsychologyRiskAlertsBanner from "@/components/psychologist/PsychologyRiskAlertsBanner";
 import { getPsychologyRiskAlerts } from "@/lib/psychology-risk-alerts";
 import { isPsychologyRiskAlertsEnabled } from "@/lib/psychology-feature-flags";
-import AcuraVolunteerOptIn from "@/components/acura/AcuraVolunteerOptIn";
 import DoctorConnectionBanner from "@/components/professional/DoctorConnectionBanner";
 import ProfessionalInsightsBanner from "@/components/professional/ProfessionalInsightsBanner";
 import { getActiveCampaignForRegion } from "@/lib/humanitarian/notify";
@@ -121,11 +120,6 @@ export default async function PsychologistDashboard() {
         campaignActive={!!humanitarianCampaign?.active}
         volunteer={humanitarianVolunteer}
         psychologyPortal
-      />
-
-      <AcuraVolunteerOptIn
-        initialChecked={professional.acuraVolunteer}
-        verified={professional.verified}
       />
 
       <DoctorConnectionBanner

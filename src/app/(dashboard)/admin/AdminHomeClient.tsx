@@ -23,6 +23,7 @@ const LINK_GROUPS: LinkGroup[] = [
       { href: "/admin/patients", labelKey: "nav.adminPatients", icon: Users },
       { href: "/admin/mensagens", labelKey: "nav.adminMessages", icon: MessageCircle },
       { href: "/admin/doctors", labelKey: "nav.adminDoctors", icon: Stethoscope },
+      { href: "/admin/acura-volunteers", labelKey: "nav.adminAcuraVolunteers", icon: Heart },
       { href: "/admin/medicos-ocupacionais", labelKey: "nav.adminOccupational", icon: Stethoscope },
       { href: "/admin/humanitarian", labelKey: "nav.adminHumanitarian", icon: Heart },
       { href: "/admin/jit-events", labelKey: "nav.adminJitEvents", icon: Radio },

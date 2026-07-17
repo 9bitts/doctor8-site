@@ -2,12 +2,22 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
-import { Loader2, RefreshCw, Users, Clock, Stethoscope, Brain, Leaf } from "lucide-react";
+import {
+  Loader2,
+  RefreshCw,
+  Users,
+  Clock,
+  Stethoscope,
+  Brain,
+  Leaf,
+  Search,
+  Ban,
+} from "lucide-react";
 import { ACURA_VOLUNTEER_LOGO } from "@/lib/acura-volunteer";
-import type { AcuraVolunteerStats } from "@/lib/acura-volunteer-stats";
+import type { AcuraVolunteerAdminList, AcuraVolunteerAdminRow } from "@/lib/acura-volunteer-admin";
 
 const KIND_LABEL: Record<string, string> = {
-  professional: "Profissional de saude",
+  professional: "Profissional de saúde",
   psychoanalyst: "Psicanalista",
   integrative: "Terapeuta integrativo",
 };
@@ -18,123 +28,354 @@ const KIND_ICON: Record<string, React.ReactNode> = {
   integrative: <Leaf size={12} />,
 };
 
+type StatusFilter = "all" | "PENDING" | "ACTIVE" | "REVOKED";
+
+function StatusBadge({ status, verified }: { status: string; verified: boolean }) {
+  if (status === "ACTIVE") {
+    return (
+      <span className="text-xs font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
+        {verified ? "Ativo · selo visível" : "Ativo · aguarda verificação"}
+      </span>
+    );
+  }
+  if (status === "PENDING") {
+    return (
+      <span className="text-xs font-medium text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full">
+        Pendente aprovação
+      </span>
+    );
+  }
+  if (status === "REVOKED") {
+    return (
+      <span className="text-xs font-medium text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full">
+        Revogado
+      </span>
+    );
+  }
+  return (
+    <span className="text-xs font-medium text-slate-500 bg-slate-50 px-2 py-0.5 rounded-full">
+      Não participante
+    </span>
+  );
+}
+
 export default function AcuraVolunteersAdminPanel() {
-  const [stats, setStats] = useState<AcuraVolunteerStats | null>(null);
+  const [data, setData] = useState<AcuraVolunteerAdminList | null>(null);
   const [loading, setLoading] = useState(true);
+  const [status, setStatus] = useState<StatusFilter>("all");
+  const [q, setQ] = useState("");
+  const [busyKey, setBusyKey] = useState<string | null>(null);
+  const [includeQ, setIncludeQ] = useState("");
+  const [includeResults, setIncludeResults] = useState<AcuraVolunteerAdminRow[]>([]);
+  const [includeLoading, setIncludeLoading] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/admin/acura-volunteers");
-      if (res.ok) setStats(await res.json());
-    } catch { /* ignore */ }
+      const params = new URLSearchParams();
+      if (status !== "all") params.set("status", status);
+      if (q.trim()) params.set("q", q.trim());
+      const res = await fetch(`/api/admin/acura-volunteers?${params}`);
+      if (res.ok) setData(await res.json());
+    } catch {
+      /* ignore */
+    }
     setLoading(false);
-  }, []);
+  }, [status, q]);
 
   useEffect(() => {
     load();
   }, [load]);
 
-  return (
-    <div className="bg-white border border-slate-100 rounded-2xl shadow-sm overflow-hidden">
-      <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between gap-3 flex-wrap">
-        <div className="flex items-center gap-3">
-          <Image
-            src={ACURA_VOLUNTEER_LOGO}
-            alt="AcuraBrasil"
-            width={96}
-            height={24}
-            className="h-6 w-auto object-contain"
-            unoptimized
-          />
-          <div>
-            <h2 className="font-semibold text-slate-800">Voluntarios AcuraBrasil</h2>
-            <p className="text-xs text-slate-500">Opt-in no perfil (selo em consultas e link publico)</p>
-          </div>
-        </div>
-        <button
-          type="button"
-          onClick={load}
-          className="text-xs font-medium px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 flex items-center gap-1.5"
-        >
-          <RefreshCw size={12} /> Atualizar
-        </button>
-      </div>
+  async function runAction(
+    row: AcuraVolunteerAdminRow,
+    action: "approve" | "reject" | "include" | "revoke",
+  ) {
+    const key = `${row.kind}-${row.id}`;
+    setBusyKey(key);
+    try {
+      const res = await fetch("/api/admin/acura-volunteers", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ kind: row.kind, id: row.id, action }),
+      });
+      if (res.ok) {
+        await load();
+        if (action === "include") {
+          setIncludeResults((prev) => prev.filter((r) => !(r.kind === row.kind && r.id === row.id)));
+        }
+      }
+    } finally {
+      setBusyKey(null);
+    }
+  }
 
-      {loading && !stats ? (
-        <div className="p-8 flex justify-center">
-          <Loader2 size={22} className="animate-spin text-sky-500" />
+  useEffect(() => {
+    if (includeQ.trim().length < 2) {
+      setIncludeResults([]);
+      return;
+    }
+    const t = setTimeout(async () => {
+      setIncludeLoading(true);
+      try {
+        const res = await fetch(
+          `/api/admin/acura-volunteers/search?q=${encodeURIComponent(includeQ.trim())}`,
+        );
+        if (res.ok) {
+          const body = await res.json();
+          setIncludeResults(body.results ?? []);
+        }
+      } catch {
+        /* ignore */
+      }
+      setIncludeLoading(false);
+    }, 300);
+    return () => clearTimeout(t);
+  }, [includeQ]);
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-white border border-slate-100 rounded-2xl shadow-sm overflow-hidden">
+        <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between gap-3 flex-wrap">
+          <div className="flex items-center gap-3">
+            <Image
+              src={ACURA_VOLUNTEER_LOGO}
+              alt="AcuraBrasil"
+              width={96}
+              height={24}
+              className="h-6 w-auto object-contain"
+              unoptimized
+            />
+            <div>
+              <h2 className="font-semibold text-slate-800">Voluntários AcuraBrasil</h2>
+              <p className="text-xs text-slate-500">
+                Lista oficial de contato — só quem pediu ou foi aprovado pelo admin
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={load}
+            className="text-xs font-medium px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 flex items-center gap-1.5"
+          >
+            <RefreshCw size={12} /> Atualizar
+          </button>
         </div>
-      ) : stats ? (
-        <>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-5 border-b border-slate-50">
-            <div className="bg-sky-50 rounded-xl p-3">
-              <p className="text-xs text-sky-700 flex items-center gap-1">
-                <Users size={12} /> Com selo ativo
-              </p>
-              <p className="text-2xl font-bold text-sky-900 mt-1">{stats.totals.optInVerified}</p>
-            </div>
-            <div className="bg-amber-50 rounded-xl p-3">
-              <p className="text-xs text-amber-700 flex items-center gap-1">
-                <Clock size={12} /> Aguardando verificacao
-              </p>
-              <p className="text-2xl font-bold text-amber-900 mt-1">{stats.totals.optInPending}</p>
-            </div>
-            <div className="bg-slate-50 rounded-xl p-3 col-span-2">
-              <p className="text-xs text-slate-500 mb-2">Por tipo (verificados)</p>
-              <div className="flex flex-wrap gap-3 text-sm text-slate-700">
-                <span>Saude: <strong>{stats.totals.byKind.professional}</strong></span>
-                <span>Psicanalista: <strong>{stats.totals.byKind.psychoanalyst}</strong></span>
-                <span>Integrativo: <strong>{stats.totals.byKind.integrative}</strong></span>
+
+        {loading && !data ? (
+          <div className="p-8 flex justify-center">
+            <Loader2 size={22} className="animate-spin text-sky-500" />
+          </div>
+        ) : data ? (
+          <>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-5 border-b border-slate-50">
+              <div className="bg-emerald-50 rounded-xl p-3">
+                <p className="text-xs text-emerald-700 flex items-center gap-1">
+                  <Users size={12} /> Ativos
+                </p>
+                <p className="text-2xl font-bold text-emerald-900 mt-1">{data.totals.active}</p>
+                <p className="text-[11px] text-emerald-700/80 mt-0.5">
+                  Selo visível: {data.totals.activeVerified}
+                </p>
+              </div>
+              <div className="bg-amber-50 rounded-xl p-3">
+                <p className="text-xs text-amber-700 flex items-center gap-1">
+                  <Clock size={12} /> Pendentes
+                </p>
+                <p className="text-2xl font-bold text-amber-900 mt-1">{data.totals.pending}</p>
+              </div>
+              <div className="bg-slate-50 rounded-xl p-3">
+                <p className="text-xs text-slate-500 flex items-center gap-1">
+                  <Ban size={12} /> Revogados
+                </p>
+                <p className="text-2xl font-bold text-slate-800 mt-1">{data.totals.revoked}</p>
+              </div>
+              <div className="bg-sky-50 rounded-xl p-3">
+                <p className="text-xs text-sky-700 mb-1">Ativos por tipo</p>
+                <div className="flex flex-wrap gap-2 text-xs text-sky-900">
+                  <span>Saúde: <strong>{data.totals.byKind.professional}</strong></span>
+                  <span>Psico: <strong>{data.totals.byKind.psychoanalyst}</strong></span>
+                  <span>Integr.: <strong>{data.totals.byKind.integrative}</strong></span>
+                </div>
               </div>
             </div>
-          </div>
 
-          {stats.volunteers.length === 0 ? (
-            <p className="text-sm text-slate-400 text-center py-10">Nenhum opt-in registrado ainda.</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-left text-xs text-slate-500 border-b border-slate-100">
-                    <th className="px-5 py-2.5">Nome</th>
-                    <th className="px-5 py-2.5">Tipo</th>
-                    <th className="px-5 py-2.5">Especialidade</th>
-                    <th className="px-5 py-2.5">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {stats.volunteers.map((v) => (
-                    <tr key={`${v.kind}-${v.id}`} className="border-b border-slate-50">
-                      <td className="px-5 py-2.5">
-                        <p className="font-medium text-slate-800">{v.name}</p>
-                        {v.email && <p className="text-xs text-slate-400 truncate max-w-[200px]">{v.email}</p>}
-                      </td>
-                      <td className="px-5 py-2.5">
-                        <span className="inline-flex items-center gap-1 text-xs text-slate-600">
-                          {KIND_ICON[v.kind]} {KIND_LABEL[v.kind]}
-                        </span>
-                      </td>
-                      <td className="px-5 py-2.5 text-slate-600 text-xs">{v.specialty || "?"}</td>
-                      <td className="px-5 py-2.5">
-                        {v.verified ? (
-                          <span className="text-xs font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
-                            Selo visivel
-                          </span>
-                        ) : (
-                          <span className="text-xs font-medium text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full">
-                            Pendente verificacao
-                          </span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="px-5 py-3 border-b border-slate-50 flex flex-wrap gap-2 items-center">
+              {(
+                [
+                  ["all", "Todos"],
+                  ["PENDING", "Pendentes"],
+                  ["ACTIVE", "Ativos"],
+                  ["REVOKED", "Revogados"],
+                ] as const
+              ).map(([value, label]) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => setStatus(value)}
+                  className={`text-xs font-medium px-3 py-1.5 rounded-lg border ${
+                    status === value
+                      ? "bg-sky-600 text-white border-sky-600"
+                      : "border-slate-200 text-slate-600 hover:bg-slate-50"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+              <div className="relative ml-auto min-w-[200px] flex-1 max-w-xs">
+                <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input
+                  value={q}
+                  onChange={(e) => setQ(e.target.value)}
+                  placeholder="Buscar nome ou e-mail…"
+                  className="w-full text-sm pl-8 pr-3 py-1.5 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-200"
+                />
+              </div>
             </div>
+
+            {data.rows.length === 0 ? (
+              <p className="text-sm text-slate-400 text-center py-10">
+                Nenhum voluntário neste filtro.
+              </p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-left text-xs text-slate-500 border-b border-slate-100">
+                      <th className="px-5 py-2.5">Nome</th>
+                      <th className="px-5 py-2.5">Tipo</th>
+                      <th className="px-5 py-2.5">Especialidade</th>
+                      <th className="px-5 py-2.5">Status</th>
+                      <th className="px-5 py-2.5">Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.rows.map((v) => {
+                      const key = `${v.kind}-${v.id}`;
+                      const busy = busyKey === key;
+                      return (
+                        <tr key={key} className="border-b border-slate-50">
+                          <td className="px-5 py-2.5">
+                            <p className="font-medium text-slate-800">{v.name}</p>
+                            {v.email && (
+                              <p className="text-xs text-slate-400 truncate max-w-[220px]">{v.email}</p>
+                            )}
+                          </td>
+                          <td className="px-5 py-2.5">
+                            <span className="inline-flex items-center gap-1 text-xs text-slate-600">
+                              {KIND_ICON[v.kind]} {KIND_LABEL[v.kind]}
+                            </span>
+                          </td>
+                          <td className="px-5 py-2.5 text-slate-600 text-xs">{v.specialty || "—"}</td>
+                          <td className="px-5 py-2.5">
+                            <StatusBadge status={v.status} verified={v.verified} />
+                          </td>
+                          <td className="px-5 py-2.5">
+                            <div className="flex flex-wrap gap-1.5">
+                              {v.status === "PENDING" && (
+                                <>
+                                  <button
+                                    type="button"
+                                    disabled={busy}
+                                    onClick={() => runAction(v, "approve")}
+                                    className="text-[11px] font-semibold px-2 py-1 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50"
+                                  >
+                                    Aprovar
+                                  </button>
+                                  <button
+                                    type="button"
+                                    disabled={busy}
+                                    onClick={() => runAction(v, "reject")}
+                                    className="text-[11px] font-semibold px-2 py-1 rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-50"
+                                  >
+                                    Rejeitar
+                                  </button>
+                                </>
+                              )}
+                              {v.status === "ACTIVE" && (
+                                <button
+                                  type="button"
+                                  disabled={busy}
+                                  onClick={() => runAction(v, "revoke")}
+                                  className="text-[11px] font-semibold px-2 py-1 rounded-lg border border-amber-200 text-amber-800 hover:bg-amber-50 disabled:opacity-50"
+                                >
+                                  Revogar
+                                </button>
+                              )}
+                              {(v.status === "REVOKED" || v.status === "NONE") && (
+                                <button
+                                  type="button"
+                                  disabled={busy}
+                                  onClick={() => runAction(v, "include")}
+                                  className="text-[11px] font-semibold px-2 py-1 rounded-lg bg-sky-600 text-white hover:bg-sky-700 disabled:opacity-50"
+                                >
+                                  Incluir / Aprovar
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </>
+        ) : null}
+      </div>
+
+      <div className="bg-white border border-slate-100 rounded-2xl shadow-sm overflow-hidden">
+        <div className="px-5 py-4 border-b border-slate-100">
+          <h3 className="font-semibold text-slate-800">Incluir profissional regular</h3>
+          <p className="text-xs text-slate-500 mt-1">
+            Cadastrou como não voluntário e depois quer participar? Busque e aprove aqui — o selo
+            AcuraBrasil é concedido automaticamente.
+          </p>
+        </div>
+        <div className="p-5 space-y-3">
+          <div className="relative max-w-md">
+            <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              value={includeQ}
+              onChange={(e) => setIncludeQ(e.target.value)}
+              placeholder="Nome ou e-mail do profissional…"
+              className="w-full text-sm pl-8 pr-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-200"
+            />
+          </div>
+          {includeLoading && (
+            <p className="text-xs text-slate-400 flex items-center gap-1.5">
+              <Loader2 size={12} className="animate-spin" /> Buscando…
+            </p>
           )}
-        </>
-      ) : null}
+          {includeResults.length > 0 && (
+            <ul className="divide-y divide-slate-50 border border-slate-100 rounded-xl overflow-hidden">
+              {includeResults.map((r) => {
+                const key = `${r.kind}-${r.id}`;
+                return (
+                  <li key={key} className="flex items-center justify-between gap-3 px-4 py-3 text-sm">
+                    <div>
+                      <p className="font-medium text-slate-800">{r.name}</p>
+                      <p className="text-xs text-slate-400">
+                        {r.email} · {KIND_LABEL[r.kind]} ·{" "}
+                        <StatusBadge status={r.status} verified={r.verified} />
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      disabled={busyKey === key}
+                      onClick={() => runAction(r, "include")}
+                      className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-sky-600 text-white hover:bg-sky-700 disabled:opacity-50 shrink-0"
+                    >
+                      Aprovar na Acura
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

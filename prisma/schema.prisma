@@ -42,6 +42,14 @@ enum ProviderType {
   INTEGRATIVE_THERAPIST
 }
 
+// AcuraBrasil volunteer program — admin-controlled (not self-service).
+enum AcuraVolunteerStatus {
+  NONE
+  PENDING
+  ACTIVE
+  REVOKED
+}
+
 enum PatientChartInviteStatus {
   SENT
   LINKED
@@ -888,8 +896,11 @@ model ProfessionalProfile {
   verifiedAt      DateTime?
   verifiedBy      String?
 
-  // AcuraBrasil volunteer badge (opt-in; shown on booking cards + public profile)
-  acuraVolunteer  Boolean  @default(false)
+  // AcuraBrasil volunteer — acuraVolunteer mirrors ACTIVE for badge/search compatibility
+  acuraVolunteer                Boolean              @default(false)
+  acuraVolunteerStatus          AcuraVolunteerStatus @default(NONE)
+  acuraVolunteerApprovedAt      DateTime?
+  acuraVolunteerApprovedBy      String?
 
   // P8b scheduled volunteer — admin approval (gradual rollout via env flag)
   volunteerScheduledApproved    Boolean   @default(false)
@@ -1033,7 +1044,10 @@ model PsychoanalystProfile {
   verifiedAt      DateTime?
   verifiedBy      String?
 
-  acuraVolunteer  Boolean  @default(false)
+  acuraVolunteer                Boolean              @default(false)
+  acuraVolunteerStatus          AcuraVolunteerStatus @default(NONE)
+  acuraVolunteerApprovedAt      DateTime?
+  acuraVolunteerApprovedBy      String?
 
   // P8b scheduled volunteer — admin approval (gradual rollout via env flag)
   volunteerScheduledApproved    Boolean   @default(false)
@@ -1122,7 +1136,10 @@ model IntegrativeTherapistProfile {
   verifiedAt      DateTime?
   verifiedBy      String?
 
-  acuraVolunteer  Boolean  @default(false)
+  acuraVolunteer                Boolean              @default(false)
+  acuraVolunteerStatus          AcuraVolunteerStatus @default(NONE)
+  acuraVolunteerApprovedAt      DateTime?
+  acuraVolunteerApprovedBy      String?
 
   // P8b scheduled volunteer — admin approval (gradual rollout via env flag)
   volunteerScheduledApproved    Boolean   @default(false)

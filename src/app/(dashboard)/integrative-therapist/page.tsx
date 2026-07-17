@@ -10,7 +10,6 @@ import { picBySlug, picLabel } from "@/lib/pics/practices";
 import { Calendar, Users, ChevronRight, Video, Settings, FileText, Leaf, TrendingUp, Clock, BookOpen, ClipboardList, AlertCircle, Sprout, MessageSquare, Stethoscope, FlaskConical } from "lucide-react";
 import Link from "next/link";
 import HumanitarianVolunteerBanner from "@/components/humanitarian/HumanitarianVolunteerBanner";
-import AcuraVolunteerOptIn from "@/components/acura/AcuraVolunteerOptIn";
 import { getActiveCampaignForRegion } from "@/lib/humanitarian/notify";
 import { getIntegrativeVisitMetaByPatientUserIds } from "@/lib/integrative-appointment-meta";
 import { getVolunteerDashboardState } from "@/lib/humanitarian/volunteer-dashboard";
@@ -107,11 +106,6 @@ export default async function IntegrativeTherapistDashboard() {
         lang={lang}
         campaignActive={!!humanitarianCampaign?.active}
         volunteer={humanitarianVolunteer}
-      />
-
-      <AcuraVolunteerOptIn
-        initialChecked={profile.acuraVolunteer}
-        verified={profile.verified}
       />
 
       <div>

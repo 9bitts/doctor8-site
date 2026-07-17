@@ -289,6 +289,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               profession,
               phoneE164,
               region: intentRegion,
+              acuraVolunteerInterest,
             } = intent;
             const nameParts = (user.name || "").split(" ");
             const firstName = nameParts[0] || "";
@@ -317,6 +318,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                 lastName,
                 avatarUrl: user.image || null,
                 country: signupRegion,
+                acuraVolunteerInterest: acuraVolunteerInterest ?? null,
               });
 
               if (phoneE164) {

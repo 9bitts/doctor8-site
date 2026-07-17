@@ -18,6 +18,19 @@ const roleSchema = z.object({
   phoneNational: z.string().min(6).max(20),
   region: z.enum(REGISTRATION_REGION_CODES as [typeof REGISTRATION_REGION_CODES[number], ...typeof REGISTRATION_REGION_CODES[number][]]).optional(),
   language: z.enum(["pt", "en", "es"]).optional(),
+  acuraVolunteerInterest: z.enum(["yes", "no"]).optional(),
+}).superRefine((val, ctx) => {
+  const isProvider =
+    val.role === "PROFESSIONAL" ||
+    val.role === "PSYCHOANALYST" ||
+    val.role === "INTEGRATIVE_THERAPIST";
+  if (isProvider && val.acuraVolunteerInterest !== "yes" && val.acuraVolunteerInterest !== "no") {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "acuraVolunteerInterest required",
+      path: ["acuraVolunteerInterest"],
+    });
+  }
 });
 
 function cookieOptions(maxAge: number) {
@@ -56,6 +69,7 @@ export async function POST(req: NextRequest) {
       headers: req.headers,
     }),
     parsed.data.profession ?? null,
+    parsed.data.acuraVolunteerInterest ?? null,
   );
   const res = NextResponse.json({ ok: true });
   res.cookies.set(OAUTH_SIGNUP_ROLE_COOKIE, token, cookieOptions(OAUTH_SIGNUP_ROLE_MAX_AGE_SECONDS));

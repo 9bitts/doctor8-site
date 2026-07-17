@@ -1,14 +1,19 @@
-import type { Prisma, PatientAcquisitionChannel } from "@prisma/client";
+import type { AcuraVolunteerStatus, Prisma, PatientAcquisitionChannel } from "@prisma/client";
 import { encrypt } from "@/lib/encryption";
 import { buildPatientProfileSearchText } from "@/lib/patient-profile-search";
-import type { OAuthProfessionSlug, SignupRole } from "@/lib/oauth-signup-intent";
+import type { SignupRole } from "@/lib/oauth-signup-intent";
 import { isProfessionSignupSlug, PROFESSION_SIGNUP } from "@/lib/profession-signup";
+import {
+  acuraStatusFromSignupInterest,
+  acuraVolunteerCreateData,
+  type AcuraVolunteerInterest,
+} from "@/lib/acura-volunteer";
 
 type Tx = Prisma.TransactionClient;
 
 function resolveProfessionalSpecialty(opts: {
   professionalKind?: "psychologist" | null;
-  profession?: OAuthProfessionSlug | null;
+  profession?: string | null;
 }): string {
   if (opts.professionalKind === "psychologist") return "Psychologist";
   const slug = opts.profession;
@@ -19,13 +24,22 @@ function resolveProfessionalSpecialty(opts: {
   return "";
 }
 
+function resolveAcuraCreate(
+  role: SignupRole,
+  interest?: AcuraVolunteerInterest | null,
+): ReturnType<typeof acuraVolunteerCreateData> | Record<string, never> {
+  if (role === "PATIENT") return {};
+  const status: AcuraVolunteerStatus = acuraStatusFromSignupInterest(interest);
+  return acuraVolunteerCreateData(status);
+}
+
 export async function createSignupProfile(
   tx: Tx,
   opts: {
     userId: string;
     role: SignupRole;
     professionalKind?: "psychologist" | null;
-    profession?: OAuthProfessionSlug | null;
+    profession?: string | null;
     firstName: string;
     lastName: string;
     email?: string | null;
@@ -35,6 +49,8 @@ export async function createSignupProfile(
     acquisitionCampaign?: string | null;
     acquisitionRecordedAt?: Date | null;
     acquisitionReferrer?: string | null;
+    /** Required for clinical providers on new signups; ignored for patients. */
+    acuraVolunteerInterest?: AcuraVolunteerInterest | null;
   },
 ): Promise<void> {
   const {
@@ -51,7 +67,10 @@ export async function createSignupProfile(
     acquisitionCampaign,
     acquisitionRecordedAt,
     acquisitionReferrer,
+    acuraVolunteerInterest,
   } = opts;
+
+  const acura = resolveAcuraCreate(role, acuraVolunteerInterest);
 
   if (role === "PROFESSIONAL") {
     await tx.professionalProfile.create({
@@ -63,6 +82,7 @@ export async function createSignupProfile(
         licenseNumber: "",
         specialty: resolveProfessionalSpecialty({ professionalKind, profession }),
         consultPrice: 0,
+        ...acura,
       },
     });
   } else if (role === "PSYCHOANALYST") {
@@ -74,6 +94,7 @@ export async function createSignupProfile(
         avatarUrl: avatarUrl ?? null,
         trainingInstitution: "",
         consultPrice: 0,
+        ...acura,
       },
     });
   } else if (role === "INTEGRATIVE_THERAPIST") {
@@ -85,6 +106,7 @@ export async function createSignupProfile(
         avatarUrl: avatarUrl ?? null,
         trainingInstitution: "",
         consultPrice: 0,
+        ...acura,
       },
     });
   } else {

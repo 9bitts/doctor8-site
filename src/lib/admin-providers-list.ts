@@ -44,6 +44,7 @@ export type AdminProfessionalRow = {
   hasVolunteerBlocks: boolean;
   volunteerScheduledApproved: boolean;
   volunteerScheduledApprovedAt: string | null;
+  acuraVolunteerStatus: "NONE" | "PENDING" | "ACTIVE" | "REVOKED";
 };
 
 export type AdminProviderRow = {
@@ -64,6 +65,7 @@ export type AdminProviderRow = {
   hasVolunteerBlocks: boolean;
   volunteerScheduledApproved: boolean;
   volunteerScheduledApprovedAt: string | null;
+  acuraVolunteerStatus: "NONE" | "PENDING" | "ACTIVE" | "REVOKED";
 };
 
 export type AdminIncompleteSignupRow = {
@@ -305,6 +307,7 @@ async function loadRawAdminRows(): Promise<RawAdminRows> {
       availability?: unknown;
       volunteerScheduledApproved?: boolean;
       volunteerScheduledApprovedAt?: Date | null;
+      acuraVolunteerStatus?: "NONE" | "PENDING" | "ACTIVE" | "REVOKED";
     };
     return {
     id: p.id,
@@ -330,6 +333,7 @@ async function loadRawAdminRows(): Promise<RawAdminRows> {
     hasVolunteerBlocks: volunteerBlocks.length > 0,
     volunteerScheduledApproved: row.volunteerScheduledApproved ?? false,
     volunteerScheduledApprovedAt: row.volunteerScheduledApprovedAt?.toISOString() ?? null,
+    acuraVolunteerStatus: row.acuraVolunteerStatus ?? "NONE",
   };
   });
 
@@ -337,6 +341,7 @@ async function loadRawAdminRows(): Promise<RawAdminRows> {
     const row = p as typeof p & {
       volunteerScheduledApproved?: boolean;
       volunteerScheduledApprovedAt?: Date | null;
+      acuraVolunteerStatus?: "NONE" | "PENDING" | "ACTIVE" | "REVOKED";
     };
     return {
       id: p.id,
@@ -359,6 +364,7 @@ async function loadRawAdminRows(): Promise<RawAdminRows> {
       hasVolunteerBlocks: p.availabilitySlots.length > 0,
       volunteerScheduledApproved: row.volunteerScheduledApproved ?? false,
       volunteerScheduledApprovedAt: row.volunteerScheduledApprovedAt?.toISOString() ?? null,
+      acuraVolunteerStatus: row.acuraVolunteerStatus ?? "NONE",
     };
   });
 
@@ -369,6 +375,7 @@ async function loadRawAdminRows(): Promise<RawAdminRows> {
     const row = p as typeof p & {
       volunteerScheduledApproved?: boolean;
       volunteerScheduledApprovedAt?: Date | null;
+      acuraVolunteerStatus?: "NONE" | "PENDING" | "ACTIVE" | "REVOKED";
     };
     return {
       id: p.id,
@@ -392,6 +399,7 @@ async function loadRawAdminRows(): Promise<RawAdminRows> {
       hasVolunteerBlocks: volunteerBlocks.length > 0,
       volunteerScheduledApproved: row.volunteerScheduledApproved ?? false,
       volunteerScheduledApprovedAt: row.volunteerScheduledApprovedAt?.toISOString() ?? null,
+      acuraVolunteerStatus: row.acuraVolunteerStatus ?? "NONE",
     };
   });
 

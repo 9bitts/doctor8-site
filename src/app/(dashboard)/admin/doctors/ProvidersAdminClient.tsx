@@ -59,6 +59,7 @@ interface ProfessionalRow {
   adminTab?: AdminProviderTab;
   hasVolunteerBlocks?: boolean;
   volunteerScheduledApproved?: boolean;
+  acuraVolunteerStatus?: "NONE" | "PENDING" | "ACTIVE" | "REVOKED";
 }
 
 interface ProviderRow {
@@ -78,6 +79,7 @@ interface ProviderRow {
   licenseDocCount: number;
   hasVolunteerBlocks?: boolean;
   volunteerScheduledApproved?: boolean;
+  acuraVolunteerStatus?: "NONE" | "PENDING" | "ACTIVE" | "REVOKED";
 }
 
 interface AngelRow {
@@ -123,6 +125,37 @@ const TAB_ICONS: Partial<Record<AdminProviderTab, React.ReactNode>> = {
 
 function providerTabLabel(tab: AdminProviderTab, t: (key: TranslationKey | string) => string): string {
   return t(`admin.providers.tab.${tab}`);
+}
+
+function AcuraStatusBadge({
+  status,
+  t,
+}: {
+  status?: "NONE" | "PENDING" | "ACTIVE" | "REVOKED";
+  t: (key: TranslationKey | string) => string;
+}) {
+  const s = status ?? "NONE";
+  const styles =
+    s === "ACTIVE"
+      ? "bg-sky-50 text-sky-800 border-sky-200"
+      : s === "PENDING"
+        ? "bg-amber-50 text-amber-800 border-amber-200"
+        : s === "REVOKED"
+          ? "bg-slate-100 text-slate-600 border-slate-200"
+          : "bg-slate-50 text-slate-500 border-slate-200";
+  const key =
+    s === "ACTIVE"
+      ? "admin.acura.status.active"
+      : s === "PENDING"
+        ? "admin.acura.status.pending"
+        : s === "REVOKED"
+          ? "admin.acura.status.revoked"
+          : "admin.acura.status.none";
+  return (
+    <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full border ${styles}`}>
+      {t(key)}
+    </span>
+  );
 }
 
 async function parseJsonResponse(res: Response): Promise<Record<string, unknown> | null> {
@@ -1158,6 +1191,9 @@ function ProfessionalList({
                 </span>
               )}
             </p>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <AcuraStatusBadge status={d.acuraVolunteerStatus} t={t} />
+            </div>
             {d.hasVolunteerBlocks && (
               <div className="mt-2 flex flex-wrap items-center gap-2">
                 <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-green-50 text-green-800 border border-green-200">
@@ -1280,6 +1316,9 @@ function ProviderList({
               {p.licenseDocCount > 0 &&
                 t("admin.providers.licenseDocs").replace("{{n}}", String(p.licenseDocCount))}
             </p>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <AcuraStatusBadge status={p.acuraVolunteerStatus} t={t} />
+            </div>
             {p.hasVolunteerBlocks && (
               <div className="mt-2 flex flex-wrap items-center gap-2">
                 <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-green-50 text-green-800 border border-green-200">

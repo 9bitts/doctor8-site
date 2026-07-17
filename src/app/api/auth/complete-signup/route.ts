@@ -19,6 +19,19 @@ const completeSchema = z.object({
   lastName: z.string().max(100).optional(),
   phoneDdi: z.string().min(1).max(4).optional(),
   phoneNational: z.string().min(6).max(20).optional(),
+  acuraVolunteerInterest: z.enum(["yes", "no"]).optional(),
+}).superRefine((val, ctx) => {
+  const isProvider =
+    val.role === "PROFESSIONAL" ||
+    val.role === "PSYCHOANALYST" ||
+    val.role === "INTEGRATIVE_THERAPIST";
+  if (isProvider && val.acuraVolunteerInterest !== "yes" && val.acuraVolunteerInterest !== "no") {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "acuraVolunteerInterest required",
+      path: ["acuraVolunteerInterest"],
+    });
+  }
 });
 
 export async function POST(req: NextRequest) {
@@ -55,7 +68,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Account already complete" }, { status: 409 });
   }
 
-  const { role, professionalKind, profession, firstName, lastName, phoneDdi, phoneNational } = parsed.data;
+  const {
+    role,
+    professionalKind,
+    profession,
+    firstName,
+    lastName,
+    phoneDdi,
+    phoneNational,
+    acuraVolunteerInterest,
+  } = parsed.data;
 
   let phoneE164: string | null = null;
   if (phoneDdi && phoneNational) {
@@ -87,6 +109,7 @@ export async function POST(req: NextRequest) {
       lastName: profileLastName,
       email: user.email,
       country: user.region,
+      acuraVolunteerInterest: acuraVolunteerInterest ?? null,
     });
 
     if (phoneE164) {
