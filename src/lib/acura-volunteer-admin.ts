@@ -6,11 +6,18 @@ import {
   acuraVolunteerWriteData,
   type AcuraVolunteerKind,
 } from "@/lib/acura-volunteer";
+import {
+  resolveAdminTabForProfessional,
+  type AdminProfessionCategory,
+} from "@/lib/admin-provider-categories";
+import { PSYCHOANALYSIS_SPECIALTY } from "@/lib/professions";
+import { INTEGRATIVE_THERAPY_SPECIALTY } from "@/lib/integrative-therapy-specialty";
 
 export type AcuraVolunteerAdminRow = {
   id: string;
   userId: string;
   kind: AcuraVolunteerKind;
+  category: AdminProfessionCategory;
   name: string;
   email: string | null;
   specialty: string | null;
@@ -23,20 +30,44 @@ export type AcuraVolunteerAdminRow = {
   createdAt: string;
 };
 
+export type AcuraCategoryCounts = Record<AdminProfessionCategory, number>;
+
 export type AcuraVolunteerAdminList = {
   totals: {
     pending: number;
     active: number;
     activeVerified: number;
     revoked: number;
-    byKind: {
-      professional: number;
-      psychoanalyst: number;
-      integrative: number;
-    };
+    byCategory: AcuraCategoryCounts;
   };
   rows: AcuraVolunteerAdminRow[];
 };
+
+export const ACURA_CATEGORY_ORDER: AdminProfessionCategory[] = [
+  "medicos",
+  "psicologos",
+  "psicanalistas",
+  "terapeutas",
+  "nutricionistas",
+  "fisioterapeutas",
+  "enfermeiros",
+  "farmaceuticos",
+  "odontologistas",
+];
+
+function emptyCategoryCounts(): AcuraCategoryCounts {
+  return {
+    medicos: 0,
+    odontologistas: 0,
+    psicologos: 0,
+    nutricionistas: 0,
+    fisioterapeutas: 0,
+    enfermeiros: 0,
+    farmaceuticos: 0,
+    psicanalistas: 0,
+    terapeutas: 0,
+  };
+}
 
 const PANEL_STATUSES: AcuraVolunteerStatus[] = ["PENDING", "ACTIVE", "REVOKED"];
 
@@ -60,6 +91,7 @@ function mapProfessional(p: {
   firstName: string;
   lastName: string;
   specialty: string;
+  licenseNumber?: string | null;
   verified: boolean;
   acuraVolunteer: boolean;
   acuraVolunteerStatus: AcuraVolunteerStatus;
@@ -71,6 +103,7 @@ function mapProfessional(p: {
     id: p.id,
     userId: p.userId,
     kind: "professional",
+    category: resolveAdminTabForProfessional(p.specialty, p.licenseNumber ?? undefined),
     name: `${p.firstName} ${p.lastName}`.trim(),
     specialty: p.specialty || null,
     verified: p.verified,
@@ -100,8 +133,9 @@ function mapPsychoanalyst(p: {
     id: p.id,
     userId: p.userId,
     kind: "psychoanalyst",
+    category: "psicanalistas",
     name: `${first} ${last}`.trim(),
-    specialty: "Psychoanalysis",
+    specialty: PSYCHOANALYSIS_SPECIALTY,
     verified: p.verified,
     ...mapUserFields(p.user),
     status: p.acuraVolunteerStatus,
@@ -128,8 +162,9 @@ function mapIntegrative(p: {
     id: p.id,
     userId: p.userId,
     kind: "integrative",
+    category: "terapeutas",
     name: `${d.firstName} ${d.lastName}`.trim(),
-    specialty: "Integrative therapy",
+    specialty: INTEGRATIVE_THERAPY_SPECIALTY,
     verified: p.verified,
     ...mapUserFields(p.user),
     status: p.acuraVolunteerStatus,
@@ -137,6 +172,25 @@ function mapIntegrative(p: {
     approvedAt: p.acuraVolunteerApprovedAt?.toISOString() ?? null,
     createdAt: p.createdAt.toISOString(),
   };
+}
+
+async function countActiveByCategory(): Promise<AcuraCategoryCounts> {
+  const counts = emptyCategoryCounts();
+  const [professionals, psychoanalysts, integrative] = await Promise.all([
+    db.professionalProfile.findMany({
+      where: { acuraVolunteerStatus: "ACTIVE" },
+      select: { specialty: true, licenseNumber: true },
+    }),
+    db.psychoanalystProfile.count({ where: { acuraVolunteerStatus: "ACTIVE" } }),
+    db.integrativeTherapistProfile.count({ where: { acuraVolunteerStatus: "ACTIVE" } }),
+  ]);
+  for (const p of professionals) {
+    const tab = resolveAdminTabForProfessional(p.specialty, p.licenseNumber);
+    counts[tab] += 1;
+  }
+  counts.psicanalistas += psychoanalysts;
+  counts.terapeutas += integrative;
+  return counts;
 }
 
 const selectFields = {
@@ -187,6 +241,7 @@ export async function listAcuraVolunteersAdmin(opts?: {
     professionals,
     psychoanalysts,
     integrative,
+    byCategory,
   ] = await Promise.all([
     db.professionalProfile.count({ where: { acuraVolunteerStatus: "PENDING" } }),
     db.psychoanalystProfile.count({ where: { acuraVolunteerStatus: "PENDING" } }),
@@ -202,7 +257,7 @@ export async function listAcuraVolunteersAdmin(opts?: {
     db.integrativeTherapistProfile.count({ where: { acuraVolunteerStatus: "REVOKED" } }),
     db.professionalProfile.findMany({
       where: whereBase,
-      select: { ...selectFields, specialty: true },
+      select: { ...selectFields, specialty: true, licenseNumber: true },
       orderBy: { updatedAt: "desc" },
       take: limit,
     }),
@@ -218,6 +273,7 @@ export async function listAcuraVolunteersAdmin(opts?: {
       orderBy: { updatedAt: "desc" },
       take: limit,
     }),
+    countActiveByCategory(),
   ]);
 
   let rows: AcuraVolunteerAdminRow[] = [
@@ -249,11 +305,7 @@ export async function listAcuraVolunteersAdmin(opts?: {
       active: activeProf + activePa + activeIt,
       activeVerified: activeVerifiedProf + activeVerifiedPa + activeVerifiedIt,
       revoked: revokedProf + revokedPa + revokedIt,
-      byKind: {
-        professional: activeProf,
-        psychoanalyst: activePa,
-        integrative: activeIt,
-      },
+      byCategory,
     },
     rows: rows.slice(0, limit),
   };
@@ -274,7 +326,7 @@ export async function searchProvidersForAcuraInclude(q: string, limit = 20): Pro
           { user: { email: { contains: term, mode: "insensitive" } } },
         ],
       },
-      select: { ...selectFields, specialty: true },
+      select: { ...selectFields, specialty: true, licenseNumber: true },
       take: limit,
       orderBy: { updatedAt: "desc" },
     }),
@@ -326,7 +378,7 @@ export async function setAcuraVolunteerStatus(opts: {
     const updated = await db.professionalProfile.update({
       where: { id: opts.id },
       data,
-      select: { ...selectFields, specialty: true },
+      select: { ...selectFields, specialty: true, licenseNumber: true },
     });
     return mapProfessional(updated);
   }

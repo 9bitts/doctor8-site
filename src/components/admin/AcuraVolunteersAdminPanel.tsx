@@ -18,16 +18,15 @@ import {
   XCircle,
 } from "lucide-react";
 import { ACURA_VOLUNTEER_LOGO } from "@/lib/acura-volunteer";
-import type { AcuraVolunteerAdminList, AcuraVolunteerAdminRow } from "@/lib/acura-volunteer-admin";
+import {
+  ACURA_CATEGORY_ORDER,
+  type AcuraVolunteerAdminList,
+  type AcuraVolunteerAdminRow,
+} from "@/lib/acura-volunteer-admin";
 import AdminViewPhoneButton from "@/components/admin/AdminViewPhoneButton";
 import AdminViewLicenseDocsButton from "@/components/admin/AdminViewLicenseDocsButton";
 import { useI18n } from "@/lib/i18n/I18nProvider";
-
-const KIND_LABEL: Record<string, string> = {
-  professional: "Profissional de saúde",
-  psychoanalyst: "Psicanalista",
-  integrative: "Terapeuta integrativo",
-};
+import { getProfessionLabel } from "@/lib/professions";
 
 const KIND_ICON: Record<string, React.ReactNode> = {
   professional: <Stethoscope size={12} />,
@@ -179,7 +178,7 @@ function ProviderCommandCtas({
 }
 
 export default function AcuraVolunteersAdminPanel() {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const [data, setData] = useState<AcuraVolunteerAdminList | null>(null);
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState<StatusFilter>("all");
@@ -337,34 +336,42 @@ export default function AcuraVolunteersAdminPanel() {
           </div>
         ) : data ? (
           <>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-5 border-b border-slate-50">
-              <div className="bg-emerald-50 rounded-xl p-3">
-                <p className="text-xs text-emerald-700 flex items-center gap-1">
-                  <Users size={12} /> Ativos
-                </p>
-                <p className="text-2xl font-bold text-emerald-900 mt-1">{data.totals.active}</p>
-                <p className="text-[11px] text-emerald-700/80 mt-0.5">
-                  Selo visível: {data.totals.activeVerified}
-                </p>
-              </div>
-              <div className="bg-amber-50 rounded-xl p-3">
-                <p className="text-xs text-amber-700 flex items-center gap-1">
-                  <Clock size={12} /> Pendentes
-                </p>
-                <p className="text-2xl font-bold text-amber-900 mt-1">{data.totals.pending}</p>
-              </div>
-              <div className="bg-slate-50 rounded-xl p-3">
-                <p className="text-xs text-slate-500 flex items-center gap-1">
-                  <Ban size={12} /> Revogados
-                </p>
-                <p className="text-2xl font-bold text-slate-800 mt-1">{data.totals.revoked}</p>
+            <div className="p-5 border-b border-slate-50 space-y-3">
+              <div className="grid grid-cols-3 gap-3">
+                <div className="bg-emerald-50 rounded-xl p-3">
+                  <p className="text-xs text-emerald-700 flex items-center gap-1">
+                    <Users size={12} /> Ativos
+                  </p>
+                  <p className="text-2xl font-bold text-emerald-900 mt-1">{data.totals.active}</p>
+                  <p className="text-[11px] text-emerald-700/80 mt-0.5">
+                    Selo visível: {data.totals.activeVerified}
+                  </p>
+                </div>
+                <div className="bg-amber-50 rounded-xl p-3">
+                  <p className="text-xs text-amber-700 flex items-center gap-1">
+                    <Clock size={12} /> Pendentes
+                  </p>
+                  <p className="text-2xl font-bold text-amber-900 mt-1">{data.totals.pending}</p>
+                </div>
+                <div className="bg-slate-50 rounded-xl p-3">
+                  <p className="text-xs text-slate-500 flex items-center gap-1">
+                    <Ban size={12} /> Revogados
+                  </p>
+                  <p className="text-2xl font-bold text-slate-800 mt-1">{data.totals.revoked}</p>
+                </div>
               </div>
               <div className="bg-sky-50 rounded-xl p-3">
-                <p className="text-xs text-sky-700 mb-1">Ativos por tipo</p>
-                <div className="flex flex-wrap gap-2 text-xs text-sky-900">
-                  <span>Saúde: <strong>{data.totals.byKind.professional}</strong></span>
-                  <span>Psico: <strong>{data.totals.byKind.psychoanalyst}</strong></span>
-                  <span>Integr.: <strong>{data.totals.byKind.integrative}</strong></span>
+                <p className="text-xs text-sky-700 mb-1.5">Ativos por tipo</p>
+                <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-xs text-sky-900">
+                  {ACURA_CATEGORY_ORDER.map((cat) => {
+                    const n = data.totals.byCategory?.[cat] ?? 0;
+                    if (n <= 0) return null;
+                    return (
+                      <span key={cat}>
+                        {t(`admin.providers.tab.${cat}`)}: <strong>{n}</strong>
+                      </span>
+                    );
+                  })}
                 </div>
               </div>
             </div>
@@ -425,10 +432,10 @@ export default function AcuraVolunteersAdminPanel() {
                         </div>
                         <div className="flex flex-wrap items-center gap-2 text-xs text-slate-600">
                           <span className="inline-flex items-center gap-1">
-                            {KIND_ICON[v.kind]} {KIND_LABEL[v.kind]}
+                            {KIND_ICON[v.kind]} {t(`admin.providers.tab.${v.category}`)}
                           </span>
                           <span className="text-slate-300">·</span>
-                          <span>{v.specialty || "—"}</span>
+                          <span>{v.specialty ? getProfessionLabel(lang, v.specialty) : "—"}</span>
                         </div>
                         <StatusBadge status={v.status} verified={v.verified} />
                       </div>
@@ -490,10 +497,10 @@ export default function AcuraVolunteersAdminPanel() {
                       </div>
                       <div className="flex flex-wrap items-center gap-2 text-xs text-slate-600">
                         <span className="inline-flex items-center gap-1">
-                          {KIND_ICON[r.kind]} {KIND_LABEL[r.kind]}
+                          {KIND_ICON[r.kind]} {t(`admin.providers.tab.${r.category}`)}
                         </span>
                         <span className="text-slate-300">·</span>
-                        <span>{r.specialty || "—"}</span>
+                        <span>{r.specialty ? getProfessionLabel(lang, r.specialty) : "—"}</span>
                       </div>
                       <StatusBadge status={r.status} verified={r.verified} />
                     </div>

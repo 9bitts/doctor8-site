@@ -38,11 +38,23 @@ function toLegacyRow(r: AcuraVolunteerAdminRow): AcuraVolunteerRow {
 
 export async function getAcuraVolunteerStats(limit = 50): Promise<AcuraVolunteerStats> {
   const data = await listAcuraVolunteersAdmin({ status: "ACTIVE", limit });
+  const c = data.totals.byCategory;
   return {
     totals: {
       optInVerified: data.totals.activeVerified,
       optInPending: data.totals.pending,
-      byKind: data.totals.byKind,
+      byKind: {
+        professional:
+          c.medicos +
+          c.odontologistas +
+          c.psicologos +
+          c.nutricionistas +
+          c.fisioterapeutas +
+          c.enfermeiros +
+          c.farmaceuticos,
+        psychoanalyst: c.psicanalistas,
+        integrative: c.terapeutas,
+      },
     },
     volunteers: data.rows.map(toLegacyRow),
   };
