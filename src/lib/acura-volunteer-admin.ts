@@ -15,6 +15,8 @@ export type AcuraVolunteerAdminRow = {
   email: string | null;
   specialty: string | null;
   verified: boolean;
+  emailVerified: boolean;
+  licenseDocCount: number;
   status: AcuraVolunteerStatus;
   acuraVolunteer: boolean;
   approvedAt: string | null;
@@ -38,6 +40,20 @@ export type AcuraVolunteerAdminList = {
 
 const PANEL_STATUSES: AcuraVolunteerStatus[] = ["PENDING", "ACTIVE", "REVOKED"];
 
+type UserSelect = {
+  email: string;
+  emailVerified: Date | null;
+  _count: { providerLicenseDocuments: number };
+};
+
+function mapUserFields(user: UserSelect): Pick<AcuraVolunteerAdminRow, "email" | "emailVerified" | "licenseDocCount"> {
+  return {
+    email: user.email,
+    emailVerified: !!user.emailVerified,
+    licenseDocCount: user._count.providerLicenseDocuments,
+  };
+}
+
 function mapProfessional(p: {
   id: string;
   userId: string;
@@ -49,16 +65,16 @@ function mapProfessional(p: {
   acuraVolunteerStatus: AcuraVolunteerStatus;
   acuraVolunteerApprovedAt: Date | null;
   createdAt: Date;
-  user: { email: string };
+  user: UserSelect;
 }): AcuraVolunteerAdminRow {
   return {
     id: p.id,
     userId: p.userId,
     kind: "professional",
     name: `${p.firstName} ${p.lastName}`.trim(),
-    email: p.user.email,
     specialty: p.specialty || null,
     verified: p.verified,
+    ...mapUserFields(p.user),
     status: p.acuraVolunteerStatus,
     acuraVolunteer: p.acuraVolunteer,
     approvedAt: p.acuraVolunteerApprovedAt?.toISOString() ?? null,
@@ -76,7 +92,7 @@ function mapPsychoanalyst(p: {
   acuraVolunteerStatus: AcuraVolunteerStatus;
   acuraVolunteerApprovedAt: Date | null;
   createdAt: Date;
-  user: { email: string };
+  user: UserSelect;
 }): AcuraVolunteerAdminRow {
   const first = safeDecrypt(p.firstName);
   const last = safeDecrypt(p.lastName);
@@ -85,9 +101,9 @@ function mapPsychoanalyst(p: {
     userId: p.userId,
     kind: "psychoanalyst",
     name: `${first} ${last}`.trim(),
-    email: p.user.email,
     specialty: "Psychoanalysis",
     verified: p.verified,
+    ...mapUserFields(p.user),
     status: p.acuraVolunteerStatus,
     acuraVolunteer: p.acuraVolunteer,
     approvedAt: p.acuraVolunteerApprovedAt?.toISOString() ?? null,
@@ -105,7 +121,7 @@ function mapIntegrative(p: {
   acuraVolunteerStatus: AcuraVolunteerStatus;
   acuraVolunteerApprovedAt: Date | null;
   createdAt: Date;
-  user: { email: string };
+  user: UserSelect;
 }): AcuraVolunteerAdminRow {
   const d = decryptIntegrativeNameFields(p);
   return {
@@ -113,9 +129,9 @@ function mapIntegrative(p: {
     userId: p.userId,
     kind: "integrative",
     name: `${d.firstName} ${d.lastName}`.trim(),
-    email: p.user.email,
     specialty: "Integrative therapy",
     verified: p.verified,
+    ...mapUserFields(p.user),
     status: p.acuraVolunteerStatus,
     acuraVolunteer: p.acuraVolunteer,
     approvedAt: p.acuraVolunteerApprovedAt?.toISOString() ?? null,
@@ -133,7 +149,13 @@ const selectFields = {
   acuraVolunteerStatus: true,
   acuraVolunteerApprovedAt: true,
   createdAt: true,
-  user: { select: { email: true } },
+  user: {
+    select: {
+      email: true,
+      emailVerified: true,
+      _count: { select: { providerLicenseDocuments: true } },
+    },
+  },
 } as const;
 
 export async function listAcuraVolunteersAdmin(opts?: {

@@ -12,9 +12,16 @@ import {
   Leaf,
   Search,
   Ban,
+  KeyRound,
+  Mail,
+  CheckCircle2,
+  XCircle,
 } from "lucide-react";
 import { ACURA_VOLUNTEER_LOGO } from "@/lib/acura-volunteer";
 import type { AcuraVolunteerAdminList, AcuraVolunteerAdminRow } from "@/lib/acura-volunteer-admin";
+import AdminViewPhoneButton from "@/components/admin/AdminViewPhoneButton";
+import AdminViewLicenseDocsButton from "@/components/admin/AdminViewLicenseDocsButton";
+import { useI18n } from "@/lib/i18n/I18nProvider";
 
 const KIND_LABEL: Record<string, string> = {
   professional: "Profissional de saúde",
@@ -29,6 +36,12 @@ const KIND_ICON: Record<string, React.ReactNode> = {
 };
 
 type StatusFilter = "all" | "PENDING" | "ACTIVE" | "REVOKED";
+
+function verifyApiPath(kind: AcuraVolunteerAdminRow["kind"]): string {
+  if (kind === "psychoanalyst") return "/api/admin/psychoanalysts";
+  if (kind === "integrative") return "/api/admin/integrative-therapists";
+  return "/api/admin/doctors";
+}
 
 function StatusBadge({ status, verified }: { status: string; verified: boolean }) {
   if (status === "ACTIVE") {
@@ -59,12 +72,120 @@ function StatusBadge({ status, verified }: { status: string; verified: boolean }
   );
 }
 
+function ProviderCommandCtas({
+  row,
+  busy,
+  verifyingEmail,
+  onToggleListing,
+  onVerifyEmail,
+  onResetPassword,
+  onAcuraAction,
+}: {
+  row: AcuraVolunteerAdminRow;
+  busy: boolean;
+  verifyingEmail: boolean;
+  onToggleListing: () => void;
+  onVerifyEmail: () => void;
+  onResetPassword: () => void;
+  onAcuraAction: (action: "approve" | "reject" | "include" | "revoke") => void;
+}) {
+  const { t } = useI18n();
+  return (
+    <div className="flex flex-col gap-2 min-w-[160px]">
+      <AdminViewPhoneButton userId={row.userId} />
+      {!row.emailVerified && (
+        <button
+          type="button"
+          onClick={onVerifyEmail}
+          disabled={verifyingEmail || busy}
+          className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border border-amber-200 text-amber-700 hover:bg-amber-50 transition disabled:opacity-50"
+        >
+          {verifyingEmail ? <Loader2 size={14} className="animate-spin" /> : <Mail size={14} />}
+          {t("admin.providers.verifyEmail")}
+        </button>
+      )}
+      <button
+        type="button"
+        onClick={onResetPassword}
+        disabled={busy}
+        className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 transition disabled:opacity-50"
+      >
+        <KeyRound size={14} />
+        {t("admin.account.resetPassword")}
+      </button>
+      <AdminViewLicenseDocsButton userId={row.userId} licenseDocCount={row.licenseDocCount ?? 0} />
+      <button
+        type="button"
+        onClick={onToggleListing}
+        disabled={busy}
+        className={`inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border transition disabled:opacity-50 ${
+          row.verified
+            ? "text-rose-600 border-rose-200 hover:bg-rose-50"
+            : "text-emerald-600 border-emerald-200 hover:bg-emerald-50"
+        }`}
+      >
+        {busy ? (
+          <Loader2 size={14} className="animate-spin" />
+        ) : row.verified ? (
+          <XCircle size={14} />
+        ) : (
+          <CheckCircle2 size={14} />
+        )}
+        {row.verified ? t("admin.providers.revoke") : t("admin.providers.approveListing")}
+      </button>
+
+      {row.status === "PENDING" && (
+        <div className="flex flex-wrap gap-1.5 pt-1 border-t border-slate-100">
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => onAcuraAction("approve")}
+            className="text-[11px] font-semibold px-2 py-1 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50"
+          >
+            Aprovar Acura
+          </button>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => onAcuraAction("reject")}
+            className="text-[11px] font-semibold px-2 py-1 rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-50"
+          >
+            Rejeitar Acura
+          </button>
+        </div>
+      )}
+      {row.status === "ACTIVE" && row.verified && (
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => onAcuraAction("revoke")}
+          className="text-[11px] font-semibold px-2 py-1 rounded-lg border border-amber-200 text-amber-800 hover:bg-amber-50 disabled:opacity-50"
+        >
+          Revogar só Acura
+        </button>
+      )}
+      {(row.status === "REVOKED" || row.status === "NONE") && (
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => onAcuraAction("include")}
+          className="text-[11px] font-semibold px-2 py-1 rounded-lg bg-sky-600 text-white hover:bg-sky-700 disabled:opacity-50"
+        >
+          Incluir na Acura
+        </button>
+      )}
+    </div>
+  );
+}
+
 export default function AcuraVolunteersAdminPanel() {
+  const { t } = useI18n();
   const [data, setData] = useState<AcuraVolunteerAdminList | null>(null);
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState<StatusFilter>("all");
   const [q, setQ] = useState("");
   const [busyKey, setBusyKey] = useState<string | null>(null);
+  const [verifyingEmailUserId, setVerifyingEmailUserId] = useState<string | null>(null);
   const [includeQ, setIncludeQ] = useState("");
   const [includeResults, setIncludeResults] = useState<AcuraVolunteerAdminRow[]>([]);
   const [includeLoading, setIncludeLoading] = useState(false);
@@ -107,6 +228,54 @@ export default function AcuraVolunteersAdminPanel() {
       }
     } finally {
       setBusyKey(null);
+    }
+  }
+
+  async function toggleListing(row: AcuraVolunteerAdminRow) {
+    const key = `${row.kind}-${row.id}`;
+    setBusyKey(key);
+    try {
+      await fetch(`${verifyApiPath(row.kind)}/${row.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ verified: !row.verified }),
+      });
+      await load();
+    } catch {
+      /* ignore */
+    } finally {
+      setBusyKey(null);
+    }
+  }
+
+  async function verifyUserEmail(userId: string) {
+    if (!confirm(t("admin.providers.verifyEmailConfirm"))) return;
+    setVerifyingEmailUserId(userId);
+    try {
+      const res = await fetch(`/api/admin/users/${userId}/verify-email`, { method: "POST" });
+      if (!res.ok) {
+        alert(t("admin.providers.verifyEmailFail"));
+        return;
+      }
+      await load();
+    } catch {
+      alert(t("admin.providers.verifyEmailErr"));
+    } finally {
+      setVerifyingEmailUserId(null);
+    }
+  }
+
+  async function resetUserPassword(userId: string) {
+    if (!confirm(t("admin.account.resetPasswordConfirm"))) return;
+    try {
+      const res = await fetch(`/api/admin/users/${userId}/reset-password`, { method: "POST" });
+      if (!res.ok) {
+        alert(t("admin.account.resetPasswordFail"));
+        return;
+      }
+      alert(t("admin.account.resetPasswordOk"));
+    } catch {
+      alert(t("admin.account.resetPasswordFail"));
     }
   }
 
@@ -270,49 +439,16 @@ export default function AcuraVolunteersAdminPanel() {
                           <td className="px-5 py-2.5">
                             <StatusBadge status={v.status} verified={v.verified} />
                           </td>
-                          <td className="px-5 py-2.5">
-                            <div className="flex flex-wrap gap-1.5">
-                              {v.status === "PENDING" && (
-                                <>
-                                  <button
-                                    type="button"
-                                    disabled={busy}
-                                    onClick={() => runAction(v, "approve")}
-                                    className="text-[11px] font-semibold px-2 py-1 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50"
-                                  >
-                                    Aprovar
-                                  </button>
-                                  <button
-                                    type="button"
-                                    disabled={busy}
-                                    onClick={() => runAction(v, "reject")}
-                                    className="text-[11px] font-semibold px-2 py-1 rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-50"
-                                  >
-                                    Rejeitar
-                                  </button>
-                                </>
-                              )}
-                              {v.status === "ACTIVE" && (
-                                <button
-                                  type="button"
-                                  disabled={busy}
-                                  onClick={() => runAction(v, "revoke")}
-                                  className="text-[11px] font-semibold px-2 py-1 rounded-lg border border-amber-200 text-amber-800 hover:bg-amber-50 disabled:opacity-50"
-                                >
-                                  Revogar
-                                </button>
-                              )}
-                              {(v.status === "REVOKED" || v.status === "NONE") && (
-                                <button
-                                  type="button"
-                                  disabled={busy}
-                                  onClick={() => runAction(v, "include")}
-                                  className="text-[11px] font-semibold px-2 py-1 rounded-lg bg-sky-600 text-white hover:bg-sky-700 disabled:opacity-50"
-                                >
-                                  Incluir / Aprovar
-                                </button>
-                              )}
-                            </div>
+                          <td className="px-5 py-2.5 align-top">
+                            <ProviderCommandCtas
+                              row={v}
+                              busy={busy}
+                              verifyingEmail={verifyingEmailUserId === v.userId}
+                              onToggleListing={() => toggleListing(v)}
+                              onVerifyEmail={() => verifyUserEmail(v.userId)}
+                              onResetPassword={() => resetUserPassword(v.userId)}
+                              onAcuraAction={(action) => runAction(v, action)}
+                            />
                           </td>
                         </tr>
                       );
@@ -352,23 +488,25 @@ export default function AcuraVolunteersAdminPanel() {
             <ul className="divide-y divide-slate-50 border border-slate-100 rounded-xl overflow-hidden">
               {includeResults.map((r) => {
                 const key = `${r.kind}-${r.id}`;
+                const busy = busyKey === key;
                 return (
-                  <li key={key} className="flex items-center justify-between gap-3 px-4 py-3 text-sm">
-                    <div>
+                  <li key={key} className="flex items-start justify-between gap-3 px-4 py-3 text-sm">
+                    <div className="min-w-0">
                       <p className="font-medium text-slate-800">{r.name}</p>
-                      <p className="text-xs text-slate-400">
+                      <p className="text-xs text-slate-400 mb-2">
                         {r.email} · {KIND_LABEL[r.kind]} ·{" "}
                         <StatusBadge status={r.status} verified={r.verified} />
                       </p>
+                      <ProviderCommandCtas
+                        row={r}
+                        busy={busy}
+                        verifyingEmail={verifyingEmailUserId === r.userId}
+                        onToggleListing={() => toggleListing(r)}
+                        onVerifyEmail={() => verifyUserEmail(r.userId)}
+                        onResetPassword={() => resetUserPassword(r.userId)}
+                        onAcuraAction={(action) => runAction(r, action)}
+                      />
                     </div>
-                    <button
-                      type="button"
-                      disabled={busyKey === key}
-                      onClick={() => runAction(r, "include")}
-                      className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-sky-600 text-white hover:bg-sky-700 disabled:opacity-50 shrink-0"
-                    >
-                      Aprovar na Acura
-                    </button>
                   </li>
                 );
               })}

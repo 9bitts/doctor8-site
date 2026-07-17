@@ -3,6 +3,7 @@ import { getAdminSession } from "@/lib/admin";
 import { db } from "@/lib/db";
 import { z } from "zod";
 import { notifyProviderVerifiedApproved, notifyProviderVerifiedRejected } from "@/lib/provider-verification-notify";
+import { acuraVolunteerWriteData } from "@/lib/acura-volunteer";
 
 const patchSchema = z.object({
   verified: z.boolean(),
@@ -22,12 +23,17 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   const parsed = patchSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
 
+  const acura = parsed.data.verified
+    ? acuraVolunteerWriteData("ACTIVE", { adminUserId: session.user.id })
+    : acuraVolunteerWriteData("REVOKED");
+
   const updated = await db.psychoanalystProfile.update({
     where: { id: params.id },
     data: {
       verified: parsed.data.verified,
       verifiedAt: parsed.data.verified ? new Date() : null,
       verifiedBy: parsed.data.verified ? session.user.id : null,
+      ...acura,
     },
   });
 
