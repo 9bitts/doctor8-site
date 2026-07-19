@@ -196,7 +196,7 @@ export default function PublicExamResultUploadPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-accent-50 to-slate-50 px-4 py-10">
+    <div className="min-h-dvh bg-gradient-to-b from-accent-50 to-slate-50 px-4 py-10 pb-[max(2.5rem,env(safe-area-inset-bottom))]">
       <div className="max-w-md mx-auto">
         <div className="flex items-center gap-2 mb-6 justify-center text-accent-600">
           <FileCheck size={22} />
@@ -289,8 +289,7 @@ export default function PublicExamResultUploadPage() {
                 <label className="block text-xs font-medium text-slate-600 mb-1">{t("file")}</label>
                 <input
                   type="file"
-                  accept=".pdf,image/*,video/mp4,video/quicktime,video/webm"
-                  capture="environment"
+                  accept="application/pdf,.pdf,image/*,.heic,.heif,video/mp4,video/quicktime,video/webm"
                   onChange={(e) => setFile(e.target.files?.[0] || null)}
                   className="w-full text-sm text-slate-600 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:bg-accent-50 file:text-accent-700 file:text-sm file:font-medium"
                 />

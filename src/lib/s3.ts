@@ -33,6 +33,7 @@ export const ALLOWED_MIME = [
   "image/png",
   "image/webp",
   "image/heic",
+  "image/heif",
   "video/mp4",
   "video/quicktime",
   "video/webm",
@@ -44,7 +45,7 @@ export const ALLOWED_MIME = [
 export const MAX_UPLOAD_BYTES = 50 * 1024 * 1024;
 
 const ALLOWED_EXTENSIONS = [
-  ".pdf", ".jpg", ".jpeg", ".png", ".webp", ".heic",
+  ".pdf", ".jpg", ".jpeg", ".png", ".webp", ".heic", ".heif",
   ".mp4", ".mov", ".webm", ".dcm",
 ];
 
@@ -62,6 +63,7 @@ const EXT_TO_MIME: Record<string, string> = {
   ".png": "image/png",
   ".webp": "image/webp",
   ".heic": "image/heic",
+  ".heif": "image/heif",
   ".mp4": "video/mp4",
   ".mov": "video/quicktime",
   ".webm": "video/webm",

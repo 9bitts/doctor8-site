@@ -5,7 +5,8 @@ import Link from "next/link";
 import {
   Check, Copy, FileCheck, FlaskConical, Link2, Loader2, Mail, MessageCircle, Paperclip, Plus, X,
 } from "lucide-react";
-import { openAuthenticatedBlob } from "@/lib/open-url-safely";
+import { openUrlAfterAsync } from "@/lib/open-url-safely";
+import { copyTextToClipboard } from "@/lib/clipboard";
 import { localeOf, type Lang } from "@/lib/i18n/translations";
 import { useUserTimeZone } from "@/hooks/useUserTimeZone";
 import { formatShortDateWithYear } from "@/lib/timezone";
@@ -68,21 +69,28 @@ export default function PatientExamResultsModal({
   const [invite, setInvite] = useState<InviteCreated | null>(null);
   const [sendEmail, setSendEmail] = useState(!!patientEmail);
   const [copied, setCopied] = useState<"url" | "pin" | null>(null);
+  const [copyError, setCopyError] = useState<string | null>(null);
 
   async function openFirstFile(docId: string) {
     try {
-      const res = await fetch(`/api/professional/documents/${docId}/files`);
-      const data = await res.json();
-      if (!res.ok) return;
-      const first = (data.files || [])[0] as { url?: string } | undefined;
-      if (!first?.url) return;
-      if (first.url.startsWith("/api/")) {
-        await openAuthenticatedBlob(first.url);
-      } else {
-        window.open(first.url, "_blank", "noopener,noreferrer");
-      }
+      await openUrlAfterAsync(async () => {
+        const res = await fetch(`/api/professional/documents/${docId}/files`, {
+          credentials: "same-origin",
+        });
+        const data = await res.json();
+        if (!res.ok) return null;
+        const first = (data.files || [])[0] as { url?: string } | undefined;
+        if (!first?.url) return null;
+        if (first.url.startsWith("/api/")) {
+          const fileRes = await fetch(first.url, { credentials: "same-origin" });
+          if (!fileRes.ok) return null;
+          const blob = await fileRes.blob();
+          return URL.createObjectURL(blob);
+        }
+        return first.url;
+      });
     } catch {
-      /* ignore */
+      /* ignore — blank tab closed by helper */
     }
   }
 
@@ -119,12 +127,13 @@ export default function PatientExamResultsModal({
   }
 
   async function copyText(kind: "url" | "pin", value: string) {
-    try {
-      await navigator.clipboard.writeText(value);
+    setCopyError(null);
+    const ok = await copyTextToClipboard(value);
+    if (ok) {
       setCopied(kind);
       setTimeout(() => setCopied(null), 1500);
-    } catch {
-      /* ignore */
+    } else {
+      setCopyError(t("examResults.copyFailed"));
     }
   }
 
@@ -149,12 +158,12 @@ export default function PatientExamResultsModal({
   }
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-50 p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
       <div
         role="dialog"
         aria-modal="true"
         aria-labelledby="exam-results-modal-title"
-        className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col"
+        className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90dvh] overflow-hidden flex flex-col"
       >
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 shrink-0">
           <h2 id="exam-results-modal-title" className="font-bold text-slate-800 flex items-center gap-2">
@@ -210,6 +219,9 @@ export default function PatientExamResultsModal({
                   <p className="text-xs text-emerald-700 inline-flex items-center gap-1">
                     <Mail size={12} /> {t("examResults.emailSent")}
                   </p>
+                )}
+                {copyError && (
+                  <p className="text-xs text-rose-600">{copyError}</p>
                 )}
               </div>
               <div className="flex flex-col sm:flex-row gap-2">

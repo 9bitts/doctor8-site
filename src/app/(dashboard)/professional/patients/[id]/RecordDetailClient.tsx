@@ -2271,8 +2271,8 @@ export default function RecordDetailClient({
 
       {/* Add / edit record modal */}
       {showForm && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-50 p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90dvh] overflow-y-auto">
             <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 sticky top-0 bg-white">
               <h2 className="font-bold text-slate-800">
                 {editingDoc ? t("rec.editRecord") : t("rec.modal.newRecord")}
@@ -2365,8 +2365,7 @@ export default function RecordDetailClient({
                 <input
                   type="file"
                   multiple
-                  accept=".pdf,image/*,video/mp4,video/quicktime,video/webm"
-                  capture="environment"
+                  accept="application/pdf,.pdf,image/*,.heic,.heif,video/mp4,video/quicktime,video/webm"
                   onChange={(e) => handleFilesChange(e.target.files)}
                   className="w-full text-sm text-slate-600 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:bg-brand-50 file:text-brand-600 file:text-sm file:font-medium hover:file:bg-brand-100"
                 />
