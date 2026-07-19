@@ -364,6 +364,7 @@ export function usePrescriptionPage() {
       setView("exam");
       setVoicePrefillActive(true);
       setExamTemplatePrefill({
+        templateId: "",
         items: d.examItems || [],
         notes: d.notes || "",
         cid: d.cid || "",
