@@ -38,10 +38,12 @@ import PushPermissionPrompt from "@/components/PushPermissionPrompt";
 import AcuraVolunteerBadge from "@/components/acura/AcuraVolunteerBadge";
 import { isAcuraVolunteerProvider, compareVolunteerFirst } from "@/lib/acura-volunteer";
 import { isScheduledVolunteerAppointment } from "@/lib/scheduled-volunteer";
+import { scrollDashboardToTopAfterPaint } from "@/lib/scroll-dashboard-client";
 import {
   Calendar, Search, Video, Building2, Clock, ChevronRight, ChevronLeft,
   CreditCard, Loader2, CheckCircle2, AlertCircle, Star, MapPin, Lock,
   X, RefreshCw, AlertTriangle, Info, HelpCircle, QrCode, FileText, Heart, Radio,
+  ExternalLink,
 } from "lucide-react";
 
 type PaymentMethodChoice = "card" | "pix" | "boleto" | "all";
@@ -70,6 +72,8 @@ interface Professional {
   verified?: boolean;
   isOnline?: boolean;
   jitSessionId?: string | null;
+  /** Present only when the professional has a live public listing. */
+  publicPath?: string | null;
 }
 
 interface Appointment {
@@ -570,6 +574,7 @@ export default function AppointmentsPage() {
     setProviderServices([]);
     setSelectedServiceId("");
     setSlotsLoading(true);
+    scrollDashboardToTopAfterPaint();
     try {
       const providerType = pro.providerType || "health";
       const [plansRes, servicesRes] = await Promise.all([
@@ -1270,7 +1275,7 @@ export default function AppointmentsPage() {
                 {selectedPro.firstName[0]}
               </div>
             )}
-            <div>
+            <div className="min-w-0 flex-1">
               <h2 className="text-white font-bold text-lg">
                 {formatPatientProviderDisplayName(
                   lang,
@@ -1291,6 +1296,16 @@ export default function AppointmentsPage() {
                   ? t("pub.selectServiceRequired")
                   : `${priceDisplay} ${t("appt.perConsult")}`}
               </p>
+              {selectedPro.publicPath && (
+                <Link
+                  href={selectedPro.publicPath}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 mt-2 text-sm font-semibold text-emerald-300 hover:text-emerald-200 transition"
+                >
+                  {t("set.viewPublicProfile")} <ExternalLink size={14} />
+                </Link>
+              )}
             </div>
           </div>
           <div className="p-6 space-y-6">

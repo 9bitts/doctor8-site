@@ -139,7 +139,11 @@ export default function PatientExamResultsModal({
   }
 
   function openWhatsAppSchedule() {
-    const msg = t("examResults.scheduleWhatsappTemplate").replace(/\{\{name\}\}/g, patientName);
+    const appBase = (process.env.NEXT_PUBLIC_APP_URL || "https://app.doctor8.org").replace(/\/$/, "");
+    const registerLink = `${appBase}/register`;
+    const msg = t("examResults.scheduleWhatsappTemplate")
+      .replace(/\{\{name\}\}/g, patientName)
+      .replace(/\{\{registerLink\}\}/g, registerLink);
     const base = phoneDigits ? `https://wa.me/${phoneDigits}` : "https://wa.me/";
     window.open(`${base}?text=${encodeURIComponent(msg)}`, "_blank", "noopener,noreferrer");
   }

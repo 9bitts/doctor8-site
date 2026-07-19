@@ -22,6 +22,7 @@ import {
   refInstantFromDaySlots,
 } from "@/lib/timezone";
 import { parseLocalDate } from "@/lib/scheduling";
+import { scrollDashboardToTopAfterPaint } from "@/lib/scroll-dashboard-client";
 import {
   Calendar,
   ChevronLeft,
@@ -158,6 +159,7 @@ export default function VolunteerAppointmentsClient() {
     setError("");
     setType(pro.acceptsTeleconsult ? "TELECONSULT" : "IN_PERSON");
     setSlotsLoading(true);
+    scrollDashboardToTopAfterPaint();
     try {
       const res = await fetch(
         `/api/professionals/${pro.id}/slots?lang=${lang}&providerType=${pro.providerType}&volunteer=1`,

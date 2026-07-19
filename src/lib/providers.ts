@@ -7,10 +7,22 @@ import { hasListableLicense } from "@/lib/license-validation";
 import { PSYCHOANALYSIS_SPECIALTY } from "@/lib/professions";
 import { safeDecrypt } from "@/lib/psychoanalyst-api";
 import { compareVolunteerFirst } from "@/lib/acura-volunteer";
+import {
+  buildPublicProfilePath,
+  cityToSeoSlug,
+  specialtyToSeoSlug,
+} from "@/lib/public-slugs";
 
 export { PSYCHOANALYSIS_SPECIALTY };
 
 export type ProviderType = "health" | "psychoanalyst";
+
+type VirtualCardPublicFields = {
+  slug: string;
+  isPublic: boolean;
+  specialtySlug: string;
+  citySlug: string;
+} | null;
 
 export interface UnifiedProvider {
   id: string;
@@ -38,7 +50,30 @@ export interface UnifiedProvider {
   verified: boolean;
   sessionDurationMins: number;
   virtualCardSlug: string | null;
+  /** Live public listing path, or null when not published. */
+  publicPath: string | null;
   acuraVolunteer: boolean;
+}
+
+const VIRTUAL_CARD_PUBLIC_SELECT = {
+  slug: true,
+  isPublic: true,
+  specialtySlug: true,
+  citySlug: true,
+} as const;
+
+function resolvePublicPath(
+  verified: boolean,
+  card: VirtualCardPublicFields,
+  specialty: string,
+  clinicCity: string | null,
+): string | null {
+  if (!verified || !card?.isPublic || !card.slug) return null;
+  return buildPublicProfilePath({
+    specialtySlug: card.specialtySlug || specialtyToSeoSlug(specialty),
+    citySlug: card.citySlug || cityToSeoSlug(clinicCity),
+    slug: card.slug,
+  });
 }
 
 type ListOpts = {
@@ -94,7 +129,7 @@ export async function listUnifiedProviders(opts: ListOpts = {}): Promise<Unified
           licenseNumber: true,
           licenseState: true,
           verified: true,
-          virtualCard: { select: { slug: true } },
+          virtualCard: { select: VIRTUAL_CARD_PUBLIC_SELECT },
           acuraVolunteer: true,
         },
         orderBy: { firstName: "asc" },
@@ -131,6 +166,7 @@ export async function listUnifiedProviders(opts: ListOpts = {}): Promise<Unified
           associations: true,
           verified: true,
           sessionDurationMins: true,
+          virtualCard: { select: VIRTUAL_CARD_PUBLIC_SELECT },
           acuraVolunteer: true,
         },
         orderBy: { firstName: "asc" },
@@ -168,6 +204,7 @@ export async function listUnifiedProviders(opts: ListOpts = {}): Promise<Unified
         verified: p.verified,
         sessionDurationMins: 30,
         virtualCardSlug: p.virtualCard?.slug ?? null,
+        publicPath: resolvePublicPath(p.verified, p.virtualCard, p.specialty, p.clinicCity),
         acuraVolunteer: p.acuraVolunteer,
       };
     });
@@ -197,7 +234,13 @@ export async function listUnifiedProviders(opts: ListOpts = {}): Promise<Unified
     associations: p.associations,
     verified: p.verified,
     sessionDurationMins: p.sessionDurationMins,
-    virtualCardSlug: null,
+    virtualCardSlug: p.virtualCard?.slug ?? null,
+    publicPath: resolvePublicPath(
+      p.verified,
+      p.virtualCard,
+      PSYCHOANALYSIS_SPECIALTY,
+      p.clinicCity,
+    ),
     acuraVolunteer: p.acuraVolunteer,
   }));
 
@@ -234,7 +277,7 @@ export async function getUnifiedProvider(
         licenseNumber: true,
         licenseState: true,
         verified: true,
-        virtualCard: { select: { slug: true } },
+        virtualCard: { select: VIRTUAL_CARD_PUBLIC_SELECT },
         acuraVolunteer: true,
       },
     });
@@ -267,6 +310,7 @@ export async function getUnifiedProvider(
       verified: p.verified,
       sessionDurationMins: 30,
       virtualCardSlug: p.virtualCard?.slug ?? null,
+      publicPath: resolvePublicPath(p.verified, p.virtualCard, p.specialty, p.clinicCity),
       acuraVolunteer: p.acuraVolunteer,
     };
   }
@@ -295,6 +339,7 @@ export async function getUnifiedProvider(
       associations: true,
       verified: true,
       sessionDurationMins: true,
+      virtualCard: { select: VIRTUAL_CARD_PUBLIC_SELECT },
       acuraVolunteer: true,
     },
   });
@@ -324,7 +369,13 @@ export async function getUnifiedProvider(
     associations: p.associations,
     verified: p.verified,
     sessionDurationMins: p.sessionDurationMins,
-    virtualCardSlug: null,
+    virtualCardSlug: p.virtualCard?.slug ?? null,
+    publicPath: resolvePublicPath(
+      p.verified,
+      p.virtualCard,
+      PSYCHOANALYSIS_SPECIALTY,
+      p.clinicCity,
+    ),
     acuraVolunteer: p.acuraVolunteer,
   };
 }
