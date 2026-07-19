@@ -26,6 +26,7 @@ import {
   patientDocsFolder,
   nutritionDiaryFolder,
   importDocsFolder,
+  doctorImageFolder,
 } from "@/lib/upload-folders";
 
 export async function POST(req: NextRequest) {
@@ -47,6 +48,9 @@ export async function POST(req: NextRequest) {
   }
   if (folder === "import-docs") {
     folder = importDocsFolder(session.user.id);
+  }
+  if (folder === "doctor-image") {
+    folder = doctorImageFolder(session.user.id);
   }
 
   if (!isAllowedUploadFolder(folder)) {

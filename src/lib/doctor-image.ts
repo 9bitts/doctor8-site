@@ -1,5 +1,7 @@
 // Doctor Image — public profile personalization types, parsing, and theme helpers.
 
+import type { CSSProperties } from "react";
+
 export const DOCTOR_IMAGE_THEME_PRESETS = [
   "default",
   "clinical",
@@ -49,12 +51,109 @@ export const MAX_HEADLINE_LENGTH = 160;
 export const MAX_BLOCK_TITLE_LENGTH = 120;
 export const MAX_BLOCK_BODY_LENGTH = 4000;
 
-const THEME_COLORS: Record<DoctorImageThemePreset, string> = {
+export const THEME_COLORS: Record<DoctorImageThemePreset, string> = {
   default: "#0d9488",
   clinical: "#2563eb",
   warm: "#d97706",
   modern: "#7c3aed",
   nature: "#059669",
+};
+
+export type DoctorImageThemeTokens = {
+  accent: string;
+  pageBg: string;
+  pageBgImage: string;
+  cardBg: string;
+  cardBorder: string;
+  cardShadow: string;
+  cardRadius: string;
+  headingFont: string;
+  bodyFont: string;
+  headingWeight: string;
+  chipRadius: string;
+  coverRadius: string;
+  heroOverlay: string;
+};
+
+const THEME_TOKENS: Record<
+  DoctorImageThemePreset,
+  Omit<DoctorImageThemeTokens, "accent">
+> = {
+  default: {
+    pageBg: "#f8fafc",
+    pageBgImage:
+      "radial-gradient(ellipse 80% 50% at 50% -20%, rgba(13,148,136,0.12), transparent)",
+    cardBg: "#ffffff",
+    cardBorder: "rgba(226,232,240,0.9)",
+    cardShadow: "0 1px 3px rgba(15,23,42,0.06)",
+    cardRadius: "1rem",
+    headingFont: "inherit",
+    bodyFont: "inherit",
+    headingWeight: "700",
+    chipRadius: "9999px",
+    coverRadius: "1rem",
+    heroOverlay: "linear-gradient(to top, rgba(15,23,42,0.55), transparent 55%)",
+  },
+  clinical: {
+    pageBg: "#f1f5f9",
+    pageBgImage:
+      "linear-gradient(180deg, #e8eef7 0%, #f1f5f9 40%, #f8fafc 100%)",
+    cardBg: "#ffffff",
+    cardBorder: "rgba(203,213,225,0.95)",
+    cardShadow: "0 1px 2px rgba(15,23,42,0.04)",
+    cardRadius: "0.5rem",
+    headingFont: '"IBM Plex Sans", "Segoe UI", system-ui, sans-serif',
+    bodyFont: '"IBM Plex Sans", "Segoe UI", system-ui, sans-serif',
+    headingWeight: "600",
+    chipRadius: "0.375rem",
+    coverRadius: "0.5rem",
+    heroOverlay: "linear-gradient(to top, rgba(30,58,138,0.5), transparent 60%)",
+  },
+  warm: {
+    pageBg: "#faf7f2",
+    pageBgImage:
+      "radial-gradient(ellipse 70% 45% at 20% 0%, rgba(217,119,6,0.14), transparent), radial-gradient(ellipse 50% 40% at 90% 10%, rgba(251,191,36,0.1), transparent)",
+    cardBg: "#fffdf9",
+    cardBorder: "rgba(231,216,196,0.9)",
+    cardShadow: "0 4px 20px rgba(120,80,40,0.06)",
+    cardRadius: "1.25rem",
+    headingFont: 'Georgia, "Source Serif 4", "Times New Roman", serif',
+    bodyFont: '"Source Sans 3", "Segoe UI", system-ui, sans-serif',
+    headingWeight: "600",
+    chipRadius: "9999px",
+    coverRadius: "1.25rem",
+    heroOverlay: "linear-gradient(to top, rgba(67,40,12,0.5), transparent 55%)",
+  },
+  modern: {
+    pageBg: "#0f172a",
+    pageBgImage:
+      "radial-gradient(ellipse 60% 40% at 80% 0%, rgba(124,58,237,0.25), transparent), linear-gradient(160deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%)",
+    cardBg: "#ffffff",
+    cardBorder: "rgba(226,232,240,0.5)",
+    cardShadow: "0 8px 32px rgba(0,0,0,0.18)",
+    cardRadius: "1.5rem",
+    headingFont: '"DM Sans", "Helvetica Neue", system-ui, sans-serif',
+    bodyFont: '"DM Sans", "Helvetica Neue", system-ui, sans-serif',
+    headingWeight: "700",
+    chipRadius: "0.75rem",
+    coverRadius: "1.5rem",
+    heroOverlay: "linear-gradient(to top, rgba(15,23,42,0.7), transparent 50%)",
+  },
+  nature: {
+    pageBg: "#f0f7f4",
+    pageBgImage:
+      "radial-gradient(ellipse 80% 50% at 50% -10%, rgba(5,150,105,0.14), transparent), linear-gradient(180deg, #e8f5ef 0%, #f0f7f4 45%, #f7faf8 100%)",
+    cardBg: "#ffffff",
+    cardBorder: "rgba(167,209,186,0.7)",
+    cardShadow: "0 2px 12px rgba(6,78,59,0.06)",
+    cardRadius: "1.125rem",
+    headingFont: 'Nunito, "Segoe UI", system-ui, sans-serif',
+    bodyFont: 'Nunito, "Segoe UI", system-ui, sans-serif',
+    headingWeight: "700",
+    chipRadius: "9999px",
+    coverRadius: "1.125rem",
+    heroOverlay: "linear-gradient(to top, rgba(6,78,59,0.45), transparent 55%)",
+  },
 };
 
 export function resolveAccentColor(
@@ -63,6 +162,57 @@ export function resolveAccentColor(
 ): string {
   if (accentColor && isValidHexColor(accentColor)) return accentColor;
   return THEME_COLORS[preset] ?? THEME_COLORS.default;
+}
+
+export function getThemeTokens(
+  preset: DoctorImageThemePreset,
+  accentColor: string | null
+): DoctorImageThemeTokens {
+  const base = THEME_TOKENS[preset] ?? THEME_TOKENS.default;
+  return {
+    ...base,
+    accent: resolveAccentColor(preset, accentColor),
+  };
+}
+
+/** Convert stored embed URL back to a friendlier watch/share URL for the editor. */
+export function displayVideoUrl(embedUrl: string | null | undefined): string {
+  if (!embedUrl) return "";
+  try {
+    const u = new URL(embedUrl);
+    const host = u.hostname.replace(/^www\./, "");
+    if (host === "youtube.com" && u.pathname.startsWith("/embed/")) {
+      const id = u.pathname.replace("/embed/", "").split("/")[0];
+      if (id) return `https://www.youtube.com/watch?v=${id}`;
+    }
+    if (host === "player.vimeo.com") {
+      const match = u.pathname.match(/^\/video\/(\d+)/);
+      if (match) return `https://vimeo.com/${match[1]}`;
+    }
+  } catch {
+    /* keep as-is */
+  }
+  return embedUrl;
+}
+
+export function themeCssVars(tokens: DoctorImageThemeTokens): CSSProperties {
+  return {
+    "--pub-accent": tokens.accent,
+    "--pub-accent-light": `${tokens.accent}18`,
+    "--pub-accent-soft": `${tokens.accent}28`,
+    "--pub-page-bg": tokens.pageBg,
+    "--pub-page-bg-image": tokens.pageBgImage,
+    "--pub-card-bg": tokens.cardBg,
+    "--pub-card-border": tokens.cardBorder,
+    "--pub-card-shadow": tokens.cardShadow,
+    "--pub-card-radius": tokens.cardRadius,
+    "--pub-heading-font": tokens.headingFont,
+    "--pub-body-font": tokens.bodyFont,
+    "--pub-heading-weight": tokens.headingWeight,
+    "--pub-chip-radius": tokens.chipRadius,
+    "--pub-cover-radius": tokens.coverRadius,
+    "--pub-hero-overlay": tokens.heroOverlay,
+  } as CSSProperties;
 }
 
 export function isValidHexColor(value: string): boolean {
@@ -117,12 +267,41 @@ function parseAccentColor(raw: unknown): string | null | false {
   return isValidHexColor(trimmed) ? trimmed : false;
 }
 
-function parseImageDataUrl(raw: unknown): string | null | false {
+/** Public path for Doctor Image S3 objects: /api/public/doctor-image/<userId>/<file> */
+export const DOCTOR_IMAGE_PUBLIC_PATH_RE =
+  /^\/api\/public\/doctor-image\/[a-zA-Z0-9_-]+\/[a-zA-Z0-9._-]+$/;
+
+export function doctorImagePublicUrlFromKey(key: string): string {
+  const normalized = key.replace(/^\/+/, "");
+  if (!normalized.startsWith("doctor-image/")) {
+    throw new Error("Invalid doctor-image key");
+  }
+  return `/api/public/doctor-image/${normalized.slice("doctor-image/".length)}`;
+}
+
+/** Accept S3 public paths, absolute app URLs to those paths, or legacy data URLs. */
+export function parseProfileImageUrl(raw: unknown): string | null | false {
   if (raw === null || raw === undefined || raw === "") return null;
   if (typeof raw !== "string") return false;
-  if (!raw.startsWith("data:image/")) return false;
-  if (raw.length > 900_000) return false;
-  return raw;
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+
+  if (trimmed.startsWith("data:image/")) {
+    if (trimmed.length > 900_000) return false;
+    return trimmed;
+  }
+
+  if (DOCTOR_IMAGE_PUBLIC_PATH_RE.test(trimmed)) return trimmed;
+
+  try {
+    const u = new URL(trimmed);
+    if (u.protocol !== "http:" && u.protocol !== "https:") return false;
+    if (DOCTOR_IMAGE_PUBLIC_PATH_RE.test(u.pathname)) return u.pathname;
+  } catch {
+    return false;
+  }
+
+  return false;
 }
 
 function parseGallery(raw: unknown): string[] | false {
@@ -130,9 +309,9 @@ function parseGallery(raw: unknown): string[] | false {
   if (!Array.isArray(raw)) return false;
   const images: string[] = [];
   for (const item of raw) {
-    if (typeof item !== "string" || !item.startsWith("data:image/")) return false;
-    if (item.length > 900_000) return false;
-    images.push(item);
+    const parsed = parseProfileImageUrl(item);
+    if (parsed === false) return false;
+    if (parsed) images.push(parsed);
   }
   if (images.length > MAX_GALLERY_IMAGES) return false;
   return images;
@@ -289,7 +468,7 @@ export function parseDoctorImagePatch(body: Record<string, unknown>): DoctorImag
   }
 
   if ("coverImageUrl" in body) {
-    const parsed = parseImageDataUrl(body.coverImageUrl);
+    const parsed = parseProfileImageUrl(body.coverImageUrl);
     if (parsed === false) return { ok: false, error: "Invalid cover image" };
     data.coverImageUrl = parsed;
   }

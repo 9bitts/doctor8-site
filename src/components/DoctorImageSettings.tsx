@@ -19,25 +19,31 @@ import {
   Video,
   Type,
   Globe,
+  Eye,
 } from "lucide-react";
 import {
   DOCTOR_IMAGE_THEME_PRESETS,
   SOCIAL_LINK_KEYS,
+  THEME_COLORS,
   MAX_GALLERY_IMAGES,
   MAX_CONTENT_BLOCKS,
   MAX_HEADLINE_LENGTH,
+  displayVideoUrl,
+  doctorImagePublicUrlFromKey,
   type DoctorImageData,
   type DoctorImageContentBlock,
   type DoctorImageSocialLinks,
   type DoctorImageThemePreset,
 } from "@/lib/doctor-image";
-import { resizeImageToDataUrl } from "@/lib/client/resize-image";
+import { resizeImageToDataUrl, resizeImageToJpegFile } from "@/lib/client/resize-image";
+import { uploadFileToApi } from "@/lib/upload-client";
 import {
   isIntegrativeTherapistVariant,
   isPsychoanalystVariant,
   variantI18nKey,
   type ProviderSettingsVariant,
 } from "@/lib/provider-settings-variant";
+import { DoctorImageLivePreview } from "@/components/public/PublicDoctorImageContent";
 
 const EMPTY: DoctorImageData = {
   headline: null,
@@ -52,8 +58,21 @@ const EMPTY: DoctorImageData = {
   contentBlocks: [],
 };
 
+const BLOCK_TEMPLATES = [
+  "doctorImage.tpl.approach",
+  "doctorImage.tpl.expect",
+  "doctorImage.tpl.faq",
+] as const;
+
 function newBlockId(): string {
   return `blk_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function forEditor(di: DoctorImageData): DoctorImageData {
+  return {
+    ...di,
+    videoUrl: displayVideoUrl(di.videoUrl) || null,
+  };
 }
 
 export default function DoctorImageSettings({
@@ -101,6 +120,17 @@ export default function DoctorImageSettings({
   const [error, setError] = useState("");
   const [publicUrl, setPublicUrl] = useState<string | null>(null);
   const [data, setData] = useState<DoctorImageData>(EMPTY);
+  const [showPreview, setShowPreview] = useState(true);
+  const [uploadingCover, setUploadingCover] = useState(false);
+  const [uploadingGallery, setUploadingGallery] = useState(false);
+
+  /** Upload resized JPEG to S3; fall back to data URL if storage is unavailable. */
+  async function uploadDoctorImageFile(file: File, maxSize: number): Promise<string> {
+    const jpeg = await resizeImageToJpegFile(file, maxSize);
+    const up = await uploadFileToApi(jpeg, "doctor-image");
+    if (up.ok) return doctorImagePublicUrlFromKey(up.key);
+    return resizeImageToDataUrl(file, maxSize);
+  }
 
   async function load() {
     setLoading(true);
@@ -110,7 +140,7 @@ export default function DoctorImageSettings({
         const json = await res.json();
         setPublicUrl(json.publicUrl || null);
         if (json.doctorImage) {
-          setData(json.doctorImage as DoctorImageData);
+          setData(forEditor(json.doctorImage as DoctorImageData));
         }
       }
     } catch { /* ignore */ }
@@ -131,23 +161,28 @@ export default function DoctorImageSettings({
   async function handleCover(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
+    setUploadingCover(true);
+    setError("");
     try {
-      const url = await resizeImageToDataUrl(file, 1200);
+      const url = await uploadDoctorImageFile(file, 1200);
       setData((prev) => ({ ...prev, coverImageUrl: url }));
     } catch {
       setError(t("doctorImage.errPhoto"));
     }
+    setUploadingCover(false);
     e.target.value = "";
   }
 
   async function handleGallery(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files || []);
     if (!files.length) return;
+    setUploadingGallery(true);
+    setError("");
     try {
       const newImages: string[] = [];
       for (const file of files) {
         if (data.galleryImages.length + newImages.length >= MAX_GALLERY_IMAGES) break;
-        newImages.push(await resizeImageToDataUrl(file, 800));
+        newImages.push(await uploadDoctorImageFile(file, 800));
       }
       setData((prev) => ({
         ...prev,
@@ -156,6 +191,7 @@ export default function DoctorImageSettings({
     } catch {
       setError(t("doctorImage.errPhoto"));
     }
+    setUploadingGallery(false);
     e.target.value = "";
   }
 
@@ -166,11 +202,11 @@ export default function DoctorImageSettings({
     }));
   }
 
-  function addBlock() {
+  function addBlock(title = "") {
     if (data.contentBlocks.length >= MAX_CONTENT_BLOCKS) return;
     const block: DoctorImageContentBlock = {
       id: newBlockId(),
-      title: "",
+      title,
       body: "",
       order: data.contentBlocks.length,
     };
@@ -244,7 +280,7 @@ export default function DoctorImageSettings({
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || t("doctorImage.errSave"));
-      if (json.doctorImage) setData(json.doctorImage as DoctorImageData);
+      if (json.doctorImage) setData(forEditor(json.doctorImage as DoctorImageData));
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch (e) {
@@ -264,16 +300,45 @@ export default function DoctorImageSettings({
 
   const inputClass =
     `w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 ${inputRing}`;
+  const resolvedAccent = data.accentColor || THEME_COLORS[data.themePreset];
 
   return (
     <div className="space-y-6">
-      <p className="text-sm text-slate-500">{tk("doctorImage.subtitle", "pa.doctorImage.subtitle", "it.doctorImage.subtitle")}</p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <p className="text-sm text-slate-500 flex-1 min-w-[200px]">
+          {tk("doctorImage.subtitle", "pa.doctorImage.subtitle", "it.doctorImage.subtitle")}
+        </p>
+        <button
+          type="button"
+          onClick={() => setShowPreview((v) => !v)}
+          className={`inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border transition ${
+            showPreview
+              ? accentSelected
+              : "border-slate-200 text-slate-600 hover:border-slate-300"
+          }`}
+        >
+          <Eye size={14} />
+          {showPreview ? t("doctorImage.previewHide") : t("doctorImage.previewShow")}
+        </button>
+      </div>
 
       {error && (
         <div className="bg-rose-50 border border-rose-200 rounded-xl p-3 text-sm text-rose-700">
           {error}
         </div>
       )}
+
+      <div className="lg:grid lg:grid-cols-[1fr_280px] gap-6 items-start">
+      {showPreview && (
+        <aside className="mb-2 lg:mb-0 lg:col-start-2 lg:row-start-1 lg:sticky lg:top-4 space-y-2">
+          <p className="text-xs font-medium text-slate-500">
+            {t("doctorImage.livePreview")}
+          </p>
+          <DoctorImageLivePreview data={data} />
+          <p className="text-[10px] text-slate-400">{t("doctorImage.livePreviewHint")}</p>
+        </aside>
+      )}
+      <div className="space-y-6 min-w-0 lg:col-start-1 lg:row-start-1">
 
       {/* Theme */}
       <section className="space-y-3">
@@ -287,12 +352,18 @@ export default function DoctorImageSettings({
             <button
               key={preset}
               type="button"
-              onClick={() => setData((prev) => ({ ...prev, themePreset: preset }))}
-              className={`rounded-xl border px-3 py-2.5 text-sm font-medium transition ${
+              onClick={() => setData((prev) => ({ ...prev, themePreset: preset as DoctorImageThemePreset }))}
+              className={`rounded-xl border px-3 py-2.5 text-sm font-medium transition text-left ${
                 data.themePreset === preset ? accentSelected : "border-slate-200 text-slate-600 hover:border-slate-300"
               }`}
             >
-              {themeKey(preset)}
+              <span className="flex items-center gap-2">
+                <span
+                  className="w-3.5 h-3.5 rounded-full shrink-0 ring-1 ring-black/10"
+                  style={{ background: THEME_COLORS[preset] }}
+                />
+                {themeKey(preset)}
+              </span>
             </button>
           ))}
         </div>
@@ -302,7 +373,7 @@ export default function DoctorImageSettings({
           </label>
           <input
             type="color"
-            value={data.accentColor || "#0d9488"}
+            value={resolvedAccent}
             onChange={(e) =>
               setData((prev) => ({ ...prev, accentColor: e.target.value }))
             }
@@ -407,20 +478,33 @@ export default function DoctorImageSettings({
             {t("doctorImage.cover")}
           </label>
           <div className="mt-2 relative rounded-xl overflow-hidden border border-slate-200 bg-slate-50 aspect-[3/1]">
-            {data.coverImageUrl ? (
+            {uploadingCover ? (
+              <div className="w-full h-full flex items-center justify-center gap-2 text-slate-400 text-sm">
+                <Loader2 size={18} className="animate-spin" /> {t("doctorImage.uploading")}
+              </div>
+            ) : data.coverImageUrl ? (
               <>
                 <img
                   src={data.coverImageUrl}
                   alt=""
                   className="w-full h-full object-cover"
                 />
-                <button
-                  type="button"
-                  onClick={() => setData((prev) => ({ ...prev, coverImageUrl: null }))}
-                  className="absolute top-2 right-2 p-1.5 rounded-lg bg-black/50 text-white hover:bg-black/70"
-                >
-                  <X size={14} />
-                </button>
+                <div className="absolute top-2 right-2 flex gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => coverRef.current?.click()}
+                    className="px-2.5 py-1.5 rounded-lg bg-black/50 text-white text-xs font-medium hover:bg-black/70"
+                  >
+                    {t("doctorImage.coverChange")}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setData((prev) => ({ ...prev, coverImageUrl: null }))}
+                    className="p-1.5 rounded-lg bg-black/50 text-white hover:bg-black/70"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
               </>
             ) : (
               <button
@@ -444,10 +528,17 @@ export default function DoctorImageSettings({
             {data.galleryImages.length < MAX_GALLERY_IMAGES && (
               <button
                 type="button"
+                disabled={uploadingGallery}
                 onClick={() => galleryRef.current?.click()}
-                className="text-xs font-semibold text-brand-600 hover:text-brand-500"
+                className="text-xs font-semibold text-brand-600 hover:text-brand-500 disabled:opacity-50"
               >
-                + {t("doctorImage.galleryAdd")}
+                {uploadingGallery ? (
+                  <span className="inline-flex items-center gap-1">
+                    <Loader2 size={12} className="animate-spin" /> {t("doctorImage.uploading")}
+                  </span>
+                ) : (
+                  <>+ {t("doctorImage.galleryAdd")}</>
+                )}
               </button>
             )}
           </div>
@@ -504,7 +595,7 @@ export default function DoctorImageSettings({
           {data.contentBlocks.length < MAX_CONTENT_BLOCKS && (
             <button
               type="button"
-              onClick={addBlock}
+              onClick={() => addBlock()}
               className="inline-flex items-center gap-1 text-xs font-semibold text-brand-600 hover:text-brand-500"
             >
               <Plus size={14} /> {t("doctorImage.blockAdd")}
@@ -512,6 +603,21 @@ export default function DoctorImageSettings({
           )}
         </div>
         <p className="text-xs text-slate-500">{tk("doctorImage.blocksHint", "pa.doctorImage.blocksHint", "it.doctorImage.blocksHint")}</p>
+
+        {data.contentBlocks.length < MAX_CONTENT_BLOCKS && (
+          <div className="flex flex-wrap gap-2">
+            {BLOCK_TEMPLATES.map((key) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => addBlock(t(key))}
+                className="text-xs px-2.5 py-1 rounded-lg border border-slate-200 text-slate-600 hover:border-brand-300 hover:text-brand-600 transition"
+              >
+                + {t(key)}
+              </button>
+            ))}
+          </div>
+        )}
 
         {data.contentBlocks.length === 0 && (
           <p className="text-xs text-slate-400 italic">{t("doctorImage.blocksEmpty")}</p>
@@ -602,6 +708,9 @@ export default function DoctorImageSettings({
           </Link>
         )}
       </div>
+
+      </div>{/* end form column */}
+      </div>{/* end grid */}
     </div>
   );
 }

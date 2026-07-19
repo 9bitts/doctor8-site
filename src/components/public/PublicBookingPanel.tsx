@@ -15,7 +15,13 @@ import { trackPublicBookClick } from "@/components/public/PublicProfileTracker";
 type DaySlots = {
   date: string;
   label: string;
-  slots: { time: string; datetime: string; available: boolean; volunteerOnly?: boolean }[];
+  slots: {
+    time: string;
+    datetime: string;
+    available: boolean;
+    volunteerOnly?: boolean;
+    isVolunteer?: boolean;
+  }[];
 };
 
 const SERVICE_EVENT = "doctor8:select-service";
@@ -164,15 +170,27 @@ export default function PublicBookingPanel({
 
   const shellClass = embed
     ? "space-y-3"
-    : "bg-white rounded-2xl border border-slate-100 shadow-sm p-5 space-y-4";
+    : "border p-5 space-y-4";
+
+  const shellStyle = embed
+    ? undefined
+    : {
+        background: "var(--pub-card-bg, #fff)",
+        borderColor: "var(--pub-card-border, #f1f5f9)",
+        borderRadius: "var(--pub-card-radius, 1rem)",
+        boxShadow: "var(--pub-card-shadow, 0 1px 3px rgba(15,23,42,0.06))",
+      };
 
   return (
-    <div id="public-booking" className={shellClass}>
+    <div id="public-booking" className={shellClass} style={shellStyle}>
       <div className="flex items-center justify-between">
         <h2 className={`font-semibold text-slate-800 ${embed ? "text-sm" : ""}`}>
           {t("pub.bookTitle")}
         </h2>
-        <p className={`font-bold text-brand-600 ${embed ? "text-sm" : "text-sm"}`}>
+        <p
+          className={`font-bold ${embed ? "text-sm" : "text-sm"}`}
+          style={{ color: "var(--pub-accent, #0d9488)" }}
+        >
           {volunteerMode ? t("consultServices.volunteerPrice") : displayPriceLabel}
         </p>
       </div>
@@ -185,7 +203,7 @@ export default function PublicBookingPanel({
           <select
             value={selectedServiceId ?? ""}
             onChange={(e) => setSelectedServiceId(e.target.value || null)}
-            className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/30"
+            className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--pub-accent,#0d9488)]/30"
             required={activeServices.length > 1}
           >
             {activeServices.length > 1 && (
@@ -230,9 +248,14 @@ export default function PublicBookingPanel({
                 onClick={() => { setSelectedDay(i); setSelectedSlot(null); }}
                 className={`shrink-0 px-3 py-2 rounded-xl text-xs font-medium transition ${
                   i === selectedDay
-                    ? "bg-brand-500 text-white"
-                    : "bg-slate-50 text-slate-600 hover:bg-brand-50"
+                    ? "text-white"
+                    : "bg-slate-50 text-slate-600 hover:bg-[var(--pub-accent-light,#0d948818)]"
                 }`}
+                style={
+                  i === selectedDay
+                    ? { background: "var(--pub-accent, #0d9488)" }
+                    : undefined
+                }
               >
                 {day.label}
               </button>
@@ -249,16 +272,35 @@ export default function PublicBookingPanel({
             {availableSlots.length === 0 ? (
               <span className="text-sm text-slate-400">—</span>
             ) : (
-              availableSlots.map((slot) => (
+              availableSlots.map((slot) => {
+                const selected = selectedSlot === slot.datetime;
+                const volunteer = !!slot.volunteerOnly || !!slot.isVolunteer;
+                return (
                 <button
                   key={slot.datetime}
                   type="button"
                   onClick={() => setSelectedSlot(slot.datetime)}
-                  className={`px-3 py-1.5 rounded-full text-sm font-medium border-2 transition ${patientSlotButtonClass(slot, selectedSlot === slot.datetime)}`}
+                  className={`px-3 py-1.5 text-sm font-medium border-2 transition ${
+                    volunteer
+                      ? patientSlotButtonClass(slot, selected)
+                      : selected
+                        ? "text-white border-transparent"
+                        : "bg-white border-slate-200 text-slate-700 hover:border-[var(--pub-accent,#0d9488)]"
+                  }`}
+                  style={{
+                    borderRadius: "var(--pub-chip-radius, 9999px)",
+                    ...(selected && !volunteer
+                      ? {
+                          background: "var(--pub-accent, #0d9488)",
+                          borderColor: "var(--pub-accent, #0d9488)",
+                        }
+                      : {}),
+                  }}
                 >
                   {slot.time}
                 </button>
-              ))
+                );
+              })
             )}
           </div>
         </>
@@ -268,7 +310,8 @@ export default function PublicBookingPanel({
         href={loginUrl}
         target={embed ? "_top" : undefined}
         onClick={() => trackPublicBookClick(profile.slug, analyticsSource)}
-        className="flex items-center justify-center gap-2 w-full bg-brand-500 hover:bg-brand-400 text-white font-semibold py-3 rounded-xl transition text-sm"
+        className="flex items-center justify-center gap-2 w-full text-white font-semibold py-3 rounded-xl transition text-sm hover:opacity-90"
+        style={{ background: "var(--pub-accent, #0d9488)" }}
       >
         <Calendar size={18} />
         {selectedSlot ? t("pub.bookSlot") : t("pub.bookCta")}
@@ -282,7 +325,8 @@ export default function PublicBookingPanel({
         <Link
           href={registerUrl}
           target={embed ? "_top" : undefined}
-          className="text-brand-500 font-semibold hover:underline"
+          className="font-semibold hover:underline"
+          style={{ color: "var(--pub-accent, #0d9488)" }}
         >
           {t("pub.register")}
         </Link>

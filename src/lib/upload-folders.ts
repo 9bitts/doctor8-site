@@ -1,5 +1,12 @@
 /** Allowed S3 upload folder prefixes ? prevents arbitrary key namespaces. */
-const FIXED_FOLDERS = new Set(["uploads", "resources", "patient-docs", "nutrition-diary", "import-docs"]);
+const FIXED_FOLDERS = new Set([
+  "uploads",
+  "resources",
+  "patient-docs",
+  "nutrition-diary",
+  "import-docs",
+  "doctor-image",
+]);
 
 const RECORDS_FOLDER = /^records\/[a-zA-Z0-9_-]+$/;
 const LICENSE_DOCS_FOLDER = /^license-docs\/[a-zA-Z0-9_-]+$/;
@@ -7,6 +14,7 @@ const LICENSE_DOCS_FOLDER = /^license-docs\/[a-zA-Z0-9_-]+$/;
 const PATIENT_DOCS_SCOPED = /^patient-docs\/[a-zA-Z0-9_-]+$/;
 const NUTRITION_DIARY_SCOPED = /^nutrition-diary\/[a-zA-Z0-9_-]+$/;
 const IMPORT_DOCS_SCOPED = /^import-docs\/[a-zA-Z0-9_-]+$/;
+const DOCTOR_IMAGE_SCOPED = /^doctor-image\/[a-zA-Z0-9_-]+$/;
 
 export function normalizeUploadFolder(raw: string): string {
   return raw.replace(/[^a-zA-Z0-9_/-]/g, "").replace(/^\/+|\/+$/g, "");
@@ -20,7 +28,13 @@ export function isAllowedUploadFolder(folder: string): boolean {
   if (PATIENT_DOCS_SCOPED.test(normalized)) return true;
   if (NUTRITION_DIARY_SCOPED.test(normalized)) return true;
   if (IMPORT_DOCS_SCOPED.test(normalized)) return true;
+  if (DOCTOR_IMAGE_SCOPED.test(normalized)) return true;
   return LICENSE_DOCS_FOLDER.test(normalized);
+}
+
+/** Public profile media (Doctor Image) scoped to the uploader. */
+export function doctorImageFolder(userId: string): string {
+  return `doctor-image/${userId.replace(/[^a-zA-Z0-9_-]/g, "")}`;
 }
 
 /** Prefix import document uploads with patient userId for ownership checks. */

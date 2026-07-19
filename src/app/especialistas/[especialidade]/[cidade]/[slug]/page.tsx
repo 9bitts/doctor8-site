@@ -3,7 +3,7 @@
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import {
-  Video, Building2, Star, CheckCircle2, Stethoscope, Award, MapPin, ExternalLink,
+  Video, Building2, Star, Stethoscope, Award, MapPin, ExternalLink, Calendar,
 } from "lucide-react";
 import { BrandLogoLink } from "@/components/brand/BrandLogo";
 import { cookies } from "next/headers";
@@ -24,13 +24,20 @@ import AcuraVolunteerBadge from "@/components/acura/AcuraVolunteerBadge";
 import { isAcuraVolunteerProvider } from "@/lib/acura-volunteer";
 import {
   PublicDoctorImageTheme,
-  PublicDoctorImageCover,
+  PublicDoctorImageHero,
   PublicDoctorImageSocial,
   PublicDoctorImageGallery,
   PublicDoctorImageVideo,
   PublicDoctorImageBlocks,
 } from "@/components/public/PublicDoctorImageContent";
-import { resolveAccentColor } from "@/lib/doctor-image";
+import { getSiteUrl } from "@/lib/site-metadata";
+
+function absoluteMediaUrl(url: string | null | undefined): string | undefined {
+  if (!url || url.startsWith("data:")) return undefined;
+  if (url.startsWith("http://") || url.startsWith("https://")) return url;
+  if (url.startsWith("/")) return `${getSiteUrl()}${url}`;
+  return undefined;
+}
 
 export async function generateMetadata({
   params,
@@ -44,10 +51,14 @@ export async function generateMetadata({
   const specialtyLabel = getProfessionLabel(lang, profile.specialty);
   const name = `${profile.firstName} ${profile.lastName}`.trim();
   const city = profile.clinicCity || params.cidade.replace(/-/g, " ");
+  const ogImage =
+    absoluteMediaUrl(profile.doctorImage.coverImageUrl) ||
+    absoluteMediaUrl(profile.avatarUrl);
 
   return {
     title: `${name} — ${specialtyLabel} em ${city} | Doctor8`,
     description:
+      profile.headline ||
       profile.bio?.slice(0, 160) ||
       `Agende consulta com ${name}, ${specialtyLabel} em ${city}.`,
     alternates: {
@@ -55,10 +66,13 @@ export async function generateMetadata({
     },
     openGraph: {
       title: `${name} — ${specialtyLabel}`,
-      description: profile.bio?.slice(0, 160) || `Agende sua consulta no Doctor8`,
+      description:
+        profile.headline ||
+        profile.bio?.slice(0, 160) ||
+        `Agende sua consulta no Doctor8`,
       url: buildPublicProfileUrl(profile),
       type: "profile",
-      ...(profile.avatarUrl ? { images: [{ url: profile.avatarUrl }] } : {}),
+      ...(ogImage ? { images: [{ url: ogImage }] } : {}),
     },
   };
 }
@@ -96,12 +110,8 @@ export default async function PublicSpecialistPage({
 
   const jsonLd = buildPhysicianJsonLd(profile, buildPublicProfileUrl(profile));
 
-  const currency = profile.currency || "BRL";
   const showAcuraBadge = isAcuraVolunteerProvider(profile.verified, profile.acuraVolunteer);
-  const accent = resolveAccentColor(
-    profile.doctorImage.themePreset,
-    profile.doctorImage.accentColor
-  );
+  const isModern = profile.doctorImage.themePreset === "modern";
 
   return (
     <>
@@ -110,12 +120,26 @@ export default async function PublicSpecialistPage({
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
+      <link
+        rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700&family=IBM+Plex+Sans:wght@400;600&family=Nunito:wght@400;600;700&family=Source+Sans+3:wght@400;600&display=swap"
+      />
 
       <PublicDoctorImageTheme doctorImage={profile.doctorImage}>
-      <div className="min-h-screen bg-slate-50">
+      <div
+        className="min-h-screen"
+        style={{
+          backgroundColor: "var(--pub-page-bg)",
+          backgroundImage: "var(--pub-page-bg-image)",
+        }}
+      >
         {/* Header */}
         <header className="sticky top-0 z-20 border-b border-white/10 bg-d8-dark text-white">
-          <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+          <div
+            className="h-0.5 w-full"
+            style={{ background: "var(--pub-accent)" }}
+          />
+          <div className="max-w-6xl mx-auto px-4 py-3.5 flex items-center justify-between">
             <BrandLogoLink href="/" variant="on-dark" size="md" />
             <div className="flex items-center gap-3 text-sm">
               <Link href="/login" className="text-white/80 transition hover:text-white">
@@ -131,66 +155,53 @@ export default async function PublicSpecialistPage({
           </div>
         </header>
 
-        <main className="max-w-6xl mx-auto px-4 py-6 lg:py-8">
+        <main className="max-w-6xl mx-auto px-4 py-6 lg:py-8 pb-24 lg:pb-8">
           <div className="grid lg:grid-cols-[1fr_340px_280px] gap-5">
-            {/* Left ? profile info */}
-            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-5">
-              <PublicDoctorImageCover coverImageUrl={profile.doctorImage.coverImageUrl} />
-              <div className="flex items-start gap-4">
-                {profile.avatarUrl ? (
-                  <img
-                    src={profile.avatarUrl}
-                    alt={name}
-                    className="w-20 h-20 rounded-2xl object-cover border border-slate-100 shrink-0"
-                  />
-                ) : (
-                  <div className="w-20 h-20 rounded-2xl bg-brand-100 text-brand-600 flex items-center justify-center text-2xl font-bold shrink-0">
-                    {initials}
-                  </div>
-                )}
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <h1 className="text-xl font-bold text-slate-900">{name}</h1>
-                    {profile.verified && (
-                      <CheckCircle2 size={18} className="text-brand-500 shrink-0" />
-                    )}
-                  </div>
-                  <p className="font-medium mt-0.5" style={{ color: accent }}>
-                    {specialtyLabel}
-                  </p>
-                  {showAcuraBadge && (
-                    <div className="mt-2">
-                      <AcuraVolunteerBadge size="md" />
-                    </div>
-                  )}
-                  <div className="flex items-center gap-3 mt-2 flex-wrap">
-                    <StarRating avg={profile.ratingAvg} count={profile.ratingCount} />
-                    {profile.license && (
-                      <span className="text-xs text-slate-500">{profile.license}</span>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {profile.headline && (
-                <p
-                  className="text-slate-600 italic text-sm pl-3"
-                  style={{ borderLeft: `2px solid ${accent}33` }}
-                >
-                  {profile.headline}
-                </p>
-              )}
+            {/* Left — profile info */}
+            <div
+              className="border p-6 space-y-5"
+              style={{
+                background: "var(--pub-card-bg)",
+                borderColor: "var(--pub-card-border)",
+                borderRadius: "var(--pub-card-radius)",
+                boxShadow: "var(--pub-card-shadow)",
+              }}
+            >
+              <PublicDoctorImageHero
+                coverImageUrl={profile.doctorImage.coverImageUrl}
+                avatarUrl={profile.avatarUrl}
+                name={name}
+                initials={initials}
+                specialtyLabel={specialtyLabel}
+                verified={profile.verified}
+                headline={profile.headline}
+                license={profile.license}
+                ratingSlot={
+                  <StarRating avg={profile.ratingAvg} count={profile.ratingCount} />
+                }
+                badgeSlot={
+                  showAcuraBadge ? <AcuraVolunteerBadge size="md" /> : null
+                }
+              />
 
               <div className="space-y-2">
                 {profile.yearsOfPractice != null && profile.yearsOfPractice > 0 && (
                   <p className="flex items-center gap-2 text-sm text-slate-600">
-                    <Stethoscope size={15} className="text-brand-400 shrink-0" />
+                    <Stethoscope
+                      size={15}
+                      className="shrink-0"
+                      style={{ color: "var(--pub-accent)" }}
+                    />
                     {t("pub.yearsExp").replace("{n}", String(profile.yearsOfPractice))}
                   </p>
                 )}
                 {profile.trainingInstitution && (
                   <p className="flex items-center gap-2 text-sm text-slate-600">
-                    <Award size={15} className="text-brand-400 shrink-0" />
+                    <Award
+                      size={15}
+                      className="shrink-0"
+                      style={{ color: "var(--pub-accent)" }}
+                    />
                     {profile.trainingInstitution}
                   </p>
                 )}
@@ -199,7 +210,12 @@ export default async function PublicSpecialistPage({
                     {profile.subspecialties.map((s) => (
                       <span
                         key={s}
-                        className="text-xs bg-brand-50 text-brand-600 px-2.5 py-1 rounded-full"
+                        className="text-xs px-2.5 py-1"
+                        style={{
+                          background: "var(--pub-accent-light)",
+                          color: "var(--pub-accent)",
+                          borderRadius: "var(--pub-chip-radius)",
+                        }}
                       >
                         {s}
                       </span>
@@ -209,17 +225,29 @@ export default async function PublicSpecialistPage({
               </div>
 
               {profile.bio && (
-                <p className="text-sm text-slate-600 leading-relaxed">{profile.bio}</p>
+                <p className="text-sm text-slate-600 leading-relaxed whitespace-pre-wrap">
+                  {profile.bio}
+                </p>
               )}
 
               <div className="flex flex-wrap gap-2">
                 {profile.acceptsTeleconsult && (
-                  <span className="inline-flex items-center gap-1.5 text-xs font-medium text-brand-700 bg-brand-50 px-3 py-1.5 rounded-full">
+                  <span
+                    className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5"
+                    style={{
+                      color: "var(--pub-accent)",
+                      background: "var(--pub-accent-light)",
+                      borderRadius: "var(--pub-chip-radius)",
+                    }}
+                  >
                     <Video size={13} /> {t("pub.teleconsult")}
                   </span>
                 )}
                 {profile.acceptsInPerson && (
-                  <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-700 bg-slate-100 px-3 py-1.5 rounded-full">
+                  <span
+                    className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-700 bg-slate-100 px-3 py-1.5"
+                    style={{ borderRadius: "var(--pub-chip-radius)" }}
+                  >
                     <Building2 size={13} /> {t("pub.inPerson")}
                   </span>
                 )}
@@ -236,7 +264,8 @@ export default async function PublicSpecialistPage({
                   href={profile.googleBusinessUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 text-sm font-medium text-brand-600 hover:text-brand-500 transition"
+                  className="inline-flex items-center gap-2 text-sm font-medium transition hover:opacity-80"
+                  style={{ color: "var(--pub-accent)" }}
                 >
                   <MapPin size={15} />
                   {t("pub.viewOnGoogle")}
@@ -255,31 +284,56 @@ export default async function PublicSpecialistPage({
               <PublicReviewsSection slug={profile.slug} />
             </div>
 
-            {/* Center ? booking */}
-            <PublicBookingPanel profile={profile} />
+            {/* Center — booking */}
+            <div className="lg:sticky lg:top-20 lg:self-start">
+              <PublicBookingPanel profile={profile} />
+            </div>
 
-            {/* Right ? locations + map */}
-            <PublicProfilePlaces
-              locations={profile.locations}
-              fallback={{
-                clinicName: profile.clinicName,
-                clinicAddress: profile.clinicAddress,
-                clinicCity: profile.clinicCity,
-                clinicState: profile.clinicState,
-                clinicCountry: profile.clinicCountry,
-                clinicLatitude: profile.clinicLatitude,
-                clinicLongitude: profile.clinicLongitude,
-                acceptsTeleconsult: profile.acceptsTeleconsult,
-              }}
-              providerName={name}
-            />
+            {/* Right — locations + map */}
+            <div className={isModern ? "[&_*]:text-slate-800" : undefined}>
+              <PublicProfilePlaces
+                locations={profile.locations}
+                fallback={{
+                  clinicName: profile.clinicName,
+                  clinicAddress: profile.clinicAddress,
+                  clinicCity: profile.clinicCity,
+                  clinicState: profile.clinicState,
+                  clinicCountry: profile.clinicCountry,
+                  clinicLatitude: profile.clinicLatitude,
+                  clinicLongitude: profile.clinicLongitude,
+                  acceptsTeleconsult: profile.acceptsTeleconsult,
+                }}
+                providerName={name}
+              />
+            </div>
           </div>
         </main>
 
-        <footer className="text-center text-xs text-slate-400 py-8">
+        {/* Sticky mobile CTA */}
+        <div className="lg:hidden fixed bottom-0 inset-x-0 z-30 border-t border-slate-200/80 bg-white/95 backdrop-blur px-4 py-3 safe-area-pb">
+          <a
+            href="#public-booking"
+            className="flex items-center justify-center gap-2 w-full text-white font-semibold py-3 rounded-xl text-sm shadow-lg transition hover:opacity-90"
+            style={{
+              background: "var(--pub-accent)",
+              borderRadius: "var(--pub-chip-radius)",
+            }}
+          >
+            <Calendar size={18} />
+            {t("pub.bookCta")}
+          </a>
+        </div>
+
+        <footer
+          className={`text-center text-xs py-8 ${isModern ? "text-white/50" : "text-slate-400"}`}
+        >
           Powered by{" "}
-          <Link href="/register" className="font-black text-brand-500">
-            Doctor8
+          <Link
+            href="/register"
+            className="font-black"
+            style={{ color: isModern ? "#5eead4" : undefined }}
+          >
+            <span className={isModern ? undefined : "text-brand-500"}>Doctor8</span>
           </Link>
         </footer>
       </div>
