@@ -15,7 +15,7 @@ import { useToast } from "@/components/ui/toast";
 import {
   ArrowLeft, Plus, X, FileText, CheckCircle2, AlertCircle,
   Mail, Loader2, Pencil, Send, MapPin, MessageCircle, ExternalLink,
-  RotateCw, Download,
+  RotateCw, Download, Video,
   Activity, Stethoscope, Syringe, LineChart, Grid3X3, Ear, Utensils, HeartPulse, Pill, FileCheck, Clock, BookMarked,
 } from "lucide-react";
 import SendEducationModal from "@/components/professional/library/SendEducationModal";
@@ -1221,7 +1221,7 @@ export default function RecordDetailClient({
                 </span>
               )}
             </p>
-            {/* P4: message buttons — only when patient has an account */}
+            {/* P4: message / video — only when patient has an account */}
             {chart.linkedUserId && (
               <div className="mt-3 flex gap-2 flex-wrap">
                 <Link
@@ -1229,6 +1229,12 @@ export default function RecordDetailClient({
                   className="inline-flex items-center gap-1.5 text-xs font-medium text-white bg-brand-500 hover:bg-brand-500 px-3 py-1.5 rounded-lg transition"
                 >
                   <MessageCircle size={13} /> {t("rec.sendMessage")}
+                </Link>
+                <Link
+                  href={`${mapProfessionalPathToPortal(pathname, "/professional/jit")}?private=1&recordId=${encodeURIComponent(chart.id)}`}
+                  className="inline-flex items-center gap-1.5 text-xs font-medium text-brand-700 bg-brand-50 hover:bg-brand-100 border border-brand-200 px-3 py-1.5 rounded-lg transition"
+                >
+                  <Video size={13} /> {t("rec.startVideoCall")}
                 </Link>
                 {hasConversation && (
                   <Link

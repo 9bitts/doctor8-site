@@ -3,17 +3,37 @@
 // Plantão Online — painel do profissional (client).
 
 import Link from "next/link";
-import { useState, useEffect, useRef } from "react";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
+import { useState, useEffect, useRef, useMemo } from "react";
 import {
-  Radio, Power, PowerOff, Users, Clock, ChevronRight,
-  Loader2, CheckCircle2, AlertCircle, Phone, Pause, Play,
-  Stethoscope, Settings, X, RefreshCw,
+  Radio, Power, PowerOff, Users, ChevronRight,
+  Loader2, AlertCircle, Phone, Pause, Play,
+  Stethoscope, Settings, X, RefreshCw, UserPlus, MessageCircle, Copy, Check,
 } from "lucide-react";
 import { useT, useI18n } from "@/lib/i18n/I18nProvider";
 import { localeOf } from "@/lib/i18n/translations";
 import { getProfessionLabel } from "@/lib/professions";
 import { useToast } from "@/components/ui/toast";
 import { formatAppointmentTimeWithLabel } from "@/lib/timezone";
+
+interface ChartOption {
+  id: string;
+  firstName: string;
+  lastName: string;
+  phone: string | null;
+  hasAccount: boolean;
+  linkedUserId: string | null;
+}
+
+interface PrivateConsultResult {
+  appointmentId: string;
+  joinPath: string;
+  joinUrl: string;
+  patientUserId: string;
+  patientName: string;
+  whatsappUrl: string;
+  messageBody: string;
+}
 
 interface QueueEntry {
   id: string;
@@ -53,6 +73,9 @@ export default function JitClient({ providerTz }: { providerTz: string }) {
   const toast = useToast();
   const { lang } = useI18n();
   const locale = localeOf(lang);
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
 
   const [session,  setSession]  = useState<JitSessionData | null>(null);
   const [loading,  setLoading]  = useState(true);
@@ -72,13 +95,44 @@ export default function JitClient({ providerTz }: { providerTz: string }) {
   const [cfgEstTime,   setCfgEstTime]   = useState(20);
   const [cfgSaving,    setCfgSaving]    = useState(false);
 
+  const [privateOpen, setPrivateOpen] = useState(false);
+  const [charts, setCharts] = useState<ChartOption[]>([]);
+  const [chartsLoading, setChartsLoading] = useState(false);
+  const [chartQuery, setChartQuery] = useState("");
+  const [selectedChartId, setSelectedChartId] = useState<string | null>(null);
+  const [creatingPrivate, setCreatingPrivate] = useState(false);
+  const [sendingMsg, setSendingMsg] = useState(false);
+  const [privateResult, setPrivateResult] = useState<PrivateConsultResult | null>(null);
+  const [linkCopied, setLinkCopied] = useState(false);
+  const [pendingPrivateRecordId, setPendingPrivateRecordId] = useState<string | null>(null);
+
   const pollRef      = useRef<NodeJS.Timeout>();
   const sessionIdRef = useRef<string | null>(null);
+  const deepLinkHandledRef = useRef(false);
 
   useEffect(() => {
     loadSession();
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
   }, []);
+
+  useEffect(() => {
+    if (loading || deepLinkHandledRef.current) return;
+    const wantsPrivate = searchParams.get("private") === "1";
+    const recordId = searchParams.get("recordId");
+    if (!wantsPrivate || !recordId) return;
+
+    deepLinkHandledRef.current = true;
+    setPendingPrivateRecordId(recordId);
+    // Clean query so refresh does not re-trigger.
+    router.replace(pathname, { scroll: false });
+
+    const status = session?.status;
+    if (status === "ONLINE" || status === "PAUSED") {
+      void openPrivateConsult(recordId);
+    } else {
+      setShowConfig(true);
+    }
+  }, [loading, searchParams, session?.status, pathname, router]);
 
   async function loadSession() {
     setLoadError(false);
@@ -142,6 +196,11 @@ export default function JitClient({ providerTz }: { providerTz: string }) {
       await loadSession();
       startPolling();
       toast.success(t("jit.toast.started"));
+      if (pendingPrivateRecordId) {
+        const recordId = pendingPrivateRecordId;
+        setPendingPrivateRecordId(null);
+        void openPrivateConsult(recordId);
+      }
     } catch { setError(t("jit.errNetwork")); toast.error(t("jit.errNetwork")); }
     setCfgSaving(false);
   }
@@ -181,9 +240,142 @@ export default function JitClient({ providerTz }: { providerTz: string }) {
     setToggling(false);
   }
 
+  async function openPrivateConsult(preselectRecordId?: string | null) {
+    const recordId = preselectRecordId || null;
+    setPrivateOpen(true);
+    setPrivateResult(null);
+    setSelectedChartId(recordId);
+    setChartQuery("");
+    setLinkCopied(false);
+    setError(null);
+    setChartsLoading(true);
+    try {
+      const res = await fetch("/api/professional/records");
+      if (!res.ok) {
+        toast.error(t("jit.private.loadChartsError"));
+        return;
+      }
+      const data = await res.json();
+      const loaded = (data.records || []) as ChartOption[];
+      setCharts(loaded);
+      if (recordId) {
+        const match = loaded.find((c) => c.id === recordId);
+        if (match?.hasAccount) {
+          setSelectedChartId(recordId);
+        } else if (match && !match.hasAccount) {
+          setSelectedChartId(null);
+          setError(t("jit.private.errNoAccount"));
+        } else {
+          setSelectedChartId(null);
+          toast.error(t("jit.private.recordNotFound"));
+        }
+      }
+    } catch {
+      toast.error(t("jit.private.loadChartsError"));
+    } finally {
+      setChartsLoading(false);
+    }
+  }
+
+  function closePrivateConsult() {
+    setPrivateOpen(false);
+    setPrivateResult(null);
+    setSelectedChartId(null);
+    setChartQuery("");
+    setLinkCopied(false);
+  }
+
+  async function createPrivateConsult() {
+    if (!session || !selectedChartId) return;
+    setCreatingPrivate(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/jit/private-consult", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          patientRecordId: selectedChartId,
+          sessionId: session.id,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        const code = data.error as string | undefined;
+        if (code === "PATIENT_NO_ACCOUNT") {
+          setError(t("jit.private.errNoAccount"));
+        } else if (code === "SESSION_NOT_ACTIVE") {
+          setError(t("jit.private.errSession"));
+        } else if (code === "PROVIDER_NOT_VERIFIED") {
+          setError(data.message || t("jit.private.errVerified"));
+        } else {
+          setError(data.message || t("jit.errGeneric"));
+        }
+        toast.error(t("jit.private.createError"));
+        return;
+      }
+      setPrivateResult({
+        appointmentId: data.appointmentId,
+        joinPath: data.joinPath,
+        joinUrl: data.joinUrl,
+        patientUserId: data.patientUserId,
+        patientName: data.patientName,
+        whatsappUrl: data.whatsappUrl,
+        messageBody: data.messageBody,
+      });
+      toast.success(t("jit.private.created"));
+    } catch {
+      setError(t("jit.errNetwork"));
+      toast.error(t("jit.errNetwork"));
+    } finally {
+      setCreatingPrivate(false);
+    }
+  }
+
+  async function sendDoctor8Message() {
+    if (!privateResult) return;
+    setSendingMsg(true);
+    try {
+      const res = await fetch("/api/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          receiverId: privateResult.patientUserId,
+          content: privateResult.messageBody,
+        }),
+      });
+      if (!res.ok) {
+        toast.error(t("jit.private.sendMsgError"));
+        return;
+      }
+      toast.success(t("jit.private.sendMsgOk"));
+    } catch {
+      toast.error(t("jit.errNetwork"));
+    } finally {
+      setSendingMsg(false);
+    }
+  }
+
+  function shareWhatsApp() {
+    if (!privateResult?.whatsappUrl) return;
+    window.open(privateResult.whatsappUrl, "_blank", "noopener,noreferrer");
+  }
+
+  async function copyJoinLink() {
+    if (!privateResult?.joinUrl) return;
+    try {
+      await navigator.clipboard.writeText(privateResult.joinUrl);
+      setLinkCopied(true);
+      toast.success(t("jit.private.linkCopied"));
+      setTimeout(() => setLinkCopied(false), 2500);
+    } catch {
+      toast.error(t("jit.errGeneric"));
+    }
+  }
+
   async function callNext(confirmed = false) {
     if (!session) return;
-    if (inProgressEntry && !confirmed) {
+    const activeInProgress = session.queue.find(q => q.status === "IN_PROGRESS");
+    if (activeInProgress && !confirmed) {
       setConfirmEndOpen(true);
       return;
     }
@@ -196,7 +388,7 @@ export default function JitClient({ providerTz }: { providerTz: string }) {
         body:    JSON.stringify({
           action: "CALL_NEXT",
           sessionId: session.id,
-          confirmEndInProgress: !!inProgressEntry,
+          confirmEndInProgress: !!activeInProgress,
         }),
       });
       const data = await res.json();
@@ -222,6 +414,28 @@ export default function JitClient({ providerTz }: { providerTz: string }) {
     return formatAppointmentTimeWithLabel(new Date(iso), providerTz, locale);
   }
 
+  const filteredCharts = useMemo(() => {
+    const q = chartQuery.trim().toLowerCase();
+    const linked = charts.filter((c) => c.hasAccount);
+    if (!q) return linked.slice(0, 40);
+    return linked
+      .filter((c) =>
+        `${c.firstName} ${c.lastName}`.toLowerCase().includes(q) ||
+        (c.phone || "").includes(q),
+      )
+      .slice(0, 40);
+  }, [charts, chartQuery]);
+
+  const selectedChart = charts.find((c) => c.id === selectedChartId) ?? null;
+
+  const queue           = session?.queue ?? [];
+  const waitingCount    = queue.filter(q => q.status === "WAITING").length;
+  const inProgressEntry = queue.find(q => q.status === "IN_PROGRESS");
+  const calledEntry     = queue.find(q => q.status === "CALLED");
+  const isOnline  = session?.status === "ONLINE";
+  const isPaused  = session?.status === "PAUSED";
+  const isOffline = !session || session.status === "OFFLINE";
+
   if (loading) return (
     <div className="flex items-center justify-center h-64">
       <Loader2 size={24} className="animate-spin text-slate-400" />
@@ -241,15 +455,6 @@ export default function JitClient({ providerTz }: { providerTz: string }) {
       </button>
     </div>
   );
-
-  const isOnline  = session?.status === "ONLINE";
-  const isPaused  = session?.status === "PAUSED";
-  const isOffline = !session || session.status === "OFFLINE";
-
-  const queue           = session?.queue ?? [];
-  const waitingCount    = queue.filter(q => q.status === "WAITING").length;
-  const inProgressEntry = queue.find(q => q.status === "IN_PROGRESS");
-  const calledEntry     = queue.find(q => q.status === "CALLED");
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
@@ -290,6 +495,11 @@ export default function JitClient({ providerTz }: { providerTz: string }) {
               </div>
               <h2 className="text-lg font-bold text-slate-900 mb-2">{t("jit.configTitle")}</h2>
               <p className="text-sm text-slate-500 max-w-sm mx-auto mb-6">{t("jit.disclaimer")}</p>
+              {pendingPrivateRecordId && (
+                <p className="text-sm text-brand-700 bg-brand-50 border border-brand-100 rounded-xl px-4 py-3 max-w-sm mx-auto mb-4">
+                  {t("jit.private.startDutyFirst")}
+                </p>
+              )}
               <button
                 onClick={() => setShowConfig(true)}
                 className="inline-flex items-center gap-2 bg-brand-500 hover:bg-brand-500 text-white font-semibold px-6 py-3 rounded-xl transition"
@@ -302,6 +512,11 @@ export default function JitClient({ providerTz }: { providerTz: string }) {
               <h2 className="font-bold text-slate-800 flex items-center gap-2">
                 <Settings size={18} className="text-brand-500" /> {t("jit.configTitle")}
               </h2>
+              {pendingPrivateRecordId && (
+                <p className="text-sm text-brand-700 bg-brand-50 border border-brand-100 rounded-xl px-4 py-3">
+                  {t("jit.private.startDutyFirst")}
+                </p>
+              )}
 
               <div>
                 <label className="block text-xs font-medium text-slate-600 mb-1">{t("jit.specialty")} *</label>
@@ -477,6 +692,155 @@ export default function JitClient({ providerTz }: { providerTz: string }) {
                   : <><ChevronRight size={16} /> {t("jit.callNext")}</>}
               </button>
             </div>
+          </div>
+
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 space-y-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0">
+                <p className="font-semibold text-slate-800">{t("jit.private.title")}</p>
+                <p className="text-xs text-slate-500 mt-0.5">{t("jit.private.subtitle")}</p>
+              </div>
+              {!privateOpen && (
+                <button
+                  type="button"
+                  onClick={() => void openPrivateConsult()}
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 border border-brand-200 bg-brand-50 hover:bg-brand-100 text-brand-700 font-semibold px-5 py-2.5 rounded-xl transition text-sm min-h-[44px]"
+                >
+                  <UserPlus size={16} /> {t("jit.private.create")}
+                </button>
+              )}
+            </div>
+
+            {privateOpen && !privateResult && (
+              <div className="space-y-3 border-t border-slate-100 pt-4">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-sm font-medium text-slate-700">{t("jit.private.pickPatient")}</p>
+                  <button
+                    type="button"
+                    onClick={closePrivateConsult}
+                    className="text-slate-400 hover:text-slate-600"
+                    aria-label={t("common.cancel")}
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+                <input
+                  value={chartQuery}
+                  onChange={(e) => setChartQuery(e.target.value)}
+                  placeholder={t("jit.private.searchPlaceholder")}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-brand-400 focus:ring-2 focus:ring-brand-100 outline-none text-sm"
+                />
+                {chartsLoading ? (
+                  <div className="flex items-center justify-center gap-2 py-6 text-sm text-slate-500">
+                    <Loader2 size={16} className="animate-spin" /> {t("common.loading")}
+                  </div>
+                ) : filteredCharts.length === 0 ? (
+                  <p className="text-sm text-slate-500 py-2">{t("jit.private.noLinkedPatients")}</p>
+                ) : (
+                  <div className="border border-slate-100 rounded-xl divide-y max-h-56 overflow-y-auto">
+                    {filteredCharts.map((c) => {
+                      const active = selectedChartId === c.id;
+                      return (
+                        <button
+                          key={c.id}
+                          type="button"
+                          onClick={() => setSelectedChartId(c.id)}
+                          className={`w-full text-left px-3 py-2.5 text-sm transition ${
+                            active ? "bg-brand-50 text-brand-800" : "hover:bg-slate-50 text-slate-800"
+                          }`}
+                        >
+                          <span className="font-medium">{c.firstName} {c.lastName}</span>
+                          {c.phone && (
+                            <span className="block text-xs text-slate-400 mt-0.5">{c.phone}</span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+                {selectedChart && !selectedChart.hasAccount && (
+                  <p className="text-xs text-amber-700 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2">
+                    {t("jit.private.errNoAccount")}
+                  </p>
+                )}
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={closePrivateConsult}
+                    className="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-medium text-sm hover:bg-slate-50"
+                  >
+                    {t("common.cancel")}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void createPrivateConsult()}
+                    disabled={creatingPrivate || !selectedChartId || !selectedChart?.hasAccount}
+                    className="flex-1 py-2.5 rounded-xl bg-brand-500 hover:bg-brand-600 text-white font-semibold text-sm disabled:opacity-50 inline-flex items-center justify-center gap-2"
+                  >
+                    {creatingPrivate
+                      ? <><Loader2 size={14} className="animate-spin" /> {t("jit.private.creating")}</>
+                      : t("jit.private.confirmCreate")}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {privateResult && (
+              <div className="space-y-3 border-t border-slate-100 pt-4">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-slate-800">
+                      {t("jit.private.readyTitle").replace("{{name}}", privateResult.patientName)}
+                    </p>
+                    <p className="text-xs text-slate-500 mt-0.5 break-all">{privateResult.joinUrl}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={closePrivateConsult}
+                    className="text-slate-400 hover:text-slate-600 shrink-0"
+                    aria-label={t("common.cancel")}
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={shareWhatsApp}
+                    className="inline-flex items-center justify-center gap-2 min-h-[44px] rounded-xl bg-[#25D366] hover:bg-[#1ebe57] text-white font-semibold text-sm px-4"
+                  >
+                    <Phone size={16} /> {t("jit.private.sendWhatsApp")}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void sendDoctor8Message()}
+                    disabled={sendingMsg}
+                    className="inline-flex items-center justify-center gap-2 min-h-[44px] rounded-xl bg-brand-500 hover:bg-brand-600 text-white font-semibold text-sm px-4 disabled:opacity-50"
+                  >
+                    {sendingMsg
+                      ? <Loader2 size={16} className="animate-spin" />
+                      : <MessageCircle size={16} />}
+                    {t("jit.private.sendDoctor8")}
+                  </button>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <button
+                    type="button"
+                    onClick={() => void copyJoinLink()}
+                    className="flex-1 inline-flex items-center justify-center gap-2 min-h-[40px] rounded-xl border border-slate-200 text-slate-700 font-medium text-sm hover:bg-slate-50"
+                  >
+                    {linkCopied ? <Check size={15} className="text-brand-500" /> : <Copy size={15} />}
+                    {linkCopied ? t("jit.private.linkCopied") : t("jit.private.copyLink")}
+                  </button>
+                  <Link
+                    href={privateResult.joinPath}
+                    className="flex-1 inline-flex items-center justify-center gap-2 min-h-[40px] rounded-xl border border-brand-200 bg-brand-50 text-brand-700 font-semibold text-sm hover:bg-brand-100"
+                  >
+                    <Phone size={15} /> {t("jit.enterRoom")}
+                  </Link>
+                </div>
+              </div>
+            )}
           </div>
 
           {confirmEndOpen && (
