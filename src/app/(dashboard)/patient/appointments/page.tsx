@@ -265,7 +265,12 @@ export default function AppointmentsPage() {
   }
 
   function goToPayment() {
+    if (providerServices.length > 1 && !selectedServiceId) {
+      setError(t("pub.selectServiceRequired"));
+      return;
+    }
     if (!requireTcleForTeleconsult()) return;
+    setError("");
     setStep("payment");
   }
 
@@ -932,12 +937,15 @@ export default function AppointmentsPage() {
   const selectedSlotIsEap = eapBookingActive && !!selectedSlot && !selectedSlotIsVolunteer;
 
   const selectedService = providerServices.find((s) => s.id === selectedServiceId);
+  const needsServiceSelection = providerServices.length > 1 && !selectedServiceId;
   const checkoutPriceCents = selectedService?.priceCents ?? selectedPro?.consultPrice ?? 0;
   const checkoutCurrency = selectedService?.currency || selectedPro?.currency || "USD";
   const isBrlCheckout = checkoutCurrency.toUpperCase() === "BRL";
 
   const priceDisplay = selectedPro
-    ? new Intl.NumberFormat(locale, { style: "currency", currency: checkoutCurrency }).format(checkoutPriceCents / 100)
+    ? needsServiceSelection
+      ? "—"
+      : new Intl.NumberFormat(locale, { style: "currency", currency: checkoutCurrency }).format(checkoutPriceCents / 100)
     : "";
 
   const usesHostedCheckout = isBrlCheckout && paymentMethod !== "card" && !selectedSlotIsVolunteer && !selectedSlotIsEap;
@@ -1278,10 +1286,46 @@ export default function AppointmentsPage() {
                   <AcuraVolunteerBadge />
                 </div>
               )}
-              <p className="text-emerald-400 font-semibold text-sm mt-1">{priceDisplay} {t("appt.perConsult")}</p>
+              <p className="text-emerald-400 font-semibold text-sm mt-1">
+                {needsServiceSelection
+                  ? t("pub.selectServiceRequired")
+                  : `${priceDisplay} ${t("appt.perConsult")}`}
+              </p>
             </div>
           </div>
           <div className="p-6 space-y-6">
+            {providerServices.length > 0 && (
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                  {t("appt.serviceLabel")}
+                </label>
+                <select
+                  value={selectedServiceId}
+                  onChange={(e) => {
+                    setSelectedServiceId(e.target.value);
+                    setError("");
+                  }}
+                  className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                  required={providerServices.length > 1}
+                >
+                  {providerServices.length > 1 && (
+                    <option value="" disabled>
+                      {t("pub.selectServiceRequired")}
+                    </option>
+                  )}
+                  {providerServices.map((svc) => (
+                    <option key={svc.id} value={svc.id}>
+                      {svc.name}
+                      {svc.priceCents != null
+                        ? svc.priceCents === 0
+                          ? ` — ${t("consultServices.volunteerPrice")}`
+                          : ` — ${new Intl.NumberFormat(locale, { style: "currency", currency: svc.currency || checkoutCurrency }).format(svc.priceCents / 100)}`
+                        : ""}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
             {(providerPlans.length > 0) && (
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1.5">
@@ -1297,6 +1341,11 @@ export default function AppointmentsPage() {
                     <option key={plan.slug} value={plan.slug}>{plan.name}</option>
                   ))}
                 </select>
+              </div>
+            )}
+            {error && step === "slots" && (
+              <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 rounded-xl p-4 text-sm">
+                <AlertCircle size={16} className="shrink-0" /> {error}
               </div>
             )}
             {slotsLoading ? (
@@ -1351,7 +1400,12 @@ export default function AppointmentsPage() {
                   <BookingHistoryNotice t={t} />
                 )}
                 {selectedSlot && (
-                  <button type="button" onClick={goToPayment} className="w-full flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-white font-bold py-4 px-4 rounded-xl transition text-base">
+                  <button
+                    type="button"
+                    onClick={goToPayment}
+                    disabled={needsServiceSelection}
+                    className="w-full flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-4 px-4 rounded-xl transition text-base"
+                  >
                     {selectedSlotIsVolunteer ? t("appt.continueVolunteerBooking") : t("appt.continueToPayment")}{" "}
                     <ChevronRight size={18} className="shrink-0" />
                   </button>
@@ -1897,10 +1951,16 @@ function DoctorCard({ pro, onSelect, locale, lang, t }: { pro: Professional; onS
           )}
         </div>
         <div className="text-right shrink-0">
-          <p className="font-bold text-slate-900 text-base">
-            {new Intl.NumberFormat(locale, { style: "currency", currency: pro.currency || "USD" }).format(pro.consultPrice / 100)}
-          </p>
-          <p className="text-xs text-slate-400">{t("appt.perConsult")}</p>
+          {pro.consultPrice === 0 ? (
+            <p className="font-bold text-slate-900 text-base">{t("appt.seePrices")}</p>
+          ) : (
+            <>
+              <p className="font-bold text-slate-900 text-base">
+                {new Intl.NumberFormat(locale, { style: "currency", currency: pro.currency || "USD" }).format(pro.consultPrice / 100)}
+              </p>
+              <p className="text-xs text-slate-400">{t("appt.perConsult")}</p>
+            </>
+          )}
         </div>
       </div>
       {pro.bio && <p className="text-xs text-slate-500 mt-3 line-clamp-2">{pro.bio}</p>}
