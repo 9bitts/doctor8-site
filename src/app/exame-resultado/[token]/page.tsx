@@ -190,15 +190,15 @@ export default function PublicExamResultUploadPage() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <Loader2 className="animate-spin text-cyan-600" size={28} />
+        <Loader2 className="animate-spin text-accent-500" size={28} />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-cyan-50 to-slate-50 px-4 py-10">
+    <div className="min-h-screen bg-gradient-to-b from-accent-50 to-slate-50 px-4 py-10">
       <div className="max-w-md mx-auto">
-        <div className="flex items-center gap-2 mb-6 justify-center text-cyan-800">
+        <div className="flex items-center gap-2 mb-6 justify-center text-accent-600">
           <FileCheck size={22} />
           <span className="font-bold text-lg">Doctor8</span>
         </div>
@@ -226,7 +226,7 @@ export default function PublicExamResultUploadPage() {
                 <button
                   type="button"
                   onClick={() => setStatus("form")}
-                  className="text-sm font-semibold text-cyan-700 hover:text-cyan-800"
+                  className="text-sm font-semibold text-accent-600 hover:text-accent-700"
                 >
                   {t("sendAnother")}
                 </button>
@@ -250,14 +250,14 @@ export default function PublicExamResultUploadPage() {
                   value={pin}
                   onChange={(e) => setPin(e.target.value.replace(/\D/g, ""))}
                   placeholder={t("pinPlaceholder")}
-                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100 outline-none text-sm tracking-widest"
+                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:border-accent-400 focus:ring-2 focus:ring-accent-100 outline-none text-sm tracking-widest"
                 />
               </div>
               {error && <p className="text-sm text-rose-600">{error}</p>}
               <button
                 type="submit"
                 disabled={saving}
-                className="w-full inline-flex items-center justify-center gap-2 py-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-semibold text-sm disabled:opacity-50"
+                className="w-full inline-flex items-center justify-center gap-2 py-2.5 rounded-xl bg-accent-500 hover:bg-accent-600 text-white font-semibold text-sm disabled:opacity-50"
               >
                 {saving ? <Loader2 size={16} className="animate-spin" /> : <Lock size={16} />}
                 {t("unlock")}
@@ -273,7 +273,7 @@ export default function PublicExamResultUploadPage() {
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder={t("titlePlaceholder")}
-                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100 outline-none text-sm"
+                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:border-accent-400 focus:ring-2 focus:ring-accent-100 outline-none text-sm"
                 />
               </div>
               <div>
@@ -282,7 +282,7 @@ export default function PublicExamResultUploadPage() {
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   rows={2}
-                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100 outline-none text-sm resize-none"
+                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:border-accent-400 focus:ring-2 focus:ring-accent-100 outline-none text-sm resize-none"
                 />
               </div>
               <div>
@@ -292,7 +292,7 @@ export default function PublicExamResultUploadPage() {
                   accept=".pdf,image/*,video/mp4,video/quicktime,video/webm"
                   capture="environment"
                   onChange={(e) => setFile(e.target.files?.[0] || null)}
-                  className="w-full text-sm text-slate-600 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:bg-cyan-50 file:text-cyan-700 file:text-sm file:font-medium"
+                  className="w-full text-sm text-slate-600 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:bg-accent-50 file:text-accent-700 file:text-sm file:font-medium"
                 />
                 {file && (
                   <p className="text-xs text-slate-500 mt-1">
@@ -304,7 +304,7 @@ export default function PublicExamResultUploadPage() {
               <button
                 type="submit"
                 disabled={saving || !file}
-                className="w-full py-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-semibold text-sm disabled:opacity-50 inline-flex items-center justify-center gap-2"
+                className="w-full py-2.5 rounded-xl bg-accent-500 hover:bg-accent-600 text-white font-semibold text-sm disabled:opacity-50 inline-flex items-center justify-center gap-2"
               >
                 {saving ? <Loader2 size={16} className="animate-spin" /> : null}
                 {t("submit")}

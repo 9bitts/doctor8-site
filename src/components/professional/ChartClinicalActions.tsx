@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Pill, FlaskConical, ScrollText } from "lucide-react";
+import { Pill, FlaskConical, ScrollText, FileCheck } from "lucide-react";
 import { useT } from "@/lib/i18n/I18nProvider";
 import { chartActionUrl } from "@/lib/video-chart-nav";
 import {
@@ -13,10 +13,13 @@ export default function ChartClinicalActions({
   chartId,
   returnUrl,
   compact = false,
+  onExamResult,
 }: {
   chartId: string;
   returnUrl: string;
   compact?: boolean;
+  /** Opens patient exam-results flow (view / request prior results). */
+  onExamResult?: () => void;
 }) {
   const t = useT();
   const pathname = usePathname();
@@ -25,6 +28,10 @@ export default function ChartClinicalActions({
   const btnClass = compact
     ? "inline-flex items-center gap-1 text-[11px] font-semibold text-brand-600 hover:text-brand-700 bg-brand-50 hover:bg-brand-100 border border-brand-100 px-2 py-1 rounded-lg transition"
     : "inline-flex items-center gap-1.5 text-xs font-medium text-brand-700 bg-brand-50 hover:bg-brand-100 border border-brand-200 px-3 py-1.5 rounded-lg transition";
+
+  const examResultBtnClass = compact
+    ? "inline-flex items-center gap-1 text-[11px] font-semibold text-white bg-accent-500 hover:bg-accent-600 border border-accent-500 px-2 py-1 rounded-lg transition"
+    : "inline-flex items-center gap-1.5 text-xs font-medium text-white bg-accent-500 hover:bg-accent-600 border border-accent-500 px-3 py-1.5 rounded-lg transition";
 
   const items = [
     {
@@ -51,6 +58,11 @@ export default function ChartClinicalActions({
           <Icon size={compact ? 11 : 13} /> {label}
         </Link>
       ))}
+      {onExamResult && (
+        <button type="button" onClick={onExamResult} className={examResultBtnClass}>
+          <FileCheck size={compact ? 11 : 13} /> {t("chartAct.examResult")}
+        </button>
+      )}
     </div>
   );
 }

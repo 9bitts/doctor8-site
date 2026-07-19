@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import {
-  Check, Copy, FileCheck, Link2, Loader2, Mail, MessageCircle, Paperclip, Plus, X,
+  Check, Copy, FileCheck, FlaskConical, Link2, Loader2, Mail, MessageCircle, Paperclip, Plus, X,
 } from "lucide-react";
 import { openAuthenticatedBlob } from "@/lib/open-url-safely";
 import { localeOf, type Lang } from "@/lib/i18n/translations";
@@ -31,6 +31,7 @@ type InviteCreated = {
 export default function PatientExamResultsModal({
   results,
   requestExamHref,
+  messageHref,
   chartId,
   patientName,
   patientPhone,
@@ -44,6 +45,8 @@ export default function PatientExamResultsModal({
 }: {
   results: PatientExamResultItem[];
   requestExamHref: string;
+  /** In-app messages deep link when patient has a Doctor8 account. */
+  messageHref?: string | null;
   chartId: string;
   patientName: string;
   patientPhone?: string | null;
@@ -58,6 +61,7 @@ export default function PatientExamResultsModal({
   const userTz = useUserTimeZone();
   const locale = localeOf(lang);
   const empty = results.length === 0;
+  const phoneDigits = patientPhone ? waPhoneDigits(patientPhone, patientCountry) : "";
 
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
@@ -124,14 +128,19 @@ export default function PatientExamResultsModal({
     }
   }
 
-  function openWhatsApp() {
+  function openWhatsAppInvite() {
     if (!invite) return;
-    const digits = patientPhone ? waPhoneDigits(patientPhone, patientCountry) : "";
     const msg = t("examResults.whatsappTemplate")
       .replace(/\{\{name\}\}/g, patientName)
       .replace(/\{\{link\}\}/g, invite.url)
       .replace(/\{\{pin\}\}/g, invite.pin);
-    const base = digits ? `https://wa.me/${digits}` : "https://wa.me/";
+    const base = phoneDigits ? `https://wa.me/${phoneDigits}` : "https://wa.me/";
+    window.open(`${base}?text=${encodeURIComponent(msg)}`, "_blank", "noopener,noreferrer");
+  }
+
+  function openWhatsAppSchedule() {
+    const msg = t("examResults.scheduleWhatsappTemplate").replace(/\{\{name\}\}/g, patientName);
+    const base = phoneDigits ? `https://wa.me/${phoneDigits}` : "https://wa.me/";
     window.open(`${base}?text=${encodeURIComponent(msg)}`, "_blank", "noopener,noreferrer");
   }
 
@@ -145,7 +154,7 @@ export default function PatientExamResultsModal({
       >
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 shrink-0">
           <h2 id="exam-results-modal-title" className="font-bold text-slate-800 flex items-center gap-2">
-            <FileCheck size={18} className="text-cyan-600" />
+            <FileCheck size={18} className="text-accent-500" />
             {t("examResults.modalTitle")}
           </h2>
           <button
@@ -182,7 +191,7 @@ export default function PatientExamResultsModal({
                     {t("examResults.pinLabel")}
                   </p>
                   <div className="flex items-center gap-2">
-                    <p className="text-2xl font-bold tracking-widest text-cyan-800">{invite.pin}</p>
+                    <p className="text-2xl font-bold tracking-widest text-accent-600">{invite.pin}</p>
                     <button
                       type="button"
                       onClick={() => void copyText("pin", invite.pin)}
@@ -202,7 +211,7 @@ export default function PatientExamResultsModal({
               <div className="flex flex-col sm:flex-row gap-2">
                 <button
                   type="button"
-                  onClick={openWhatsApp}
+                  onClick={openWhatsAppInvite}
                   className="flex-1 inline-flex items-center justify-center gap-2 py-2.5 rounded-xl bg-green-600 hover:bg-green-500 text-white font-semibold text-sm"
                 >
                   <MessageCircle size={16} /> {t("examResults.sendWhatsApp")}
@@ -245,7 +254,7 @@ export default function PatientExamResultsModal({
                       type="button"
                       onClick={() => void createInvite()}
                       disabled={creating}
-                      className="w-full inline-flex items-center justify-center gap-2 py-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-semibold text-sm disabled:opacity-50"
+                      className="w-full inline-flex items-center justify-center gap-2 py-2.5 rounded-xl bg-accent-500 hover:bg-accent-600 text-white font-semibold text-sm disabled:opacity-50"
                     >
                       {creating ? <Loader2 size={16} className="animate-spin" /> : <Link2 size={16} />}
                       {t("examResults.requestPrior")}
@@ -282,7 +291,7 @@ export default function PatientExamResultsModal({
                               <p className="font-semibold text-slate-800 text-sm truncate">{r.title}</p>
                               <p className="text-xs text-slate-400 mt-0.5">
                                 {formatShortDateWithYear(new Date(r.createdAt), userTz, locale)}
-                                <span className="ml-1.5 text-cyan-700">{t("examResults.patientSent")}</span>
+                                <span className="ml-1.5 text-accent-600">{t("examResults.patientSent")}</span>
                               </p>
                               {r.content && (
                                 <p className="text-xs text-slate-600 mt-1.5 whitespace-pre-wrap line-clamp-3">
@@ -302,7 +311,7 @@ export default function PatientExamResultsModal({
                                 <button
                                   type="button"
                                   onClick={() => void openFirstFile(r.id)}
-                                  className="inline-flex items-center gap-1 text-xs font-semibold text-cyan-700 hover:text-cyan-800 px-2 py-1 rounded-lg hover:bg-cyan-50"
+                                  className="inline-flex items-center gap-1 text-xs font-semibold text-accent-600 hover:text-accent-700 px-2 py-1 rounded-lg hover:bg-accent-50"
                                 >
                                   <Paperclip size={12} /> {t("examResults.viewFile")}
                                 </button>
@@ -313,6 +322,38 @@ export default function PatientExamResultsModal({
                       );
                     })}
                   </ul>
+
+                  <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3 space-y-2">
+                    <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                      {t("examResults.nextSteps")}
+                    </p>
+                    <Link
+                      href={requestExamHref}
+                      className="w-full inline-flex items-center justify-center gap-2 py-2.5 rounded-xl bg-brand-500 hover:bg-brand-600 text-white font-semibold text-sm transition"
+                    >
+                      <FlaskConical size={16} /> {t("examResults.orderNewExams")}
+                    </Link>
+                    {messageHref ? (
+                      <Link
+                        href={messageHref}
+                        className="w-full inline-flex items-center justify-center gap-2 py-2.5 rounded-xl bg-accent-500 hover:bg-accent-600 text-white font-semibold text-sm transition"
+                      >
+                        <MessageCircle size={16} /> {t("examResults.messageToSchedule")}
+                      </Link>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={openWhatsAppSchedule}
+                        className="w-full inline-flex items-center justify-center gap-2 py-2.5 rounded-xl bg-accent-500 hover:bg-accent-600 text-white font-semibold text-sm"
+                      >
+                        <MessageCircle size={16} /> {t("examResults.messageToSchedule")}
+                      </button>
+                    )}
+                    {!messageHref && !phoneDigits && (
+                      <p className="text-[11px] text-amber-700">{t("examResults.scheduleNeedsContact")}</p>
+                    )}
+                  </div>
+
                   <div className="pt-1 space-y-2">
                     {patientEmail && (
                       <label className="flex items-center gap-2 text-xs text-slate-600">
@@ -332,7 +373,7 @@ export default function PatientExamResultsModal({
                       type="button"
                       onClick={() => void createInvite()}
                       disabled={creating}
-                      className="w-full inline-flex items-center justify-center gap-2 py-2 rounded-xl border border-cyan-200 text-cyan-800 bg-cyan-50 hover:bg-cyan-100 font-semibold text-sm disabled:opacity-50"
+                      className="w-full inline-flex items-center justify-center gap-2 py-2 rounded-xl border border-slate-200 text-slate-700 bg-white hover:bg-slate-50 font-semibold text-sm disabled:opacity-50"
                     >
                       {creating ? <Loader2 size={14} className="animate-spin" /> : <Link2 size={14} />}
                       {t("examResults.requestPrior")}
@@ -349,7 +390,7 @@ export default function PatientExamResultsModal({
             <button
               type="button"
               onClick={onRegisterManually}
-              className="w-full inline-flex items-center justify-center gap-2 py-2.5 rounded-xl border border-cyan-200 text-cyan-800 bg-cyan-50 hover:bg-cyan-100 font-semibold text-sm transition"
+              className="w-full inline-flex items-center justify-center gap-2 py-2.5 rounded-xl border border-accent-100 text-accent-700 bg-accent-50 hover:bg-accent-100 font-semibold text-sm transition"
             >
               <Plus size={16} /> {t("examResults.registerManually")}
             </button>

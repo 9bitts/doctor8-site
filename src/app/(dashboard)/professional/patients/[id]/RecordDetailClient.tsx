@@ -1494,11 +1494,6 @@ export default function RecordDetailClient({
                       <FileText size={13} /> {t("chartAct.anamnesis")}
                     </button>
                   )}
-                  {!isPsychologistPortal && (
-                    <button type="button" onClick={openExamResultsView} className="inline-flex items-center gap-1.5 text-xs font-medium text-cyan-700 bg-cyan-50 hover:bg-cyan-100 border border-cyan-200 px-3 py-1.5 rounded-lg transition">
-                      <FileCheck size={13} /> {t("chartAct.examResult")}
-                    </button>
-                  )}
                   <button
                     type="button"
                     onClick={() => setShowEducationModal(true)}
@@ -1508,7 +1503,11 @@ export default function RecordDetailClient({
                   </button>
                 </div>
                 {!isPsychologistPortal && (
-                  <ChartClinicalActions chartId={chart.id} returnUrl={professionalPatientsHref(pathname, chart.id)} />
+                  <ChartClinicalActions
+                    chartId={chart.id}
+                    returnUrl={professionalPatientsHref(pathname, chart.id)}
+                    onExamResult={openExamResultsView}
+                  />
                 )}
                 {isOwner && <ReferralPanel chartId={chart.id} />}
               </div>
@@ -1798,7 +1797,7 @@ export default function RecordDetailClient({
                   <button
                     type="button"
                     onClick={openExamResultsView}
-                    className="inline-flex items-center gap-2 text-xs font-semibold text-cyan-800 bg-white border border-cyan-200 px-3 py-2 rounded-xl"
+                    className="inline-flex items-center gap-2 text-xs font-semibold text-white bg-accent-500 hover:bg-accent-600 border border-accent-500 px-3 py-2 rounded-xl"
                   >
                     <FileCheck size={14} /> {t("chartAct.examResult")}
                   </button>
@@ -2463,6 +2462,11 @@ export default function RecordDetailClient({
             view: "exam",
             returnUrl: chartReturnUrl,
           })}
+          messageHref={
+            chart.linkedUserId
+              ? `${portalBase}/messages?with=${chart.linkedUserId}&returnUrl=${encodeURIComponent(chartReturnUrl)}`
+              : null
+          }
           chartId={chart.id}
           patientName={`${displayFirstName} ${displayLastName}`.trim()}
           patientPhone={reg.phone || chart.phone}

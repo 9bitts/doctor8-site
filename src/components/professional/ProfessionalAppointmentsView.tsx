@@ -493,7 +493,7 @@ export default function ProfessionalAppointmentsView({
                           sp.set("returnUrl", `${portalBase}/appointments`);
                           return `${portalBase}/patients/${chartId}?${sp.toString()}`;
                         })()}
-                        className="inline-flex items-center gap-1 text-[11px] font-semibold text-indigo-600 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded-lg hover:bg-indigo-100 transition"
+                        className="inline-flex items-center gap-1 text-[11px] font-semibold text-white bg-accent-500 hover:bg-accent-600 border border-accent-500 px-2 py-0.5 rounded-lg transition"
                       >
                         <FileCheck size={11} /> {t("chartAct.examResult")}
                       </Link>
