@@ -13,14 +13,12 @@ import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { useToast } from "@/components/ui/toast";
 import {
-  ArrowLeft, Plus, X, FileText, Paperclip, CheckCircle2, AlertCircle,
-  Share2, Mail, Loader2, Tag, Pencil, Send, MapPin, MessageCircle, ExternalLink,
-  Copy, Printer, RotateCw, ChevronDown, ChevronUp, FileType, Film, Download,
+  ArrowLeft, Plus, X, FileText, CheckCircle2, AlertCircle,
+  Mail, Loader2, Pencil, Send, MapPin, MessageCircle, ExternalLink,
+  RotateCw, Download,
   Activity, Stethoscope, Syringe, LineChart, Grid3X3, Ear, Utensils, HeartPulse, Pill, FileCheck, Clock, BookMarked,
 } from "lucide-react";
-import AiSummarizeButton from "@/components/AiSummarizeButton";
 import SendEducationModal from "@/components/professional/library/SendEducationModal";
-import { EmissionCardActions } from "@/components/professional/emissions/EmissionCardActions";
 import { EmissionsSignModal, type EmissionKind, type SignTarget } from "@/components/professional/emissions/EmissionsSignModal";
 import VideoConsultReturnBanner from "@/components/professional/VideoConsultReturnBanner";
 import ReferralPanel from "@/components/professional/ReferralPanel";
@@ -40,24 +38,28 @@ import PharmacistPatientChartPanel from "@/components/pharmacist/PharmacistPatie
 import ChartClinicalActions from "@/components/professional/ChartClinicalActions";
 import ChartActivityTimeline from "@/components/professional/ChartActivityTimeline";
 import CategorySearchSelect from "@/components/professional/CategorySearchSelect";
+import DoctorClinicalHub, {
+  tabToDoctorHubSection,
+  type DoctorHubSectionId,
+} from "@/components/professional/DoctorClinicalHub";
+import ChartDocsList from "@/components/professional/ChartDocsList";
 import { buildEmissionReuseUrl } from "@/lib/emission-reuse-nav";
-import { openAuthenticatedPdf, openAuthenticatedBlob } from "@/lib/open-url-safely";
+import { openAuthenticatedPdf } from "@/lib/open-url-safely";
 import { uploadFileToApi } from "@/lib/upload-client";
 import {
   RecordTimelineFilters,
   PinnedAnamnesisCard,
   AnamnesisPromptBanner,
-  RecordKindBadge,
 } from "@/components/professional/PatientRecordTimeline";
 import { consumeVoiceFormPrefill } from "@/lib/voice-assistant/prefill-storage";
 import { VOICE_FORM_PREFILL_EVENT } from "@/lib/voice-assistant/types";
 import { VoicePrefillBanner } from "@/components/voice-assistant/useVoiceFormPrefill";
 import type { ChartEvolutionPrefill } from "@/lib/voice-assistant/types";
-import { RecordFileThumbnail } from "@/components/professional/RecordFileThumbnail";
 import {
   mapProfessionalPathToPortal,
   professionalPatientsHref,
 } from "@/lib/psychologist-portal";
+import { chartActionUrl } from "@/lib/video-chart-nav";
 import { hasAnyMetric, type ClinicalMetricsInput } from "@/lib/clinical-metrics";
 import {
   type ClinicalRecordKind,
@@ -78,10 +80,9 @@ import {
 import CidSearchInput, { type CidSelection } from "@/components/CidSearchInput";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import { localeOf } from "@/lib/i18n/translations";
-import { getCategoryGroupLabel, getCategoryLabel } from "@/lib/category-i18n";
+import { getCategoryLabel } from "@/lib/category-i18n";
 import {
   buildRecordCopyText, formatRecordContentForDisplay, parseRecordContent,
-  isPsychologyStructuredContent, countRecordAttachments,
 } from "@/lib/record-content";
 import { isImageFile, rotateImageFile } from "@/lib/image-rotate";
 import { waPhoneDigits } from "@/lib/wa-phone";
@@ -135,103 +136,11 @@ interface Doc {
   medications?: { name: string; dosage?: string; frequency?: string }[] | null;
 }
 
-type RecordFilePreview = {
-  index: number;
-  url: string;
-  name: string;
-  kind: "image" | "pdf" | "video" | "other";
-};
-
 function emissionKindFromDocType(type: string): EmissionKind | null {
   if (type === "PRESCRIPTION") return "prescription";
   if (type === "EXAM_REQUEST" || type === "EXAM_RESULT") return "exam";
   if (["CERTIFICATE", "REFERRAL", "CLINICAL_NOTE", "OTHER"].includes(type)) return "document";
   return null;
-}
-
-function isEmissionDoc(doc: Doc): boolean {
-  return emissionKindFromDocType(doc.type) !== null;
-}
-
-const CONTENT_PREVIEW_CHARS = 160;
-
-function RecordAttachmentStrip({
-  docId,
-  count,
-  t,
-}: {
-  docId: string;
-  count: number;
-  t: (k: string) => string;
-}) {
-  const [files, setFiles] = useState<RecordFilePreview[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(false);
-
-  useEffect(() => {
-    if (count === 0) return;
-    let active = true;
-    setLoading(true);
-    setError(false);
-    (async () => {
-      try {
-        const res = await fetch(`/api/professional/documents/${docId}/files`);
-        const data = await res.json();
-        if (!active) return;
-        if (!res.ok) {
-          setError(true);
-          return;
-        }
-        setFiles(data.files || []);
-      } catch {
-        if (active) setError(true);
-      } finally {
-        if (active) setLoading(false);
-      }
-    })();
-    return () => { active = false; };
-  }, [docId, count]);
-
-  if (count === 0) return null;
-
-  return (
-    <div className="mt-2">
-      {loading && (
-        <p className="text-xs text-slate-400 inline-flex items-center gap-1">
-          <Loader2 size={12} className="animate-spin" /> {t("rec.attachLoading")}
-        </p>
-      )}
-      {error && !loading && (
-        <p className="text-xs text-rose-500">{t("rec.attachError")}</p>
-      )}
-      {files.length > 0 && (
-        <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 snap-x snap-mandatory scrollbar-thin max-w-full">
-          {files.map((f) => (
-            <button
-              key={f.index}
-              type="button"
-              onClick={() => {
-                if (f.url.startsWith("/api/")) {
-                  void openAuthenticatedBlob(f.url).catch(() => {});
-                } else {
-                  window.open(f.url, "_blank", "noopener,noreferrer");
-                }
-              }}
-              title={f.name || t("rec.openFile")}
-              className="flex-shrink-0 snap-start w-20 h-20 rounded-xl border border-slate-200 bg-slate-50 overflow-hidden hover:border-brand-300 hover:ring-2 hover:ring-brand-100 transition"
-            >
-              {f.kind === "image" ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={f.url} alt={f.name} className="w-full h-full object-cover" loading="lazy" />
-              ) : (
-                <RecordFileThumbnail kind={f.kind} name={f.name} />
-              )}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
 }
 
 interface CategoryItem {
@@ -312,11 +221,14 @@ export default function RecordDetailClient({
   const isOwner = chartAccess === "owner";
   const canEdit = !readOnly && chartAccess !== "view";
   const pathname = usePathname();
+  const isDoctorPortal = pathname.startsWith("/professional");
   const isNutritionistPortal = pathname.startsWith("/nutricionista");
   const isPsychologistPortal = pathname.startsWith("/psychologist");
   const isNursePortal = pathname.startsWith("/enfermeiro");
   const isPharmacistPortal = pathname.startsWith("/farmaceutico");
   const portalBase = mapProfessionalPathToPortal(pathname, "/professional");
+  const prescriptionsPath = mapProfessionalPathToPortal(pathname, "/professional/prescriptions");
+  const chartReturnUrl = professionalPatientsHref(pathname, chart.id);
   const { data: session, update: updateSession } = useSession();
   const userId = session?.user?.id ?? "";
   const { lang, t } = useI18n();
@@ -326,6 +238,7 @@ export default function RecordDetailClient({
   const legacyLabel = (type: string) => t(LEGACY_KEYS[type] || "doctype.OTHER");
   const [docs, setDocs] = useState<Doc[]>(initialDocuments);
   const [chartTab, setChartTab] = useState<"activity" | "records" | "evolution" | "diagnoses" | "vaccines" | "growth" | "dental" | "audio" | "nutrition" | "nursing" | "pharmacy">("activity");
+  const [hubOpenId, setHubOpenId] = useState<DoctorHubSectionId | null>("anamnesis");
   const [recordFilter, setRecordFilter] = useState<RecordTimelineFilter>("all");
   const [showForm, setShowForm] = useState(false);
   const [editingDoc, setEditingDoc] = useState<Doc | null>(null);
@@ -505,20 +418,33 @@ export default function RecordDetailClient({
       if (tab === "nursing" && !isNursePortal) return;
       if (tab === "pharmacy" && !isPharmacistPortal) return;
       setChartTab(tab as typeof chartTab);
+      if (isDoctorPortal) {
+        const hub = tabToDoctorHubSection(tab);
+        if (hub) setHubOpenId(hub);
+      }
     }
-  }, [searchParams, isNutritionistPortal, isNursePortal, isPharmacistPortal]);
+  }, [searchParams, isNutritionistPortal, isNursePortal, isPharmacistPortal, isDoctorPortal]);
 
   useEffect(() => {
     const recordId = searchParams.get("recordId");
     if (!recordId) return;
     setChartTab("records");
     setRecordFilter("all");
+    if (isDoctorPortal) {
+      const doc = docs.find((d) => d.id === recordId);
+      if (doc?.recordKind === "ANAMNESIS") setHubOpenId("anamnesis");
+      else if (doc && matchesTimelineFilter(doc, "prescription")) setHubOpenId("prescriptions");
+      else if (doc && matchesTimelineFilter(doc, "exam")) setHubOpenId("exams");
+      else if (doc && matchesTimelineFilter(doc, "report")) setHubOpenId("documents");
+      else if (doc && matchesTimelineFilter(doc, "patient_shared")) setHubOpenId("patient_shared");
+      else setHubOpenId("timeline");
+    }
     setExpandedIds((prev) => new Set(prev).add(recordId));
     const timer = setTimeout(() => {
       document.getElementById(`record-${recordId}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
     }, 120);
     return () => clearTimeout(timer);
-  }, [searchParams]);
+  }, [searchParams, isDoctorPortal, docs]);
 
   useEffect(() => {
     if (!userId || editingDoc || !showForm) return;
@@ -602,6 +528,7 @@ export default function RecordDetailClient({
     }
     setChartTab("records");
     setRecordFilter("anamnesis");
+    if (isDoctorPortal) setHubOpenId("anamnesis");
     setShowForm(true);
   }
 
@@ -625,6 +552,7 @@ export default function RecordDetailClient({
     if (catId) setCategoryId(catId);
     setChartTab("records");
     setRecordFilter("exam");
+    if (isDoctorPortal) setHubOpenId("exams");
     setShowForm(true);
   }
 
@@ -648,6 +576,7 @@ export default function RecordDetailClient({
       setRecordKind("EVOLUTION");
     }
     setChartTab("records");
+    if (isDoctorPortal) setHubOpenId("vitals");
     setShowForm(true);
   }
 
@@ -1162,11 +1091,25 @@ export default function RecordDetailClient({
 
   function scrollToRecord(id: string) {
     setRecordFilter("all");
+    if (isDoctorPortal) {
+      const doc = docs.find((d) => d.id === id);
+      if (doc?.recordKind === "ANAMNESIS") setHubOpenId("anamnesis");
+      else if (doc && matchesTimelineFilter(doc, "prescription")) setHubOpenId("prescriptions");
+      else if (doc && matchesTimelineFilter(doc, "exam")) setHubOpenId("exams");
+      else if (doc && matchesTimelineFilter(doc, "report")) setHubOpenId("documents");
+      else if (doc && matchesTimelineFilter(doc, "patient_shared")) setHubOpenId("patient_shared");
+      else setHubOpenId("timeline");
+    }
     setExpandedIds((prev) => new Set(prev).add(id));
     setTimeout(() => {
       document.getElementById(`record-${id}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
     }, 80);
   }
+
+  const docsForFilter = (filter: RecordTimelineFilter) =>
+    [...docs]
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .filter((d) => matchesTimelineFilter(d, filter));
 
   const localeFull = localeOf(lang);
 
@@ -1437,9 +1380,11 @@ export default function RecordDetailClient({
                   )}
                 </button>
                 <div className="flex flex-wrap gap-2">
-                  <button type="button" onClick={openAnamnesisForm} className="inline-flex items-center gap-1.5 text-xs font-medium text-violet-700 bg-violet-50 hover:bg-violet-100 border border-violet-200 px-3 py-1.5 rounded-lg transition">
-                    <FileText size={13} /> {t("chartAct.anamnesis")}
-                  </button>
+                  {!isDoctorPortal && (
+                    <button type="button" onClick={openAnamnesisForm} className="inline-flex items-center gap-1.5 text-xs font-medium text-violet-700 bg-violet-50 hover:bg-violet-100 border border-violet-200 px-3 py-1.5 rounded-lg transition">
+                      <FileText size={13} /> {t("chartAct.anamnesis")}
+                    </button>
+                  )}
                   <button type="button" onClick={openExamResultForm} className="inline-flex items-center gap-1.5 text-xs font-medium text-cyan-700 bg-cyan-50 hover:bg-cyan-100 border border-cyan-200 px-3 py-1.5 rounded-lg transition">
                     <FileCheck size={13} /> {t("chartAct.examResult")}
                   </button>
@@ -1613,6 +1558,241 @@ export default function RecordDetailClient({
         </div>
       </div>
 
+      {isDoctorPortal ? (
+        <DoctorClinicalHub
+          openId={hubOpenId}
+          onOpenChange={setHubOpenId}
+          headerExtras={{
+            anamnesis: {
+              badge: pinnedAnamnesis ? (
+                <span className="text-[10px] font-semibold normal-case tracking-normal text-accent-600 bg-white/70 border border-accent-200 px-1.5 py-0.5 rounded-full">
+                  {t("timeline.pinnedAnamnesis")}
+                </span>
+              ) : null,
+              description: pinnedAnamnesis ? pinnedAnamnesis.title : t("doctorHub.desc.anamnesis"),
+              cta: canEdit
+                ? pinnedAnamnesis
+                  ? { kind: "button", label: t("chart.addNewInformation"), onClick: openNewRecordForm }
+                  : { kind: "button", label: t("chart.createAnamnesis"), onClick: openAnamnesisForm }
+                : null,
+            },
+            prescriptions: {
+              cta: canEdit
+                ? {
+                    kind: "link",
+                    label: t("chartAct.prescribe"),
+                    href: chartActionUrl(prescriptionsPath, chart.id, { view: "prescription", returnUrl: chartReturnUrl }),
+                  }
+                : null,
+            },
+            exams: {
+              cta: canEdit
+                ? {
+                    kind: "link",
+                    label: t("chartAct.exam"),
+                    href: chartActionUrl(prescriptionsPath, chart.id, { view: "exam", returnUrl: chartReturnUrl }),
+                  }
+                : null,
+            },
+            documents: {
+              cta: canEdit
+                ? {
+                    kind: "link",
+                    label: t("chartAct.document"),
+                    href: chartActionUrl(prescriptionsPath, chart.id, { view: "document", returnUrl: chartReturnUrl }),
+                  }
+                : null,
+            },
+            vitals: {
+              cta: canEdit
+                ? { kind: "button", label: t("metric.addVitalsCta"), onClick: openVitalsRecordForm }
+                : null,
+            },
+          }}
+          panels={{
+            anamnesis: pinnedAnamnesis ? (
+              <div className="space-y-3">
+                <PinnedAnamnesisCard
+                  title={pinnedAnamnesis.title}
+                  preview={pinnedAnamnesis.content ? formatRecordContentForDisplay(pinnedAnamnesis.content).slice(0, 200) : ""}
+                  dateLabel={new Date(pinnedAnamnesis.createdAt).toLocaleDateString(localeFull, {
+                    day: "2-digit", month: "long", year: "numeric",
+                  })}
+                  onView={() => scrollToRecord(pinnedAnamnesis.id)}
+                />
+                <ChartDocsList
+                  docs={docsForFilter("anamnesis")}
+                  totalDocs={docs.length}
+                  lang={lang}
+                  t={t}
+                  legacyLabel={legacyLabel}
+                  pinnedAnamnesisId={pinnedAnamnesis.id}
+                  expandedIds={expandedIds}
+                  setExpandedIds={setExpandedIds}
+                  shareStatus={shareStatus}
+                  sharingId={sharingId}
+                  copiedId={copiedId}
+                  canEdit={canEdit}
+                  patientName={`${displayFirstName} ${displayLastName}`}
+                  onCopy={handleCopy}
+                  onPrint={handlePrint}
+                  onEdit={openEditForm}
+                  onShare={handleShare}
+                  onInvite={handleInvite}
+                  onReuse={reuseEmissionDoc}
+                  onSign={signEmissionDoc}
+                  onDelivered={markEmissionDelivered}
+                  onPdfError={(msg) => toast.error(msg)}
+                  compact
+                />
+              </div>
+            ) : (
+              <p className="text-sm text-slate-600">{t("doctorHub.desc.anamnesis")}</p>
+            ),
+            timeline: (
+              <ChartActivityTimeline
+                chartId={chart.id}
+                events={initialActivityTimeline}
+                pathname={pathname}
+              />
+            ),
+            prescriptions: (
+              <ChartDocsList
+                docs={docsForFilter("prescription")}
+                totalDocs={docs.length}
+                lang={lang}
+                t={t}
+                legacyLabel={legacyLabel}
+                pinnedAnamnesisId={pinnedAnamnesis?.id}
+                expandedIds={expandedIds}
+                setExpandedIds={setExpandedIds}
+                shareStatus={shareStatus}
+                sharingId={sharingId}
+                copiedId={copiedId}
+                canEdit={canEdit}
+                patientName={`${displayFirstName} ${displayLastName}`}
+                onCopy={handleCopy}
+                onPrint={handlePrint}
+                onEdit={openEditForm}
+                onShare={handleShare}
+                onInvite={handleInvite}
+                onReuse={reuseEmissionDoc}
+                onSign={signEmissionDoc}
+                onDelivered={markEmissionDelivered}
+                onPdfError={(msg) => toast.error(msg)}
+                compact
+              />
+            ),
+            exams: (
+              <div className="space-y-3">
+                {canEdit && (
+                  <button
+                    type="button"
+                    onClick={openExamResultForm}
+                    className="inline-flex items-center gap-2 text-xs font-semibold text-cyan-800 bg-white border border-cyan-200 px-3 py-2 rounded-xl"
+                  >
+                    <FileCheck size={14} /> {t("chartAct.examResult")}
+                  </button>
+                )}
+                <ChartDocsList
+                  docs={docsForFilter("exam")}
+                  totalDocs={docs.length}
+                  lang={lang}
+                  t={t}
+                  legacyLabel={legacyLabel}
+                  pinnedAnamnesisId={pinnedAnamnesis?.id}
+                  expandedIds={expandedIds}
+                  setExpandedIds={setExpandedIds}
+                  shareStatus={shareStatus}
+                  sharingId={sharingId}
+                  copiedId={copiedId}
+                  canEdit={canEdit}
+                  patientName={`${displayFirstName} ${displayLastName}`}
+                  onCopy={handleCopy}
+                  onPrint={handlePrint}
+                  onEdit={openEditForm}
+                  onShare={handleShare}
+                  onInvite={handleInvite}
+                  onReuse={reuseEmissionDoc}
+                  onSign={signEmissionDoc}
+                  onDelivered={markEmissionDelivered}
+                  onPdfError={(msg) => toast.error(msg)}
+                  compact
+                />
+              </div>
+            ),
+            documents: (
+              <ChartDocsList
+                docs={docsForFilter("report")}
+                totalDocs={docs.length}
+                lang={lang}
+                t={t}
+                legacyLabel={legacyLabel}
+                pinnedAnamnesisId={pinnedAnamnesis?.id}
+                expandedIds={expandedIds}
+                setExpandedIds={setExpandedIds}
+                shareStatus={shareStatus}
+                sharingId={sharingId}
+                copiedId={copiedId}
+                canEdit={canEdit}
+                patientName={`${displayFirstName} ${displayLastName}`}
+                onCopy={handleCopy}
+                onPrint={handlePrint}
+                onEdit={openEditForm}
+                onShare={handleShare}
+                onInvite={handleInvite}
+                onReuse={reuseEmissionDoc}
+                onSign={signEmissionDoc}
+                onDelivered={markEmissionDelivered}
+                onPdfError={(msg) => toast.error(msg)}
+                compact
+              />
+            ),
+            patient_shared: (
+              <ChartDocsList
+                docs={docsForFilter("patient_shared")}
+                totalDocs={docs.length}
+                lang={lang}
+                t={t}
+                legacyLabel={legacyLabel}
+                pinnedAnamnesisId={pinnedAnamnesis?.id}
+                expandedIds={expandedIds}
+                setExpandedIds={setExpandedIds}
+                shareStatus={shareStatus}
+                sharingId={sharingId}
+                copiedId={copiedId}
+                canEdit={canEdit}
+                patientName={`${displayFirstName} ${displayLastName}`}
+                onCopy={handleCopy}
+                onPrint={handlePrint}
+                onEdit={openEditForm}
+                onShare={handleShare}
+                onInvite={handleInvite}
+                onReuse={reuseEmissionDoc}
+                onSign={signEmissionDoc}
+                onDelivered={markEmissionDelivered}
+                onPdfError={(msg) => toast.error(msg)}
+                compact
+              />
+            ),
+            vitals: (
+              <MetricsEvolutionPanel
+                chartId={chart.id}
+                onAddVitals={canEdit ? openVitalsRecordForm : undefined}
+                readOnly={!canEdit}
+              />
+            ),
+            diagnoses: <DiagnosesPanel chartId={chart.id} readOnly={!canEdit} />,
+            vaccines: <VaccinationPanel chartId={chart.id} readOnly={!canEdit} />,
+            growth: (
+              <GrowthCurvePanel chartId={chart.id} dateOfBirth={chart.dateOfBirth} sex={chart.sex} />
+            ),
+            dental: <OdontogramPanel chartId={chart.id} readOnly={!canEdit} />,
+            audio: <AudiogramPanel chartId={chart.id} readOnly={!canEdit} />,
+          }}
+        />
+      ) : (
+        <>
       {!pinnedAnamnesis && chartTab === "records" && (
         <AnamnesisPromptBanner onCreate={openAnamnesisForm} readOnly={!canEdit} />
       )}
@@ -1694,7 +1874,6 @@ export default function RecordDetailClient({
 
       {chartTab === "records" && (
       <>
-      {/* Records section */}
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <h2 className="text-lg font-bold text-slate-900">{t("chartTab.records")}</h2>
         {canEdit && (
@@ -1725,216 +1904,33 @@ export default function RecordDetailClient({
         counts={filterCounts}
       />
 
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-        {filteredDocs.length === 0 ? (
-          <div className="text-center py-14">
-            <FileText className="mx-auto text-slate-300 mb-3" size={36} />
-            <p className="text-slate-400 text-sm">
-              {docs.length === 0 ? t("timeline.empty") : t("timeline.emptyFilter")}
-            </p>
-          </div>
-        ) : (
-          <div className="p-3 sm:p-4 space-y-3 bg-slate-50/60">
-            {filteredDocs.map((d) => {
-              const label = d.categoryName
-                ? getCategoryLabel(lang, { name: d.categoryName })
-                : legacyLabel(d.type);
-              const status = shareStatus[d.id] || "";
-              const isSharing = sharingId === d.id;
-              const emissionKind = emissionKindFromDocType(d.type);
-              const isEmission = isEmissionDoc(d);
-              const parsedContent = d.content ? parseRecordContent(d.content) : null;
-              const displayText = d.type === "PRESCRIPTION" && d.medications?.length
-                ? d.medications.map((m, i) => `${i + 1}. ${m.name}${m.dosage ? ` — ${m.dosage}` : ""}${m.frequency ? `, ${m.frequency}` : ""}`).join("\n")
-                : d.content ? formatRecordContentForDisplay(d.content) : "";
-              const isExpanded = expandedIds.has(d.id);
-              const canExpand = displayText.length > CONTENT_PREVIEW_CHARS;
-              const attachmentCount = d.attachmentCount ?? countRecordAttachments(d.hasFile, d.content);
-              const previewText = !isExpanded && displayText.length > CONTENT_PREVIEW_CHARS
-                ? `${displayText.slice(0, CONTENT_PREVIEW_CHARS).trim()}…`
-                : displayText;
-
-              function toggleExpanded() {
-                setExpandedIds((prev) => {
-                  const next = new Set(prev);
-                  if (next.has(d.id)) next.delete(d.id);
-                  else next.add(d.id);
-                  return next;
-                });
-              }
-
-              return (
-                <div key={d.id} id={`record-${d.id}`} className={`relative px-4 py-4 rounded-2xl border shadow-sm ${
-                  pinnedAnamnesis?.id === d.id
-                    ? "bg-accent-50/50 border-accent-200 ring-1 ring-accent-100"
-                    : "bg-white border-slate-200/80"
-                }`}>
-                  <div className="flex items-center gap-2 mb-1 flex-wrap">
-                    <span className="inline-block w-2 h-2 rounded-full bg-brand-400 shrink-0" aria-hidden />
-                    {d.type === "PRESCRIPTION" ? (
-                      <span className="inline-flex text-[10px] font-bold px-2 py-0.5 rounded-full border bg-emerald-50 text-emerald-700 border-emerald-200">
-                        {t("timeline.filter.prescription")}
-                      </span>
-                    ) : d.type === "EXAM_REQUEST" ? (
-                      <span className="inline-flex text-[10px] font-bold px-2 py-0.5 rounded-full border bg-cyan-50 text-cyan-700 border-cyan-200">
-                        {t("doctype.EXAM_REQUEST")}
-                      </span>
-                    ) : d.type === "EXAM_RESULT" ? (
-                      <span className="inline-flex text-[10px] font-bold px-2 py-0.5 rounded-full border bg-indigo-50 text-indigo-700 border-indigo-200">
-                        {t("doctype.EXAM_RESULT")}
-                      </span>
-                    ) : d.recordKind ? (
-                      <RecordKindBadge kind={d.recordKind as ClinicalRecordKind} />
-                    ) : null}
-                    <span className="inline-flex items-center gap-1 text-xs font-medium text-brand-600 bg-brand-50 px-2 py-0.5 rounded-full">
-                      <Tag size={12} /> {label}
-                    </span>
-                    {d.categoryGroup && (
-                      <span className="text-xs text-slate-400">{getCategoryGroupLabel(lang, d.categoryGroup)}</span>
-                    )}
-                    {attachmentCount > 0 && (
-                      <span className="inline-flex items-center gap-1 text-xs text-slate-400">
-                        <Paperclip size={12} /> {attachmentCount} {t("rec.attachments")}
-                      </span>
-                    )}
-                  </div>
-                  <p className="font-semibold text-slate-800 text-sm">{d.title}</p>
-                  <p className="text-xs text-slate-400 mt-0.5">
-                    {new Date(d.createdAt).toLocaleString(
-                      localeOf(lang),
-                      { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }
-                    )}
-                  </p>
-                  {displayText && (
-                    <p className={`text-sm text-slate-600 mt-1 whitespace-pre-wrap ${!isExpanded && displayText.length > CONTENT_PREVIEW_CHARS ? "line-clamp-3" : ""}`}>
-                      {isExpanded || displayText.length <= CONTENT_PREVIEW_CHARS ? displayText : previewText}
-                    </p>
-                  )}
-                  {attachmentCount > 0 && (
-                    <RecordAttachmentStrip key={`${d.id}-${attachmentCount}`} docId={d.id} count={attachmentCount} t={t} />
-                  )}
-                  {d.sourceDocumentId && (
-                    <p className="text-xs text-amber-600 mt-1">{t("rec.sharedReadOnly")}</p>
-                  )}
-
-                  {canExpand && (
-                    <button
-                      type="button"
-                      onClick={toggleExpanded}
-                      className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-brand-600 hover:text-brand-700"
-                    >
-                      {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-                      {isExpanded ? t("rec.collapse") : t("rec.expand")}
-                    </button>
-                  )}
-
-                  {/* Actions row */}
-                  {isEmission && emissionKind ? (
-                    <EmissionCardActions
-                      kind={emissionKind}
-                      emissionId={emissionKind === "prescription" ? (d.prescriptionId || d.id) : d.id}
-                      signatureStatus={d.signatureStatus}
-                      patientNotifiedAt={d.patientNotifiedAt}
-                      whatsappNotifyStatus={d.whatsappNotifyStatus}
-                      patientName={`${displayFirstName} ${displayLastName}`}
-                      medications={d.medications || undefined}
-                      examItems={parsedContent?.items}
-                      title={d.title}
-                      content={d.content}
-                      t={t}
-                      onCopy={() => handleCopy(d, label)}
-                      onPrint={() => handlePrint(d.id)}
-                      onReuse={() => reuseEmissionDoc(d)}
-                      onSign={canEdit ? () => signEmissionDoc(d) : undefined}
-                      onPdfError={(msg) => toast.error(msg)}
-                      onDelivered={() => markEmissionDelivered(d.id)}
-                    />
-                  ) : (
-                  <div className="mt-3 flex items-center gap-2 flex-wrap">
-                    <button
-                      type="button"
-                      onClick={() => handleCopy(d, label)}
-                      className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 hover:text-brand-500 border border-slate-200 hover:border-brand-200 px-3 py-1.5 rounded-lg transition"
-                    >
-                      {copiedId === d.id ? <CheckCircle2 size={14} className="text-brand-500" /> : <Copy size={14} />}
-                      {copiedId === d.id ? t("rec.copied") : t("rec.copy")}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handlePrint(d.id)}
-                      className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 hover:text-brand-500 border border-slate-200 hover:border-brand-200 px-3 py-1.5 rounded-lg transition"
-                    >
-                      <Printer size={14} /> {t("rec.print")}
-                    </button>
-                    {canEdit && d.canEdit !== false && !d.sourceDocumentId && !isPsychologyStructuredContent(d.content) && (
-                      <button
-                        type="button"
-                        onClick={() => openEditForm(d)}
-                        className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 hover:text-brand-500 border border-slate-200 hover:border-brand-200 px-3 py-1.5 rounded-lg transition"
-                      >
-                        <Pencil size={14} /> {t("rec.edit")}
-                      </button>
-                    )}
-                    <AiSummarizeButton documentId={d.id} />
-                    {canEdit && (
-                    <>
-                    {status === "shared" ? (
-                      <span className="inline-flex items-center gap-1.5 text-xs font-medium text-brand-500 bg-brand-50 px-3 py-1.5 rounded-lg">
-                        <CheckCircle2 size={14} /> {t("rec.shareShared")}
-                      </span>
-                    ) : status === "invited" ? (
-                      <span className="inline-flex items-center gap-1.5 text-xs font-medium text-brand-500 bg-brand-50 px-3 py-1.5 rounded-lg">
-                        <Mail size={14} /> {t("rec.shareInvited")}
-                      </span>
-                    ) : status === "needsInvite" ? (
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="inline-flex items-center gap-1.5 text-xs text-amber-600">
-                          <AlertCircle size={14} /> {t("rec.shareNeedsInvite")}
-                        </span>
-                        <button
-                          onClick={() => handleInvite(d.id)}
-                          disabled={isSharing}
-                          className="inline-flex items-center gap-1.5 text-xs font-medium text-white bg-brand-500 hover:bg-brand-500 px-3 py-1.5 rounded-lg disabled:opacity-50"
-                        >
-                          {isSharing ? <Loader2 size={14} className="animate-spin" /> : <Mail size={14} />}
-                          {t("rec.sendInvite")}
-                        </button>
-                      </div>
-                    ) : status === "noEmail" ? (
-                      <span className="inline-flex items-center gap-1.5 text-xs text-amber-600">
-                        <AlertCircle size={14} /> {t("rec.shareNoEmail")}
-                      </span>
-                    ) : status.startsWith("error:") ? (
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-rose-600">{status.slice(6)}</span>
-                        <button
-                          onClick={() => handleShare(d.id)}
-                          className="text-xs font-medium text-slate-600 hover:text-slate-800 underline"
-                        >
-                          {t("rec.retry")}
-                        </button>
-                      </div>
-                    ) : (
-                      <button
-                        onClick={() => handleShare(d.id)}
-                        disabled={isSharing}
-                        className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 hover:text-brand-500 border border-slate-200 hover:border-brand-200 px-3 py-1.5 rounded-lg transition disabled:opacity-50"
-                      >
-                        {isSharing ? <Loader2 size={14} className="animate-spin" /> : <Share2 size={14} />}
-                        {t("rec.shareWithPatient")}
-                      </button>
-                    )}
-                    </>
-                    )}
-                  </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
+      <ChartDocsList
+        docs={filteredDocs}
+        totalDocs={docs.length}
+        lang={lang}
+        t={t}
+        legacyLabel={legacyLabel}
+        pinnedAnamnesisId={pinnedAnamnesis?.id}
+        expandedIds={expandedIds}
+        setExpandedIds={setExpandedIds}
+        shareStatus={shareStatus}
+        sharingId={sharingId}
+        copiedId={copiedId}
+        canEdit={canEdit}
+        patientName={`${displayFirstName} ${displayLastName}`}
+        onCopy={handleCopy}
+        onPrint={handlePrint}
+        onEdit={openEditForm}
+        onShare={handleShare}
+        onInvite={handleInvite}
+        onReuse={reuseEmissionDoc}
+        onSign={signEmissionDoc}
+        onDelivered={markEmissionDelivered}
+        onPdfError={(msg) => toast.error(msg)}
+      />
       </>
+      )}
+        </>
       )}
 
       {/* Add / edit record modal */}
