@@ -9,6 +9,8 @@ import { useI18n } from "@/lib/i18n/I18nProvider";
 import {
   TEMPLATE_CATEGORIES,
   parseExamTemplateBody,
+  resolveDocumentTemplateCategory,
+  resolvePrescriptionTemplateCategory,
 } from "@/lib/clinical-template-utils";
 import { ExamTemplateForm, type ExamTemplateData } from "@/components/professional/settings/templates/ExamTemplateForm";
 import { RxTemplateForm, type RxTemplateData } from "@/components/professional/settings/templates/RxTemplateForm";
@@ -69,19 +71,31 @@ export default function TemplatesSettingsClient() {
   useEffect(() => { loadAll(); }, []);
 
   const examClinical = useMemo(
-    () => docTemplates.filter((x) => x.templateCategory === TEMPLATE_CATEGORIES.EXAM_CLINICAL),
+    () =>
+      docTemplates.filter(
+        (x) => resolveDocumentTemplateCategory(x) === TEMPLATE_CATEGORIES.EXAM_CLINICAL,
+      ),
     [docTemplates],
   );
   const examPreop = useMemo(
-    () => docTemplates.filter((x) => x.templateCategory === TEMPLATE_CATEGORIES.EXAM_PREOP),
+    () =>
+      docTemplates.filter(
+        (x) => resolveDocumentTemplateCategory(x) === TEMPLATE_CATEGORIES.EXAM_PREOP,
+      ),
     [docTemplates],
   );
   const certificates = useMemo(
-    () => docTemplates.filter((x) => x.templateCategory === TEMPLATE_CATEGORIES.CERTIFICATE),
+    () =>
+      docTemplates.filter(
+        (x) => resolveDocumentTemplateCategory(x) === TEMPLATE_CATEGORIES.CERTIFICATE,
+      ),
     [docTemplates],
   );
   const rxPostop = useMemo(
-    () => rxTemplates.filter((x) => x.templateCategory === TEMPLATE_CATEGORIES.RX_POSTOP),
+    () =>
+      rxTemplates.filter(
+        (x) => resolvePrescriptionTemplateCategory(x) === TEMPLATE_CATEGORIES.RX_POSTOP,
+      ),
     [rxTemplates],
   );
 
@@ -172,6 +186,7 @@ export default function TemplatesSettingsClient() {
         <p className="text-sm text-slate-500">{t("tmpl.examClinicalHint")}</p>
         {activeForm === "exam_clinical" && (
           <ExamTemplateForm
+            key={editingId || "new-exam-clinical"}
             category={TEMPLATE_CATEGORIES.EXAM_CLINICAL}
             defaultTitle={t("tmpl.examClinicalDefaultTitle")}
             editing={editingExamClinical}
@@ -213,6 +228,7 @@ export default function TemplatesSettingsClient() {
         <p className="text-sm text-slate-500">{t("tmpl.examPreopHint")}</p>
         {activeForm === "exam_preop" && (
           <ExamTemplateForm
+            key={editingId || "new-exam-preop"}
             category={TEMPLATE_CATEGORIES.EXAM_PREOP}
             defaultTitle={t("tmpl.examPreopDefaultTitle")}
             editing={editingExamPreop}
@@ -254,6 +270,7 @@ export default function TemplatesSettingsClient() {
         <p className="text-sm text-slate-500">{t("tmpl.rxPostopHint")}</p>
         {activeForm === "rx_postop" && (
           <RxTemplateForm
+            key={editingId || "new-rx-postop"}
             editing={editingRxPostop}
             t={t}
             onSaved={handleSaved}
@@ -290,6 +307,7 @@ export default function TemplatesSettingsClient() {
         <p className="text-sm text-slate-500">{t("tmpl.certificateHint")}</p>
         {activeForm === "certificate" && (
           <CertificateTemplateForm
+            key={editingId || "new-certificate"}
             editing={editingCertificate}
             t={t}
             onSaved={handleSaved}

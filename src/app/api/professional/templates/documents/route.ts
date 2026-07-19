@@ -3,7 +3,11 @@ import { z } from "zod";
 import { requireProfessional } from "@/lib/psychology-api";
 import { db } from "@/lib/db";
 import { resolveDocumentTemplate } from "@/lib/template-context";
-import { isExamTemplateCategory, TEMPLATE_CATEGORIES } from "@/lib/clinical-template-utils";
+import {
+  isExamTemplateCategory,
+  resolveDocumentTemplateCategory,
+  TEMPLATE_CATEGORIES,
+} from "@/lib/clinical-template-utils";
 
 const templateCategorySchema = z.enum([
   TEMPLATE_CATEGORIES.EXAM_CLINICAL,
@@ -48,13 +52,14 @@ export async function GET(req: NextRequest) {
       });
     if (!tpl) return NextResponse.json({ error: "Template not found" }, { status: 404 });
 
-    if (isExamTemplateCategory(tpl.templateCategory)) {
+    const resolvedCategory = resolveDocumentTemplateCategory(tpl);
+    if (isExamTemplateCategory(resolvedCategory)) {
       return NextResponse.json({
         template: {
           id: tpl.id,
           name: tpl.name,
           documentType: tpl.documentType,
-          templateCategory: tpl.templateCategory,
+          templateCategory: resolvedCategory,
           title: tpl.title,
           body: tpl.body,
         },

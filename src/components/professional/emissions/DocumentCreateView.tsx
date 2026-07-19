@@ -106,6 +106,15 @@ export function DocumentCreateView({
   const draftHydratedRef = useRef(false);
   const suppressDraftSaveRef = useRef(false);
   const skipInitialTemplateRef = useRef(false);
+  const appliedBodySeedRef = useRef(!!initialBody.trim());
+
+  // Prefill from "Utilizar modelo" can arrive after first mount.
+  useEffect(() => {
+    if (appliedBodySeedRef.current) return;
+    if (!initialBody.trim()) return;
+    appliedBodySeedRef.current = true;
+    setBody(initialBody);
+  }, [initialBody]);
 
   useEffect(() => {
     if (!userId || draftHydratedRef.current || hasSeedContent) {
@@ -327,12 +336,12 @@ export function DocumentCreateView({
   }
 
   const selectedCategory = sortedCategories.find((c) => c.id === categoryId) ?? null;
-  const filteredTemplates = templates.filter(
-    (tpl) =>
-      !selectedCategory
-      || tpl.documentType === selectedCategory.legacyType
-      || templates.length <= 6,
-  );
+  const filteredTemplates = templates.filter((tpl) => {
+    // Exam request templates use a structured JSON body — never offer them in the document form.
+    if (tpl.documentType === "EXAM_REQUEST") return false;
+    if (!selectedCategory) return true;
+    return tpl.documentType === selectedCategory.legacyType;
+  });
 
   return (
     <div className="max-w-3xl mx-auto space-y-5 pb-24">

@@ -35,6 +35,7 @@ interface ExamCreateViewProps {
   initialItems: string[];
   initialNotes: string;
   initialCid: string;
+  initialCidLabel?: string;
   initialTitle: string;
   editingDocumentId?: string | null;
   portal?: string;
@@ -43,7 +44,7 @@ interface ExamCreateViewProps {
 }
 
 export function ExamCreateView({
-  t, charts, chartsLoading = false, reuseHint, templateHint, initialPatient, lockPatient = false, initialItems, initialNotes, initialCid, initialTitle,
+  t, charts, chartsLoading = false, reuseHint, templateHint, initialPatient, lockPatient = false, initialItems, initialNotes, initialCid, initialCidLabel = "", initialTitle,
   editingDocumentId = null,
   portal: portalProp,
   onBack, onSaved,
@@ -73,8 +74,26 @@ export function ExamCreateView({
   );
   const [notes, setNotes] = useState(initialNotes);
   const [cid, setCid] = useState<CidSelection | null>(
-    initialCid ? { code: initialCid, description: "" } : null
+    initialCid ? { code: initialCid, description: initialCidLabel || "" } : null
   );
+  const appliedSeedRef = useRef(
+    initialItems.length > 0 || !!initialNotes.trim() || !!initialCid.trim() || !!initialTitle.trim(),
+  );
+
+  // Template/reuse prefill can arrive after first mount — sync once when seed content appears.
+  useEffect(() => {
+    if (appliedSeedRef.current) return;
+    const hasItems = initialItems.length > 0;
+    const hasNotes = !!initialNotes.trim();
+    const hasCid = !!initialCid.trim();
+    const hasTitle = !!initialTitle.trim() && initialTitle !== t("rx.examDefaultTitle");
+    if (!hasItems && !hasNotes && !hasCid && !hasTitle) return;
+    appliedSeedRef.current = true;
+    if (hasItems) setItems(initialItems);
+    if (hasNotes) setNotes(initialNotes);
+    if (hasCid) setCid({ code: initialCid, description: initialCidLabel || "" });
+    if (initialTitle.trim()) setTitle(initialTitle);
+  }, [initialItems, initialNotes, initialCid, initialCidLabel, initialTitle, t]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [examSearchOpen, setExamSearchOpen] = useState(false);

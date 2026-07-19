@@ -12,6 +12,7 @@ import { readChartDeepLink } from "@/lib/video-chart-nav";
 import {
   isExamTemplateCategory,
   parseExamTemplateBody,
+  resolveDocumentTemplateCategory,
   TEMPLATE_CATEGORIES,
 } from "@/lib/clinical-template-utils";
 import { mapProfessionalPathToPortal } from "@/lib/psychologist-portal";
@@ -212,9 +213,11 @@ export function usePrescriptionPage() {
   const [pendingTemplateId, setPendingTemplateId] = useState<string | null>(null);
   const [pendingDocTemplateId, setPendingDocTemplateId] = useState<string | null>(null);
   const [examTemplatePrefill, setExamTemplatePrefill] = useState<{
+    templateId: string;
     items: string[];
     notes: string;
     cid: string;
+    cidLabel?: string;
     title: string;
   } | null>(null);
   const [docTemplatePrefill, setDocTemplatePrefill] = useState<{
@@ -224,6 +227,10 @@ export function usePrescriptionPage() {
     title?: string;
   } | null>(null);
   const [templateAppliedHint, setTemplateAppliedHint] = useState(false);
+  const [loadingDocTemplate, setLoadingDocTemplate] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return !!new URLSearchParams(window.location.search).get("docTemplateId");
+  });
   const [pendingFloralProductId, setPendingFloralProductId] = useState<string | null>(null);
   const [pendingProtocolId, setPendingProtocolId] = useState<string | null>(null);
   const [voicePrefillActive, setVoicePrefillActive] = useState(false);
@@ -642,21 +649,17 @@ export function usePrescriptionPage() {
 
     const docTemplateId = params.get("docTemplateId");
     const rxTemplateId = params.get("templateId");
-    const viewFromUrl = params.get("view") as View | null;
 
+    // Wait for template fetch/apply before opening the form — otherwise ExamCreateView /
+    // DocumentCreateView mount with empty initial state and never pick up the prefill.
     if (docTemplateId && !patientRecordId) {
+      setLoadingDocTemplate(true);
       setPendingDocTemplateId(docTemplateId);
-      if (viewFromUrl === "exam" || viewFromUrl === "document") {
-        setView(viewFromUrl);
-      }
       window.history.replaceState({}, "", window.location.pathname);
     }
 
     if (rxTemplateId && !patientRecordId && params.get("add") !== "floral") {
       setPendingTemplateId(rxTemplateId);
-      if (viewFromUrl === "prescription") {
-        setView("prescription");
-      }
       window.history.replaceState({}, "", window.location.pathname);
     }
 
@@ -713,12 +716,11 @@ export function usePrescriptionPage() {
   useEffect(() => {
     if (!pendingTemplateId) return;
     const tpl = rxTemplates.find((x) => x.id === pendingTemplateId);
-    if (tpl) {
-      applyRxTemplate(tpl);
-      setView("prescription");
-      setTemplateAppliedHint(true);
-      setPendingTemplateId(null);
-    }
+    if (!tpl) return;
+    applyRxTemplate(tpl);
+    setView("prescription");
+    setTemplateAppliedHint(true);
+    setPendingTemplateId(null);
   }, [pendingTemplateId, rxTemplates]);
 
   useEffect(() => {
@@ -731,26 +733,32 @@ export function usePrescriptionPage() {
         const data = await res.json();
         const tpl = data.template as {
           id: string;
+          documentType?: string | null;
           templateCategory: string | null;
           title: string;
           body: string;
         } | undefined;
         if (!tpl) return;
 
-        if (isExamTemplateCategory(tpl.templateCategory)) {
+        const category = resolveDocumentTemplateCategory(tpl);
+        if (category && isExamTemplateCategory(category)) {
           const parsed = parseExamTemplateBody(tpl.body);
           setExamTemplatePrefill({
+            templateId: tpl.id,
             items: parsed.items,
             notes: parsed.notes || "",
             cid: parsed.cid || "",
+            cidLabel: parsed.cidLabel || "",
             title: tpl.title || t("rx.examDefaultTitle"),
           });
           setView("exam");
           setTemplateAppliedHint(true);
-        } else if (tpl.templateCategory === TEMPLATE_CATEGORIES.CERTIFICATE) {
+        } else if (category === TEMPLATE_CATEGORIES.CERTIFICATE || tpl.documentType === "CERTIFICATE") {
           setDocTemplatePrefill({
             body: data.preview?.body || tpl.body,
             templateId: tpl.id,
+            documentType: tpl.documentType || "CERTIFICATE",
+            title: tpl.title,
           });
           setView("document");
           setTemplateAppliedHint(true);
@@ -759,6 +767,7 @@ export function usePrescriptionPage() {
         /* ignore */
       } finally {
         setPendingDocTemplateId(null);
+        setLoadingDocTemplate(false);
       }
     })();
   }, [pendingDocTemplateId, locale, t]);
@@ -1461,6 +1470,7 @@ export function usePrescriptionPage() {
     setExamTemplatePrefill(null);
     setDocTemplatePrefill(null);
     setTemplateAppliedHint(false);
+    setLoadingDocTemplate(false);
     fetchAll();
   }
 
@@ -2246,6 +2256,7 @@ export function usePrescriptionPage() {
     lockPatient,
     examTemplatePrefill,
     docTemplatePrefill,
+    loadingDocTemplate,
     charts,
     chartsLoading,
     handleEmissionSaved,

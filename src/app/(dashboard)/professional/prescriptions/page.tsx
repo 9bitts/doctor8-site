@@ -3,6 +3,7 @@
 // src/app/(dashboard)/professional/prescriptions/page.tsx
 // Memed-style prescription UI: reuse, manual add, recent carousel.
 
+import { Loader2 } from "lucide-react";
 import { RX_STYLES } from "@/components/professional/emissions/EmissionsSignModal";
 import { ExamCreateView } from "@/components/professional/emissions/ExamCreateView";
 import { DocumentCreateView } from "@/components/professional/emissions/DocumentCreateView";
@@ -35,11 +36,20 @@ export default function PrescriptionsPage() {
     );
   }
 
+  if (p.loadingDocTemplate) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="animate-spin text-brand-500" size={28} />
+      </div>
+    );
+  }
+
   if (p.view === "exam") {
     return (
       <>
         <VideoConsultReturnBanner returnUrl={p.consultReturnUrl} patientName={p.reusePatient ? `${p.reusePatient.firstName} ${p.reusePatient.lastName}` : undefined} lang={p.lang as "pt" | "en" | "es"} />
         <ExamCreateView
+          key={p.examTemplatePrefill?.templateId || p.editingClinicalDocId || "exam-new"}
           t={p.t} locale={p.locale} charts={p.charts} chartsLoading={p.chartsLoading}
           reuseHint={!!p.reuseClinical}
           templateHint={p.templateAppliedHint}
@@ -48,6 +58,7 @@ export default function PrescriptionsPage() {
           initialItems={p.examTemplatePrefill?.items || p.reuseClinical?.examItems || []}
           initialNotes={p.examTemplatePrefill?.notes || p.reuseClinical?.examNotes || ""}
           initialCid={p.examTemplatePrefill?.cid || p.reuseClinical?.cid || ""}
+          initialCidLabel={p.examTemplatePrefill?.cidLabel || ""}
           initialTitle={p.examTemplatePrefill?.title || p.reuseClinical?.title || ""}
           editingDocumentId={p.editingClinicalDocId}
           portal={p.cfg.portal}
@@ -64,6 +75,7 @@ export default function PrescriptionsPage() {
       <>
         <VideoConsultReturnBanner returnUrl={p.consultReturnUrl} patientName={p.reusePatient ? `${p.reusePatient.firstName} ${p.reusePatient.lastName}` : undefined} lang={p.lang as "pt" | "en" | "es"} />
         <DocumentCreateView
+          key={p.docTemplatePrefill?.templateId || p.editingClinicalDocId || "document-new"}
           t={p.t} charts={p.charts} chartsLoading={p.chartsLoading}
           reuseHint={!!p.reuseClinical}
           templateHint={p.templateAppliedHint}
