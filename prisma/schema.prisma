@@ -391,6 +391,7 @@ enum PatientProfessionalLinkStatus {
 enum JitMode {
   QUEUE      // paciente entra na fila, sistema distribui automaticamente
   SHOWCASE   // paciente escolhe o profissional disponível
+  PRIVATE    // plantão particular — sem fila / sem vitrine pública
 }
 
 enum JitSessionStatus {

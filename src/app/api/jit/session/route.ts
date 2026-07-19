@@ -19,7 +19,7 @@ function safeDecrypt(v: string | null | undefined): string {
 }
 
 const createSchema = z.object({
-  mode:                        z.enum(["QUEUE", "SHOWCASE"]),
+  mode:                        z.enum(["QUEUE", "SHOWCASE", "PRIVATE"]),
   specialty:                   z.string().min(1).max(100),
   isFree:                      z.boolean(),
   priceAmount:                 z.number().int().min(0).default(0),
@@ -31,7 +31,7 @@ const createSchema = z.object({
 
 const patchSchema = z.object({
   status: z.enum(["ONLINE", "PAUSED", "OFFLINE"]).optional(),
-  mode:   z.enum(["QUEUE", "SHOWCASE"]).optional(),
+  mode:   z.enum(["QUEUE", "SHOWCASE", "PRIVATE"]).optional(),
   estimatedMinutesPerPatient: z.number().int().min(5).max(120).optional(),
   maxQueueSize: z.number().int().min(1).max(500).optional(),
 });
@@ -200,30 +200,34 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  const isPrivate = d.mode === "PRIVATE";
   const jitSession = await db.jitSession.create({
     data: {
       professionalId:              professional.id,
       mode:                        d.mode,
       status:                      "ONLINE",
       specialty:                   d.specialty,
-      isFree,
-      priceAmount,
+      isFree:                      isPrivate ? true : isFree,
+      priceAmount:                 isPrivate ? 0 : priceAmount,
       currency:                    d.currency,
-      maxQueueSize:                d.maxQueueSize,
+      maxQueueSize:                isPrivate ? 1 : d.maxQueueSize,
       estimatedMinutesPerPatient:  d.estimatedMinutesPerPatient,
-      jitEventId,
+      jitEventId:                  isPrivate ? null : jitEventId,
       lastHeartbeatAt:             new Date(),
     },
   });
 
-  if (forceFreeOverrode) {
+  if (forceFreeOverrode && !isPrivate) {
     console.log(
       `[JIT-FORCE-FREE] sessionId=${jitSession.id} eventId=${jitEventId} requested isFree=${requestedIsFree} priceAmount=${requestedPriceAmount}`,
     );
   }
 
-  const { notifyFavoritePatientsOnline } = await import("@/lib/notify-favorites");
-  notifyFavoritePatientsOnline(professional.id).catch(() => {});
+  // Private duty is invite-only — do not broadcast to favorites / urgent queue.
+  if (!isPrivate) {
+    const { notifyFavoritePatientsOnline } = await import("@/lib/notify-favorites");
+    notifyFavoritePatientsOnline(professional.id).catch(() => {});
+  }
 
   return NextResponse.json({ session: jitSession }, { status: 201 });
 }
@@ -262,7 +266,7 @@ export async function PATCH(req: NextRequest) {
     include: jitSessionInclude,
   });
 
-  if (wasPaused && goingOnline) {
+  if (wasPaused && goingOnline && updated.mode !== "PRIVATE") {
     const { notifyFavoritePatientsOnline } = await import("@/lib/notify-favorites");
     notifyFavoritePatientsOnline(professional.id).catch(() => {});
   }

@@ -8,7 +8,7 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import {
   Radio, Power, PowerOff, Users, ChevronRight,
   Loader2, AlertCircle, Phone, Pause, Play,
-  Stethoscope, Settings, X, RefreshCw, UserPlus, MessageCircle, Copy, Check,
+  Stethoscope, Settings, X, RefreshCw, UserPlus, MessageCircle, Copy, Check, Video,
 } from "lucide-react";
 import { useT, useI18n } from "@/lib/i18n/I18nProvider";
 import { localeOf } from "@/lib/i18n/translations";
@@ -86,13 +86,16 @@ export default function JitClient({ providerTz }: { providerTz: string }) {
   const [error,    setError]    = useState<string | null>(null);
 
   const [showConfig,   setShowConfig]   = useState(false);
+  const [showPrivateConfig, setShowPrivateConfig] = useState(false);
   const [cfgMode,      setCfgMode]      = useState<"QUEUE" | "SHOWCASE">("QUEUE");
   const [cfgSpecialty, setCfgSpecialty] = useState("");
+  const [cfgPrivateSpecialty, setCfgPrivateSpecialty] = useState("");
   const [cfgFree,      setCfgFree]      = useState(true);
   const [cfgPriceReais, setCfgPriceReais] = useState("0,00");
   const [cfgCurrency,  setCfgCurrency]  = useState("BRL");
   const [cfgMax,       setCfgMax]       = useState(50);
   const [cfgEstTime,   setCfgEstTime]   = useState(20);
+  const [cfgPrivateEstTime, setCfgPrivateEstTime] = useState(30);
   const [cfgSaving,    setCfgSaving]    = useState(false);
 
   const [privateOpen, setPrivateOpen] = useState(false);
@@ -130,7 +133,8 @@ export default function JitClient({ providerTz }: { providerTz: string }) {
     if (status === "ONLINE" || status === "PAUSED") {
       void openPrivateConsult(recordId);
     } else {
-      setShowConfig(true);
+      setShowConfig(false);
+      setShowPrivateConfig(true);
     }
   }, [loading, searchParams, session?.status, pathname, router]);
 
@@ -193,6 +197,7 @@ export default function JitClient({ providerTz }: { providerTz: string }) {
       const data = await res.json();
       if (!res.ok) { setError(data.message || t("jit.errGeneric")); setCfgSaving(false); return; }
       setShowConfig(false);
+      setShowPrivateConfig(false);
       await loadSession();
       startPolling();
       toast.success(t("jit.toast.started"));
@@ -202,6 +207,43 @@ export default function JitClient({ providerTz }: { providerTz: string }) {
         void openPrivateConsult(recordId);
       }
     } catch { setError(t("jit.errNetwork")); toast.error(t("jit.errNetwork")); }
+    setCfgSaving(false);
+  }
+
+  async function startPrivateDuty() {
+    setCfgSaving(true); setError(null);
+    try {
+      const res = await fetch("/api/jit/session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          mode: "PRIVATE",
+          specialty: cfgPrivateSpecialty.trim() || cfgSpecialty.trim() || "General",
+          isFree: true,
+          priceAmount: 0,
+          currency: "BRL",
+          maxQueueSize: 1,
+          estimatedMinutesPerPatient: cfgPrivateEstTime,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.message || data.error || t("jit.errGeneric"));
+        setCfgSaving(false);
+        return;
+      }
+      setShowConfig(false);
+      setShowPrivateConfig(false);
+      await loadSession();
+      startPolling();
+      toast.success(t("jit.private.toast.started"));
+      const recordId = pendingPrivateRecordId;
+      setPendingPrivateRecordId(null);
+      void openPrivateConsult(recordId);
+    } catch {
+      setError(t("jit.errNetwork"));
+      toast.error(t("jit.errNetwork"));
+    }
     setCfgSaving(false);
   }
 
@@ -475,7 +517,11 @@ export default function JitClient({ providerTz }: { providerTz: string }) {
             isOnline ? "bg-brand-500 animate-pulse" :
             isPaused ? "bg-amber-500" : "bg-slate-400"
           }`} />
-          {isOnline ? t("jit.statusOnline") : isPaused ? t("jit.statusPaused") : t("jit.statusOffline")}
+          {isOnline
+            ? (session?.mode === "PRIVATE" ? t("jit.private.statusOnline") : t("jit.statusOnline"))
+            : isPaused
+              ? (session?.mode === "PRIVATE" ? t("jit.private.statusPaused") : t("jit.statusPaused"))
+              : t("jit.statusOffline")}
         </span>
       </div>
 
@@ -486,37 +532,108 @@ export default function JitClient({ providerTz }: { providerTz: string }) {
         </div>
       )}
 
-      {isOffline && (
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
-          {!showConfig ? (
+      {isOffline && !showConfig && !showPrivateConfig && (
+        <div className="space-y-4">
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
             <div className="text-center py-8">
               <div className="w-16 h-16 rounded-2xl bg-brand-50 flex items-center justify-center mx-auto mb-4">
                 <Stethoscope size={28} className="text-brand-500" />
               </div>
               <h2 className="text-lg font-bold text-slate-900 mb-2">{t("jit.configTitle")}</h2>
               <p className="text-sm text-slate-500 max-w-sm mx-auto mb-6">{t("jit.disclaimer")}</p>
+              <button
+                type="button"
+                onClick={() => { setShowPrivateConfig(false); setShowConfig(true); }}
+                className="inline-flex items-center gap-2 bg-brand-500 hover:bg-brand-500 text-white font-semibold px-6 py-3 rounded-xl transition"
+              >
+                <Settings size={18} /> {t("jit.configTitle")}
+              </button>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
+            <div className="text-center py-8">
+              <div className="w-16 h-16 rounded-2xl bg-brand-50 flex items-center justify-center mx-auto mb-4">
+                <Video size={28} className="text-brand-500" />
+              </div>
+              <h2 className="text-lg font-bold text-slate-900 mb-2">{t("jit.private.configTitle")}</h2>
+              <p className="text-sm text-slate-500 max-w-sm mx-auto mb-6">{t("jit.private.configDisclaimer")}</p>
               {pendingPrivateRecordId && (
                 <p className="text-sm text-brand-700 bg-brand-50 border border-brand-100 rounded-xl px-4 py-3 max-w-sm mx-auto mb-4">
                   {t("jit.private.startDutyFirst")}
                 </p>
               )}
               <button
-                onClick={() => setShowConfig(true)}
+                type="button"
+                onClick={() => { setShowConfig(false); setShowPrivateConfig(true); }}
                 className="inline-flex items-center gap-2 bg-brand-500 hover:bg-brand-500 text-white font-semibold px-6 py-3 rounded-xl transition"
               >
-                <Settings size={18} /> {t("jit.configTitle")}
+                <Video size={18} /> {t("jit.private.configTitle")}
               </button>
             </div>
-          ) : (
+          </div>
+        </div>
+      )}
+
+      {isOffline && showPrivateConfig && (
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-4">
+          <h2 className="font-bold text-slate-800 flex items-center gap-2">
+            <Video size={18} className="text-brand-500" /> {t("jit.private.configTitle")}
+          </h2>
+          <p className="text-sm text-slate-500">{t("jit.private.configDisclaimer")}</p>
+          {pendingPrivateRecordId && (
+            <p className="text-sm text-brand-700 bg-brand-50 border border-brand-100 rounded-xl px-4 py-3">
+              {t("jit.private.startDutyFirst")}
+            </p>
+          )}
+          <div>
+            <label className="block text-xs font-medium text-slate-600 mb-1">{t("jit.specialty")} *</label>
+            <input
+              value={cfgPrivateSpecialty}
+              onChange={(e) => setCfgPrivateSpecialty(e.target.value)}
+              placeholder={t("jit.specialtyPlaceholder")}
+              className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-brand-400 focus:ring-2 focus:ring-brand-100 outline-none text-sm"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-slate-600 mb-1">{t("jit.estTime")}</label>
+            <input
+              type="number"
+              value={cfgPrivateEstTime}
+              onChange={(e) => setCfgPrivateEstTime(Number(e.target.value))}
+              min={5}
+              max={120}
+              className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-brand-400 outline-none text-sm"
+            />
+          </div>
+          <div className="flex gap-3 pt-2">
+            <button
+              type="button"
+              onClick={() => setShowPrivateConfig(false)}
+              className="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-medium text-sm hover:bg-slate-50"
+            >
+              {t("common.cancel")}
+            </button>
+            <button
+              type="button"
+              onClick={() => void startPrivateDuty()}
+              disabled={cfgSaving || !cfgPrivateSpecialty.trim()}
+              className="flex-1 py-2.5 rounded-xl bg-brand-500 hover:bg-brand-600 text-white font-semibold text-sm disabled:opacity-50 inline-flex items-center justify-center gap-2"
+            >
+              {cfgSaving
+                ? <><Loader2 size={14} className="animate-spin" /> {t("jit.starting")}</>
+                : <><Power size={14} /> {t("jit.private.saveStart")}</>}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {isOffline && showConfig && (
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
             <div className="space-y-4">
               <h2 className="font-bold text-slate-800 flex items-center gap-2">
                 <Settings size={18} className="text-brand-500" /> {t("jit.configTitle")}
               </h2>
-              {pendingPrivateRecordId && (
-                <p className="text-sm text-brand-700 bg-brand-50 border border-brand-100 rounded-xl px-4 py-3">
-                  {t("jit.private.startDutyFirst")}
-                </p>
-              )}
 
               <div>
                 <label className="block text-xs font-medium text-slate-600 mb-1">{t("jit.specialty")} *</label>
@@ -623,11 +740,174 @@ export default function JitClient({ providerTz }: { providerTz: string }) {
                 </button>
               </div>
             </div>
-          )}
         </div>
       )}
 
-      {(isOnline || isPaused) && session && (
+      {(isOnline || isPaused) && session && session.mode === "PRIVATE" && (
+        <>
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 text-center">
+            <p className="text-sm font-semibold text-slate-800">
+              {getProfessionLabel(lang, session.specialty)}
+            </p>
+            <p className="text-xs text-slate-500 mt-0.5">{t("jit.private.onlineHint")}</p>
+          </div>
+
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 space-y-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0">
+                <p className="font-semibold text-slate-800">{t("jit.private.title")}</p>
+                <p className="text-xs text-slate-500 mt-0.5">{t("jit.private.subtitle")}</p>
+              </div>
+              {!privateOpen && (
+                <button
+                  type="button"
+                  onClick={() => void openPrivateConsult()}
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-brand-500 hover:bg-brand-600 text-white font-semibold px-5 py-2.5 rounded-xl transition text-sm min-h-[44px]"
+                >
+                  <UserPlus size={16} /> {t("jit.private.create")}
+                </button>
+              )}
+            </div>
+
+            {privateOpen && !privateResult && (
+              <div className="space-y-3 border-t border-slate-100 pt-4">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-sm font-medium text-slate-700">{t("jit.private.pickPatient")}</p>
+                  <button
+                    type="button"
+                    onClick={closePrivateConsult}
+                    className="text-slate-400 hover:text-slate-600"
+                    aria-label={t("common.cancel")}
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+                <input
+                  value={chartQuery}
+                  onChange={(e) => setChartQuery(e.target.value)}
+                  placeholder={t("jit.private.searchPlaceholder")}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:border-brand-400 focus:ring-2 focus:ring-brand-100 outline-none text-sm"
+                />
+                {chartsLoading ? (
+                  <div className="flex items-center justify-center gap-2 py-6 text-sm text-slate-500">
+                    <Loader2 size={16} className="animate-spin" /> {t("common.loading")}
+                  </div>
+                ) : filteredCharts.length === 0 ? (
+                  <p className="text-sm text-slate-500 py-2">{t("jit.private.noLinkedPatients")}</p>
+                ) : (
+                  <div className="border border-slate-100 rounded-xl divide-y max-h-56 overflow-y-auto">
+                    {filteredCharts.map((c) => {
+                      const active = selectedChartId === c.id;
+                      return (
+                        <button
+                          key={c.id}
+                          type="button"
+                          onClick={() => setSelectedChartId(c.id)}
+                          className={`w-full text-left px-3 py-2.5 text-sm transition ${
+                            active ? "bg-brand-50 text-brand-800" : "hover:bg-slate-50 text-slate-800"
+                          }`}
+                        >
+                          <span className="font-medium">{c.firstName} {c.lastName}</span>
+                          {c.phone && (
+                            <span className="block text-xs text-slate-400 mt-0.5">{c.phone}</span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={closePrivateConsult}
+                    className="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-medium text-sm hover:bg-slate-50"
+                  >
+                    {t("common.cancel")}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void createPrivateConsult()}
+                    disabled={creatingPrivate || !selectedChartId || !selectedChart?.hasAccount}
+                    className="flex-1 py-2.5 rounded-xl bg-brand-500 hover:bg-brand-600 text-white font-semibold text-sm disabled:opacity-50 inline-flex items-center justify-center gap-2"
+                  >
+                    {creatingPrivate
+                      ? <><Loader2 size={14} className="animate-spin" /> {t("jit.private.creating")}</>
+                      : t("jit.private.confirmCreate")}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {privateResult && (
+              <div className="space-y-3 border-t border-slate-100 pt-4">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-slate-800">
+                      {t("jit.private.readyTitle").replace("{{name}}", privateResult.patientName)}
+                    </p>
+                    <p className="text-xs text-slate-500 mt-0.5 break-all">{privateResult.joinUrl}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={closePrivateConsult}
+                    className="text-slate-400 hover:text-slate-600 shrink-0"
+                    aria-label={t("common.cancel")}
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={shareWhatsApp}
+                    className="inline-flex items-center justify-center gap-2 min-h-[44px] rounded-xl bg-[#25D366] hover:bg-[#1ebe57] text-white font-semibold text-sm px-4"
+                  >
+                    <Phone size={16} /> {t("jit.private.sendWhatsApp")}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void sendDoctor8Message()}
+                    disabled={sendingMsg}
+                    className="inline-flex items-center justify-center gap-2 min-h-[44px] rounded-xl bg-brand-500 hover:bg-brand-600 text-white font-semibold text-sm px-4 disabled:opacity-50"
+                  >
+                    {sendingMsg
+                      ? <Loader2 size={16} className="animate-spin" />
+                      : <MessageCircle size={16} />}
+                    {t("jit.private.sendDoctor8")}
+                  </button>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <button
+                    type="button"
+                    onClick={() => void copyJoinLink()}
+                    className="flex-1 inline-flex items-center justify-center gap-2 min-h-[40px] rounded-xl border border-slate-200 text-slate-700 font-medium text-sm hover:bg-slate-50"
+                  >
+                    {linkCopied ? <Check size={15} className="text-brand-500" /> : <Copy size={15} />}
+                    {linkCopied ? t("jit.private.linkCopied") : t("jit.private.copyLink")}
+                  </button>
+                  <Link
+                    href={privateResult.joinPath}
+                    className="flex-1 inline-flex items-center justify-center gap-2 min-h-[40px] rounded-xl border border-brand-200 bg-brand-50 text-brand-700 font-semibold text-sm hover:bg-brand-100"
+                  >
+                    <Phone size={15} /> {t("jit.enterRoom")}
+                  </Link>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <button
+            type="button"
+            onClick={() => toggleStatus("OFFLINE")}
+            disabled={toggling}
+            className="w-full py-2.5 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-semibold text-sm inline-flex items-center justify-center gap-2 disabled:opacity-50"
+          >
+            {toggling ? <Loader2 size={14} className="animate-spin" /> : <><PowerOff size={14} /> {t("jit.private.goOffline")}</>}
+          </button>
+        </>
+      )}
+
+      {(isOnline || isPaused) && session && session.mode !== "PRIVATE" && (
         <>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
             <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-3 sm:p-4 text-center">

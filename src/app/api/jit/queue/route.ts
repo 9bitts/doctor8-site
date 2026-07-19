@@ -282,6 +282,7 @@ export async function POST(req: NextRequest) {
     where: { id: sessionId },
     select: {
       status: true,
+      mode: true,
       isFree: true,
       priceAmount: true,
       professionalId: true,
@@ -290,6 +291,11 @@ export async function POST(req: NextRequest) {
   });
   if (!jitSession || jitSession.status !== "ONLINE")
     return NextResponse.json({ error: "Session not available" }, { status: 404 });
+  if (jitSession.mode === "PRIVATE")
+    return NextResponse.json(
+      { error: "PRIVATE_SESSION", message: "This duty does not accept queue patients." },
+      { status: 403 },
+    );
 
   let corporateEapMemberId: string | null = null;
   if (!jitSession.isFree && jitSession.priceAmount > 0 && !paymentIntentId) {
@@ -515,6 +521,13 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json(
         { error: "SESSION_NOT_ONLINE", message: "Go online before calling the next patient." },
         { status: 409 },
+      );
+    }
+
+    if (jitSession.mode === "PRIVATE") {
+      return NextResponse.json(
+        { error: "PRIVATE_SESSION", message: "Private duty has no queue." },
+        { status: 403 },
       );
     }
 

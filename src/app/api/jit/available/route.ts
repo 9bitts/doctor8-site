@@ -16,6 +16,7 @@ export async function GET(req: NextRequest) {
   const sessions = await db.jitSession.findMany({
     where: {
       ...activeOnlineJitSessionWhere(),
+      mode: { not: "PRIVATE" },
       professional: { verified: true },
       ...(specialty ? { specialty: { contains: specialty, mode: "insensitive" } } : {}),
     },

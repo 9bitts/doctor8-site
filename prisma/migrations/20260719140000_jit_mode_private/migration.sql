@@ -1,0 +1,2 @@
+-- AlterEnum
+ALTER TYPE "JitMode" ADD VALUE IF NOT EXISTS 'PRIVATE';

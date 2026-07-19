@@ -28,6 +28,9 @@ export async function POST(req: NextRequest) {
   if (!jitSession || jitSession.status !== "ONLINE")
     return NextResponse.json({ error: "Session not available" }, { status: 404 });
 
+  if (jitSession.mode === "PRIVATE")
+    return NextResponse.json({ error: "Private duty does not accept queue payments" }, { status: 403 });
+
   if (jitSession.isFree || jitSession.priceAmount === 0)
     return NextResponse.json({ error: "This session is free — no payment needed" }, { status: 400 });
 
