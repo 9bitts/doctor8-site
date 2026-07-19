@@ -356,22 +356,6 @@ export default function ProfessionalSettings() {
 
   return (
     <div className="relative max-w-3xl mx-auto pb-10">
-      <div className="sticky top-3 z-20 h-0 overflow-visible pointer-events-none flex justify-end">
-        {(autoSaving || autoSaved) && (
-          <p className="pointer-events-auto text-xs text-slate-600 flex items-center gap-1.5 bg-white/95 backdrop-blur-sm border border-slate-200 rounded-full px-3 py-1.5 shadow-sm">
-            {autoSaving ? (
-              <>
-                <Loader2 size={12} className="animate-spin" /> {t("set.autoSaving")}
-              </>
-            ) : (
-              <>
-                <CheckCircle2 size={12} className="text-emerald-500" /> {t("set.autoSaved")}
-              </>
-            )}
-          </p>
-        )}
-      </div>
-
       <div className="space-y-4">
       <div>
         <h1 className="text-2xl font-bold text-slate-900">{t("set.title")}</h1>
@@ -736,6 +720,20 @@ export default function ProfessionalSettings() {
           <p className="text-xs text-slate-500 mt-1">{t("tmpl.settingsCardDesc")}</p>
         </a>
       </div>
+
+      {(autoSaving || autoSaved) && (
+        <p className="text-xs text-slate-600 flex items-center justify-center gap-1.5 bg-white border border-slate-200 rounded-full px-3 py-1.5 w-fit mx-auto">
+          {autoSaving ? (
+            <>
+              <Loader2 size={12} className="animate-spin" /> {t("set.autoSaving")}
+            </>
+          ) : (
+            <>
+              <CheckCircle2 size={12} className="text-emerald-500" /> {t("set.autoSaved")}
+            </>
+          )}
+        </p>
+      )}
       </div>
     </div>
   );
