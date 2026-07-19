@@ -33,27 +33,44 @@ export default function PatientChartTags({
   initialTags = [],
   readOnly = false,
   suggestedAllergy,
+  allowedKinds,
+  defaultKind,
 }: {
   chartId: string;
   initialTags?: ChartTag[];
   readOnly?: boolean;
   suggestedAllergy?: string | null;
+  /** When set, only these tag kinds can be added (existing tags of other kinds still show). */
+  allowedKinds?: ChartTag["kind"][];
+  defaultKind?: ChartTag["kind"];
 }) {
   const { t } = useI18n();
   const { update: updateSession } = useSession();
+  const kindOptions = allowedKinds?.length
+    ? KIND_OPTIONS.filter((k) => allowedKinds.includes(k.value))
+    : [...KIND_OPTIONS];
+  const initialKind = (
+    defaultKind && kindOptions.some((k) => k.value === defaultKind)
+      ? defaultKind
+      : kindOptions[0]?.value
+  ) || "OTHER";
   const [tags, setTags] = useState<ChartTag[]>(initialTags);
   const [adding, setAdding] = useState(false);
-  const [kind, setKind] = useState<ChartTag["kind"]>("ALLERGY");
+  const [kind, setKind] = useState<ChartTag["kind"]>(initialKind);
   const [label, setLabel] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const showAllergySuggest =
+    !!suggestedAllergy &&
+    (!allowedKinds || allowedKinds.includes("ALLERGY"));
 
   useEffect(() => {
     setTags(initialTags);
     setAdding(false);
     setLabel("");
     setError("");
-  }, [chartId, initialTags]);
+    setKind(initialKind);
+  }, [chartId, initialTags, initialKind]);
 
   function handleAuthFailure() {
     setError(t("session.expiredOnSave"));
@@ -170,7 +187,7 @@ export default function PatientChartTags({
         )}
       </div>
 
-      {suggestedAllergy && !readOnly && !tags.some((t) => t.kind === "ALLERGY") && (
+      {showAllergySuggest && !readOnly && !tags.some((t) => t.kind === "ALLERGY") && (
         <button
           type="button"
           onClick={addSuggestedAllergy}
@@ -183,7 +200,7 @@ export default function PatientChartTags({
       {adding && (
         <div className="mt-3 bg-slate-50 rounded-xl p-3 space-y-2 border border-slate-100">
           <div className="flex flex-wrap gap-2">
-            {KIND_OPTIONS.map((opt) => (
+            {kindOptions.map((opt) => (
               <button
                 key={opt.value}
                 type="button"

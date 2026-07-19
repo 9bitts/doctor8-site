@@ -1,14 +1,23 @@
-export type ClinicalRecordKind = "ANAMNESIS" | "EVOLUTION" | "REPORT" | "OTHER";
+export type ClinicalRecordKind =
+  | "ANAMNESIS"
+  | "SESSION_NOTE"
+  | "SCALE"
+  | "EVOLUTION"
+  | "REPORT"
+  | "OTHER";
 
 export type RecordTimelineFilter =
   | "all"
   | "anamnesis"
+  | "session_note"
+  | "scale"
   | "evolution"
   | "report"
   | "exam"
   | "prescription"
   | "patient_shared";
 
+/** Kinds selectable in the generic clinical record form (not session/scale dedicated flows). */
 export const RECORD_KIND_OPTIONS: ClinicalRecordKind[] = [
   "ANAMNESIS",
   "EVOLUTION",
@@ -51,6 +60,8 @@ export function matchesTimelineFilter(
   if (filter === "all") return true;
   if (filter === "patient_shared") return isPatientSharedChartDocument(doc);
   if (filter === "anamnesis") return doc.recordKind === "ANAMNESIS";
+  if (filter === "session_note") return doc.recordKind === "SESSION_NOTE";
+  if (filter === "scale") return doc.recordKind === "SCALE";
   if (filter === "evolution") return doc.recordKind === "EVOLUTION";
   if (filter === "report") return doc.recordKind === "REPORT";
   if (filter === "exam") {
@@ -60,10 +71,47 @@ export function matchesTimelineFilter(
   return true;
 }
 
+/** CFP / psychology documents that are not anamnesis, session notes, or scales. */
+export function matchesPsychologyCfpDocument(doc: {
+  type: string;
+  recordKind?: ClinicalRecordKind | string | null;
+  sourceDocumentId?: string | null;
+}): boolean {
+  if (isPatientSharedChartDocument(doc)) return false;
+  const kind = doc.recordKind || "";
+  if (
+    kind === "ANAMNESIS" ||
+    kind === "SESSION_NOTE" ||
+    kind === "SCALE" ||
+    kind === "EVOLUTION"
+  ) {
+    return false;
+  }
+  if (
+    doc.type === "PRESCRIPTION" ||
+    doc.type === "EXAM_REQUEST" ||
+    doc.type === "EXAM_RESULT"
+  ) {
+    return false;
+  }
+  return (
+    doc.type === "CLINICAL_NOTE" ||
+    doc.type === "OTHER" ||
+    doc.type === "CERTIFICATE" ||
+    kind === "REPORT" ||
+    kind === "OTHER" ||
+    !kind
+  );
+}
+
 export function kindBadgeClass(kind: ClinicalRecordKind | string | null | undefined): string {
   switch (kind) {
     case "ANAMNESIS":
       return "bg-accent-50 text-accent-700 border-accent-200";
+    case "SESSION_NOTE":
+      return "bg-violet-50 text-violet-700 border-violet-200";
+    case "SCALE":
+      return "bg-fuchsia-50 text-fuchsia-700 border-fuchsia-200";
     case "EVOLUTION":
       return "bg-sky-50 text-sky-700 border-sky-200";
     case "REPORT":

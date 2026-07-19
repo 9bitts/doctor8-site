@@ -13,7 +13,7 @@ import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { useToast } from "@/components/ui/toast";
 import {
-  ArrowLeft, Plus, X, FileText, CheckCircle2, AlertCircle,
+  ArrowLeft, Plus, X, FileText, CheckCircle2, AlertCircle, AlertTriangle,
   Mail, Loader2, Pencil, Send, MapPin, MessageCircle, ExternalLink,
   RotateCw, Download, Video,
   Activity, Stethoscope, Syringe, LineChart, Grid3X3, Ear, Utensils, HeartPulse, Pill, FileCheck, Clock, BookMarked,
@@ -42,6 +42,10 @@ import DoctorClinicalHub, {
   tabToDoctorHubSection,
   type DoctorHubSectionId,
 } from "@/components/professional/DoctorClinicalHub";
+import PsychologistClinicalHub, {
+  tabToPsychologistHubSection,
+  type PsychologistHubSectionId,
+} from "@/components/psychologist/PsychologistClinicalHub";
 import ChartDocsList from "@/components/professional/ChartDocsList";
 import { buildEmissionReuseUrl } from "@/lib/emission-reuse-nav";
 import { openAuthenticatedPdf } from "@/lib/open-url-safely";
@@ -65,6 +69,7 @@ import {
   type ClinicalRecordKind,
   type RecordTimelineFilter,
   matchesTimelineFilter,
+  matchesPsychologyCfpDocument,
   suggestRecordKind,
   inferRecordKindFromCategory,
   findPinnedAnamnesis,
@@ -238,7 +243,8 @@ export default function RecordDetailClient({
   const legacyLabel = (type: string) => t(LEGACY_KEYS[type] || "doctype.OTHER");
   const [docs, setDocs] = useState<Doc[]>(initialDocuments);
   const [chartTab, setChartTab] = useState<"activity" | "records" | "evolution" | "diagnoses" | "vaccines" | "growth" | "dental" | "audio" | "nutrition" | "nursing" | "pharmacy">("activity");
-  const [hubOpenId, setHubOpenId] = useState<DoctorHubSectionId | null>("anamnesis");
+  const [doctorHubOpenId, setDoctorHubOpenId] = useState<DoctorHubSectionId | null>("anamnesis");
+  const [psychHubOpenId, setPsychHubOpenId] = useState<PsychologistHubSectionId | null>("anamnesis");
   const [recordFilter, setRecordFilter] = useState<RecordTimelineFilter>("all");
   const [showForm, setShowForm] = useState(false);
   const [editingDoc, setEditingDoc] = useState<Doc | null>(null);
@@ -420,31 +426,43 @@ export default function RecordDetailClient({
       setChartTab(tab as typeof chartTab);
       if (isDoctorPortal) {
         const hub = tabToDoctorHubSection(tab);
-        if (hub) setHubOpenId(hub);
+        if (hub) setDoctorHubOpenId(hub);
+      }
+      if (isPsychologistPortal) {
+        const hub = tabToPsychologistHubSection(tab);
+        if (hub) setPsychHubOpenId(hub);
       }
     }
-  }, [searchParams, isNutritionistPortal, isNursePortal, isPharmacistPortal, isDoctorPortal]);
+  }, [searchParams, isNutritionistPortal, isNursePortal, isPharmacistPortal, isDoctorPortal, isPsychologistPortal]);
 
   useEffect(() => {
     const recordId = searchParams.get("recordId");
     if (!recordId) return;
     setChartTab("records");
     setRecordFilter("all");
+    const doc = docs.find((d) => d.id === recordId);
     if (isDoctorPortal) {
-      const doc = docs.find((d) => d.id === recordId);
-      if (doc?.recordKind === "ANAMNESIS") setHubOpenId("anamnesis");
-      else if (doc && matchesTimelineFilter(doc, "prescription")) setHubOpenId("prescriptions");
-      else if (doc && matchesTimelineFilter(doc, "exam")) setHubOpenId("exams");
-      else if (doc && matchesTimelineFilter(doc, "report")) setHubOpenId("documents");
-      else if (doc && matchesTimelineFilter(doc, "patient_shared")) setHubOpenId("patient_shared");
-      else setHubOpenId("timeline");
+      if (doc?.recordKind === "ANAMNESIS") setDoctorHubOpenId("anamnesis");
+      else if (doc && matchesTimelineFilter(doc, "prescription")) setDoctorHubOpenId("prescriptions");
+      else if (doc && matchesTimelineFilter(doc, "exam")) setDoctorHubOpenId("exams");
+      else if (doc && matchesTimelineFilter(doc, "report")) setDoctorHubOpenId("documents");
+      else if (doc && matchesTimelineFilter(doc, "patient_shared")) setDoctorHubOpenId("patient_shared");
+      else setDoctorHubOpenId("timeline");
+    }
+    if (isPsychologistPortal) {
+      if (doc?.recordKind === "ANAMNESIS") setPsychHubOpenId("anamnesis");
+      else if (doc?.recordKind === "SESSION_NOTE") setPsychHubOpenId("session_notes");
+      else if (doc?.recordKind === "SCALE") setPsychHubOpenId("scales");
+      else if (doc && matchesTimelineFilter(doc, "patient_shared")) setPsychHubOpenId("patient_shared");
+      else if (doc && matchesPsychologyCfpDocument(doc)) setPsychHubOpenId("cfp_docs");
+      else setPsychHubOpenId("timeline");
     }
     setExpandedIds((prev) => new Set(prev).add(recordId));
     const timer = setTimeout(() => {
       document.getElementById(`record-${recordId}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
     }, 120);
     return () => clearTimeout(timer);
-  }, [searchParams, isDoctorPortal, docs]);
+  }, [searchParams, isDoctorPortal, isPsychologistPortal, docs]);
 
   useEffect(() => {
     if (!userId || editingDoc || !showForm) return;
@@ -528,7 +546,8 @@ export default function RecordDetailClient({
     }
     setChartTab("records");
     setRecordFilter("anamnesis");
-    if (isDoctorPortal) setHubOpenId("anamnesis");
+    if (isDoctorPortal) setDoctorHubOpenId("anamnesis");
+    if (isPsychologistPortal) setPsychHubOpenId("anamnesis");
     setShowForm(true);
   }
 
@@ -552,7 +571,7 @@ export default function RecordDetailClient({
     if (catId) setCategoryId(catId);
     setChartTab("records");
     setRecordFilter("exam");
-    if (isDoctorPortal) setHubOpenId("exams");
+    if (isDoctorPortal) setDoctorHubOpenId("exams");
     setShowForm(true);
   }
 
@@ -576,7 +595,7 @@ export default function RecordDetailClient({
       setRecordKind("EVOLUTION");
     }
     setChartTab("records");
-    if (isDoctorPortal) setHubOpenId("vitals");
+    if (isDoctorPortal) setDoctorHubOpenId("vitals");
     setShowForm(true);
   }
 
@@ -1091,14 +1110,22 @@ export default function RecordDetailClient({
 
   function scrollToRecord(id: string) {
     setRecordFilter("all");
+    const doc = docs.find((d) => d.id === id);
     if (isDoctorPortal) {
-      const doc = docs.find((d) => d.id === id);
-      if (doc?.recordKind === "ANAMNESIS") setHubOpenId("anamnesis");
-      else if (doc && matchesTimelineFilter(doc, "prescription")) setHubOpenId("prescriptions");
-      else if (doc && matchesTimelineFilter(doc, "exam")) setHubOpenId("exams");
-      else if (doc && matchesTimelineFilter(doc, "report")) setHubOpenId("documents");
-      else if (doc && matchesTimelineFilter(doc, "patient_shared")) setHubOpenId("patient_shared");
-      else setHubOpenId("timeline");
+      if (doc?.recordKind === "ANAMNESIS") setDoctorHubOpenId("anamnesis");
+      else if (doc && matchesTimelineFilter(doc, "prescription")) setDoctorHubOpenId("prescriptions");
+      else if (doc && matchesTimelineFilter(doc, "exam")) setDoctorHubOpenId("exams");
+      else if (doc && matchesTimelineFilter(doc, "report")) setDoctorHubOpenId("documents");
+      else if (doc && matchesTimelineFilter(doc, "patient_shared")) setDoctorHubOpenId("patient_shared");
+      else setDoctorHubOpenId("timeline");
+    }
+    if (isPsychologistPortal) {
+      if (doc?.recordKind === "ANAMNESIS") setPsychHubOpenId("anamnesis");
+      else if (doc?.recordKind === "SESSION_NOTE") setPsychHubOpenId("session_notes");
+      else if (doc?.recordKind === "SCALE") setPsychHubOpenId("scales");
+      else if (doc && matchesTimelineFilter(doc, "patient_shared")) setPsychHubOpenId("patient_shared");
+      else if (doc && matchesPsychologyCfpDocument(doc)) setPsychHubOpenId("cfp_docs");
+      else setPsychHubOpenId("timeline");
     }
     setExpandedIds((prev) => new Set(prev).add(id));
     setTimeout(() => {
@@ -1110,6 +1137,38 @@ export default function RecordDetailClient({
     [...docs]
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
       .filter((d) => matchesTimelineFilter(d, filter));
+
+  const psychCfpDocs = useMemo(
+    () =>
+      [...docs]
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        .filter((d) => matchesPsychologyCfpDocument(d)),
+    [docs],
+  );
+
+  const psychScaleRiskAlerts = useMemo(() => {
+    if (!isPsychologistPortal) return [] as { id: string; title: string; level: string; message: string }[];
+    const out: { id: string; title: string; level: string; message: string }[] = [];
+    for (const d of docs) {
+      if (d.recordKind !== "SCALE" || !d.content) continue;
+      try {
+        const parsed = JSON.parse(d.content) as {
+          risk?: { level?: string; messagePt?: string; messageEn?: string; messageEs?: string };
+        };
+        const risk = parsed?.risk;
+        if (!risk?.level || risk.level === "none" || risk.level === "low") continue;
+        const message =
+          lang === "en" ? (risk.messageEn || "") : lang === "es" ? (risk.messageEs || "") : (risk.messagePt || "");
+        out.push({ id: d.id, title: d.title, level: risk.level, message });
+      } catch {
+        /* ignore non-JSON */
+      }
+    }
+    return out.sort((a, b) => {
+      const rank = (l: string) => (l === "critical" ? 0 : l === "high" ? 1 : 2);
+      return rank(a.level) - rank(b.level);
+    });
+  }, [docs, isPsychologistPortal, lang]);
 
   const localeFull = localeOf(lang);
 
@@ -1276,7 +1335,7 @@ export default function RecordDetailClient({
                   </button>
                 )}
               </div>
-              {missingForRx.length > 0 && (
+              {!isPsychologistPortal && missingForRx.length > 0 && (
                 <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-2 inline-flex items-start gap-1.5">
                   <AlertCircle size={13} className="shrink-0 mt-0.5" />
                   <span>
@@ -1285,10 +1344,29 @@ export default function RecordDetailClient({
                   </span>
                 </p>
               )}
-              {chart.profileAllergies && (
+              {!isPsychologistPortal && chart.profileAllergies && (
                 <p className="text-xs text-rose-700 bg-rose-50 border border-rose-200 rounded-lg px-3 py-2 mb-2">
                   <strong>{t("rec.profileAllergieAlert")}</strong> {chart.profileAllergies}
                 </p>
+              )}
+              {isPsychologistPortal && psychScaleRiskAlerts.length > 0 && (
+                <div className="text-xs text-amber-900 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-2 space-y-1.5">
+                  <p className="font-semibold inline-flex items-center gap-1.5">
+                    <AlertTriangle size={13} className="shrink-0" />
+                    {t("psychHub.riskAlertTitle")}
+                  </p>
+                  {psychScaleRiskAlerts.slice(0, 3).map((a) => (
+                    <button
+                      key={a.id}
+                      type="button"
+                      onClick={() => scrollToRecord(a.id)}
+                      className="block w-full text-left text-amber-800 hover:text-amber-950"
+                    >
+                      <span className="font-medium">{a.title}</span>
+                      {a.message ? <span className="block mt-0.5 opacity-90">{a.message}</span> : null}
+                    </button>
+                  ))}
+                </div>
               )}
               {editingReg ? (
                 <div className="space-y-3 bg-slate-50 rounded-xl p-4">
@@ -1386,14 +1464,16 @@ export default function RecordDetailClient({
                   )}
                 </button>
                 <div className="flex flex-wrap gap-2">
-                  {!isDoctorPortal && (
+                  {!isDoctorPortal && !isPsychologistPortal && (
                     <button type="button" onClick={openAnamnesisForm} className="inline-flex items-center gap-1.5 text-xs font-medium text-violet-700 bg-violet-50 hover:bg-violet-100 border border-violet-200 px-3 py-1.5 rounded-lg transition">
                       <FileText size={13} /> {t("chartAct.anamnesis")}
                     </button>
                   )}
-                  <button type="button" onClick={openExamResultForm} className="inline-flex items-center gap-1.5 text-xs font-medium text-cyan-700 bg-cyan-50 hover:bg-cyan-100 border border-cyan-200 px-3 py-1.5 rounded-lg transition">
-                    <FileCheck size={13} /> {t("chartAct.examResult")}
-                  </button>
+                  {!isPsychologistPortal && (
+                    <button type="button" onClick={openExamResultForm} className="inline-flex items-center gap-1.5 text-xs font-medium text-cyan-700 bg-cyan-50 hover:bg-cyan-100 border border-cyan-200 px-3 py-1.5 rounded-lg transition">
+                      <FileCheck size={13} /> {t("chartAct.examResult")}
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={() => setShowEducationModal(true)}
@@ -1402,7 +1482,9 @@ export default function RecordDetailClient({
                     <BookMarked size={13} /> {t("libHub.sendEducation")}
                   </button>
                 </div>
-                <ChartClinicalActions chartId={chart.id} returnUrl={professionalPatientsHref(pathname, chart.id)} />
+                {!isPsychologistPortal && (
+                  <ChartClinicalActions chartId={chart.id} returnUrl={professionalPatientsHref(pathname, chart.id)} />
+                )}
                 {isOwner && <ReferralPanel chartId={chart.id} />}
               </div>
             )}
@@ -1413,14 +1495,10 @@ export default function RecordDetailClient({
           chartId={chart.id}
           initialTags={initialTags}
           readOnly={!canEdit}
-          suggestedAllergy={chart.profileAllergies}
+          suggestedAllergy={isPsychologistPortal ? null : chart.profileAllergies}
+          allowedKinds={isPsychologistPortal ? ["MEDICATION", "OTHER"] : undefined}
+          defaultKind={isPsychologistPortal ? "OTHER" : undefined}
         />
-
-        {isPsychologistPortal && isOwner && (
-          <div className="mt-4">
-            <PsychologyChartAuditPanel chartId={chart.id} />
-          </div>
-        )}
 
         {/* ── Etapa 3c: email & invite management (only meaningful when no account) ── */}
         {canEdit && !hasAccount && (
@@ -1566,8 +1644,8 @@ export default function RecordDetailClient({
 
       {isDoctorPortal ? (
         <DoctorClinicalHub
-          openId={hubOpenId}
-          onOpenChange={setHubOpenId}
+          openId={doctorHubOpenId}
+          onOpenChange={setDoctorHubOpenId}
           headerExtras={{
             anamnesis: {
               badge: pinnedAnamnesis ? (
@@ -1795,6 +1873,234 @@ export default function RecordDetailClient({
             ),
             dental: <OdontogramPanel chartId={chart.id} readOnly={!canEdit} />,
             audio: <AudiogramPanel chartId={chart.id} readOnly={!canEdit} />,
+          }}
+        />
+      ) : isPsychologistPortal ? (
+        <PsychologistClinicalHub
+          openId={psychHubOpenId}
+          onOpenChange={setPsychHubOpenId}
+          headerExtras={{
+            anamnesis: {
+              badge: pinnedAnamnesis ? (
+                <span className="text-[10px] font-semibold normal-case tracking-normal text-violet-700 bg-white/70 border border-violet-200 px-1.5 py-0.5 rounded-full">
+                  {t("timeline.pinnedAnamnesis")}
+                </span>
+              ) : null,
+              description: pinnedAnamnesis ? pinnedAnamnesis.title : t("psychHub.desc.anamnesis"),
+              cta: canEdit
+                ? pinnedAnamnesis
+                  ? { kind: "button", label: t("chart.addNewInformation"), onClick: openNewRecordForm }
+                  : { kind: "button", label: t("chart.createAnamnesis"), onClick: openAnamnesisForm }
+                : null,
+            },
+            session_notes: {
+              cta: canEdit
+                ? {
+                    kind: "link",
+                    label: t("psychHub.cta.newSession"),
+                    href: chartActionUrl("/psychologist/sessions", chart.id, {
+                      view: "create",
+                      returnUrl: chartReturnUrl,
+                    }),
+                  }
+                : null,
+            },
+            scales: {
+              cta: canEdit
+                ? {
+                    kind: "link",
+                    label: t("psychHub.cta.applyScale"),
+                    href: chartActionUrl("/psychologist/scales", chart.id, {
+                      view: "apply",
+                      returnUrl: chartReturnUrl,
+                    }),
+                  }
+                : null,
+            },
+            cfp_docs: {
+              cta: canEdit
+                ? {
+                    kind: "link",
+                    label: t("psychHub.cta.cfpDocument"),
+                    href: chartActionUrl("/psychologist/documents", chart.id, {
+                      returnUrl: chartReturnUrl,
+                    }),
+                  }
+                : null,
+            },
+          }}
+          panels={{
+            anamnesis: (
+              <div className="space-y-3">
+                {canEdit && (
+                  <Link
+                    href={chartActionUrl("/psychologist/anamnesis", chart.id, { returnUrl: chartReturnUrl })}
+                    className="inline-flex items-center gap-2 text-xs font-semibold text-violet-800 bg-white border border-violet-200 px-3 py-2 rounded-xl"
+                  >
+                    {t("psychHub.cta.digitalAnamnesis")}
+                  </Link>
+                )}
+                {pinnedAnamnesis ? (
+                  <>
+                    <PinnedAnamnesisCard
+                      title={pinnedAnamnesis.title}
+                      preview={pinnedAnamnesis.content ? formatRecordContentForDisplay(pinnedAnamnesis.content).slice(0, 200) : ""}
+                      dateLabel={new Date(pinnedAnamnesis.createdAt).toLocaleDateString(localeFull, {
+                        day: "2-digit", month: "long", year: "numeric",
+                      })}
+                      onView={() => scrollToRecord(pinnedAnamnesis.id)}
+                    />
+                    <ChartDocsList
+                      docs={docsForFilter("anamnesis")}
+                      totalDocs={docs.length}
+                      lang={lang}
+                      t={t}
+                      legacyLabel={legacyLabel}
+                      pinnedAnamnesisId={pinnedAnamnesis.id}
+                      expandedIds={expandedIds}
+                      setExpandedIds={setExpandedIds}
+                      shareStatus={shareStatus}
+                      sharingId={sharingId}
+                      copiedId={copiedId}
+                      canEdit={canEdit}
+                      patientName={`${displayFirstName} ${displayLastName}`}
+                      onCopy={handleCopy}
+                      onPrint={handlePrint}
+                      onEdit={openEditForm}
+                      onShare={handleShare}
+                      onInvite={handleInvite}
+                      onReuse={reuseEmissionDoc}
+                      onSign={signEmissionDoc}
+                      onDelivered={markEmissionDelivered}
+                      onPdfError={(msg) => toast.error(msg)}
+                      compact
+                    />
+                  </>
+                ) : (
+                  <p className="text-sm text-slate-600">{t("psychHub.desc.anamnesis")}</p>
+                )}
+              </div>
+            ),
+            timeline: (
+              <ChartActivityTimeline
+                chartId={chart.id}
+                events={initialActivityTimeline}
+                pathname={pathname}
+              />
+            ),
+            session_notes: (
+              <ChartDocsList
+                docs={docsForFilter("session_note")}
+                totalDocs={docs.length}
+                lang={lang}
+                t={t}
+                legacyLabel={legacyLabel}
+                pinnedAnamnesisId={pinnedAnamnesis?.id}
+                expandedIds={expandedIds}
+                setExpandedIds={setExpandedIds}
+                shareStatus={shareStatus}
+                sharingId={sharingId}
+                copiedId={copiedId}
+                canEdit={canEdit}
+                patientName={`${displayFirstName} ${displayLastName}`}
+                onCopy={handleCopy}
+                onPrint={handlePrint}
+                onEdit={openEditForm}
+                onShare={handleShare}
+                onInvite={handleInvite}
+                onReuse={reuseEmissionDoc}
+                onSign={signEmissionDoc}
+                onDelivered={markEmissionDelivered}
+                onPdfError={(msg) => toast.error(msg)}
+                compact
+              />
+            ),
+            scales: (
+              <ChartDocsList
+                docs={docsForFilter("scale")}
+                totalDocs={docs.length}
+                lang={lang}
+                t={t}
+                legacyLabel={legacyLabel}
+                pinnedAnamnesisId={pinnedAnamnesis?.id}
+                expandedIds={expandedIds}
+                setExpandedIds={setExpandedIds}
+                shareStatus={shareStatus}
+                sharingId={sharingId}
+                copiedId={copiedId}
+                canEdit={canEdit}
+                patientName={`${displayFirstName} ${displayLastName}`}
+                onCopy={handleCopy}
+                onPrint={handlePrint}
+                onEdit={openEditForm}
+                onShare={handleShare}
+                onInvite={handleInvite}
+                onReuse={reuseEmissionDoc}
+                onSign={signEmissionDoc}
+                onDelivered={markEmissionDelivered}
+                onPdfError={(msg) => toast.error(msg)}
+                compact
+              />
+            ),
+            cfp_docs: (
+              <ChartDocsList
+                docs={psychCfpDocs}
+                totalDocs={docs.length}
+                lang={lang}
+                t={t}
+                legacyLabel={legacyLabel}
+                pinnedAnamnesisId={pinnedAnamnesis?.id}
+                expandedIds={expandedIds}
+                setExpandedIds={setExpandedIds}
+                shareStatus={shareStatus}
+                sharingId={sharingId}
+                copiedId={copiedId}
+                canEdit={canEdit}
+                patientName={`${displayFirstName} ${displayLastName}`}
+                onCopy={handleCopy}
+                onPrint={handlePrint}
+                onEdit={openEditForm}
+                onShare={handleShare}
+                onInvite={handleInvite}
+                onReuse={reuseEmissionDoc}
+                onSign={signEmissionDoc}
+                onDelivered={markEmissionDelivered}
+                onPdfError={(msg) => toast.error(msg)}
+                compact
+              />
+            ),
+            patient_shared: (
+              <ChartDocsList
+                docs={docsForFilter("patient_shared")}
+                totalDocs={docs.length}
+                lang={lang}
+                t={t}
+                legacyLabel={legacyLabel}
+                pinnedAnamnesisId={pinnedAnamnesis?.id}
+                expandedIds={expandedIds}
+                setExpandedIds={setExpandedIds}
+                shareStatus={shareStatus}
+                sharingId={sharingId}
+                copiedId={copiedId}
+                canEdit={canEdit}
+                patientName={`${displayFirstName} ${displayLastName}`}
+                onCopy={handleCopy}
+                onPrint={handlePrint}
+                onEdit={openEditForm}
+                onShare={handleShare}
+                onInvite={handleInvite}
+                onReuse={reuseEmissionDoc}
+                onSign={signEmissionDoc}
+                onDelivered={markEmissionDelivered}
+                onPdfError={(msg) => toast.error(msg)}
+                compact
+              />
+            ),
+            audit: isOwner ? (
+              <PsychologyChartAuditPanel chartId={chart.id} />
+            ) : (
+              <p className="text-sm text-slate-500">{t("psychHub.desc.audit")}</p>
+            ),
           }}
         />
       ) : (
