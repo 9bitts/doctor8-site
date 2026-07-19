@@ -14,7 +14,7 @@ import { buildRootMetadata } from "@/lib/site-metadata";
 const poppins = Poppins({ subsets: ["latin"], weight: ["400", "500", "600", "700"] });
 
 export const metadata: Metadata = buildRootMetadata({
-  robots: { index: false, follow: false },
+  robots: { index: true, follow: true },
 });
 
 export const viewport: Viewport = {
