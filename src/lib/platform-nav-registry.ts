@@ -164,6 +164,7 @@ export const PATIENT_NAV_GROUPS: PlatformNavGroup[] = [
   {
     labelKey: "nav.group.myHealth",
     items: [
+      { href: "/patient/providers", labelKey: "nav.myProviders", roles: ["PATIENT"], iconKey: "Users" },
       { href: "/patient/history", labelKey: "nav.medicalHistory", roles: ["PATIENT"], iconKey: "FileText" },
       { href: "/patient/prescriptions", labelKey: "nav.myPrescriptions", roles: ["PATIENT"], iconKey: "Stethoscope" },
       { href: "/patient/exam-requests", labelKey: "nav.myExamRequests", roles: ["PATIENT"], iconKey: "FlaskConical" },
@@ -189,7 +190,6 @@ export const PATIENT_NAV_GROUPS: PlatformNavGroup[] = [
     labelKey: "nav.group.accountMore",
     items: [
       { href: "/patient/messages", labelKey: "nav.messages", roles: ["PATIENT"], iconKey: "MessageSquare" },
-      { href: "/patient/providers", labelKey: "nav.myProviders", roles: ["PATIENT"], iconKey: "Users" },
       { href: "/patient/club-doctor", labelKey: "nav.benefits", roles: ["PATIENT"], iconKey: "Sparkles" },
       { href: "/patient/account", labelKey: "nav.account", roles: ["PATIENT"], iconKey: "Settings" },
     ],
