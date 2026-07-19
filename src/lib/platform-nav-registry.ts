@@ -216,6 +216,7 @@ export const PROFESSIONAL_NAV_GROUPS: PlatformNavGroup[] = [
       { href: "/professional/jit", labelKey: "nav.jit", roles: ["PROFESSIONAL"], iconKey: "Radio" },
       { href: "/professional/appointments", labelKey: "nav.appointments", roles: ["PROFESSIONAL"], iconKey: "Calendar" },
       { href: "/professional/settings/availability", labelKey: "nav.availability", roles: ["PROFESSIONAL"], iconKey: "Calendar" },
+      { href: "/professional/settings/doctor-image", labelKey: "nav.doctorImage", roles: ["PROFESSIONAL"], iconKey: "Sparkles" },
     ],
   },
   {
@@ -544,6 +545,7 @@ export const PSYCHOANALYST_NAV_GROUPS: PlatformNavGroup[] = [
       { href: "/psychoanalyst", labelKey: "nav.dashboard", roles: ["PSYCHOANALYST"], iconKey: "LayoutDashboard" },
       { href: "/psychoanalyst/appointments", labelKey: "nav.appointments", roles: ["PSYCHOANALYST"], iconKey: "Calendar" },
       { href: "/psychoanalyst/settings/availability", labelKey: "nav.availability", roles: ["PSYCHOANALYST"], iconKey: "Calendar" },
+      { href: "/psychoanalyst/settings/doctor-image", labelKey: "nav.doctorImage", roles: ["PSYCHOANALYST"], iconKey: "Sparkles" },
     ],
   },
   {
@@ -591,6 +593,7 @@ export const INTEGRATIVE_THERAPIST_NAV_GROUPS: PlatformNavGroup[] = [
       { href: "/integrative-therapist", labelKey: "nav.dashboard", roles: ["INTEGRATIVE_THERAPIST"], iconKey: "LayoutDashboard" },
       { href: "/integrative-therapist/appointments", labelKey: "nav.appointments", roles: ["INTEGRATIVE_THERAPIST"], iconKey: "Calendar" },
       { href: "/integrative-therapist/settings/availability", labelKey: "nav.availability", roles: ["INTEGRATIVE_THERAPIST"], iconKey: "Calendar" },
+      { href: "/integrative-therapist/settings/doctor-image", labelKey: "nav.doctorImage", roles: ["INTEGRATIVE_THERAPIST"], iconKey: "Sparkles" },
     ],
   },
   {

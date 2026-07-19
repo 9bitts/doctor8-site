@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import ConsultPricingSettings from "@/components/professional/ConsultPricingSettings";
 import PracticeSettings from "@/components/PracticeSettings";
@@ -9,11 +10,9 @@ import HealthPlansSettings from "@/components/HealthPlansSettings";
 import LicenseDocumentsUpload from "@/components/LicenseDocumentsUpload";
 import OrganizationJoinSettings from "@/components/organization/OrganizationJoinSettings";
 import IncompleteSectionHighlight from "@/components/IncompleteSectionHighlight";
-import ProfileSettingsSection from "@/components/professional/ProfileSettingsSection";
-import DoctorImageSettings from "@/components/DoctorImageSettings";
 import { useRegistrationChecklist } from "@/hooks/useRegistrationChecklist";
 import { registrationChecklistHash } from "@/lib/provider-registration-complete";
-import { Loader2, CheckCircle2, Sparkles, User, Camera, X } from "lucide-react";
+import { Loader2, CheckCircle2, User, Camera, X } from "lucide-react";
 import { initials as nameInitials } from "@/lib/format-name";
 
 const PA_VARIANT = "psychoanalyst" as const;
@@ -23,6 +22,7 @@ const inputClass =
 
 export default function PsychoanalystSettingsPage() {
   const { t } = useI18n();
+  const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
   const readyRef = useRef(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -46,8 +46,6 @@ export default function PsychoanalystSettingsPage() {
   const [bio, setBio] = useState("");
   const [clinicCity, setClinicCity] = useState("");
   const [clinicCountry, setClinicCountry] = useState("");
-  const [doctorImageOpen, setDoctorImageOpen] = useState(false);
-
   const { providerChecklist, refresh: refreshRegistration } = useRegistrationChecklist();
   const missingProfessionalData = providerChecklist?.professionalData === false;
   const missingDocuments = providerChecklist?.verificationDocuments === false;
@@ -56,11 +54,14 @@ export default function PsychoanalystSettingsPage() {
   useEffect(() => {
     const hash = window.location.hash.replace("#", "");
     if (!hash) return;
-    if (hash === "section-doctor-image") setDoctorImageOpen(true);
+    if (hash === "section-doctor-image") {
+      router.replace("/psychoanalyst/settings/doctor-image");
+      return;
+    }
     requestAnimationFrame(() => {
       document.getElementById(hash)?.scrollIntoView({ behavior: "smooth", block: "start" });
     });
-  }, [loading]);
+  }, [loading, router]);
 
   useEffect(() => {
     async function load() {
@@ -380,18 +381,6 @@ export default function PsychoanalystSettingsPage() {
 
       {/* 3 — Perfil público */}
       <PublicListingSettings variant={PA_VARIANT} apiPath="/api/psychoanalyst/public-profile" />
-
-      <ProfileSettingsSection
-        id="section-doctor-image"
-        title={t("pa.settings.publicProfileTitle")}
-        description={t("pa.settings.publicProfileDesc")}
-        icon={<Sparkles size={18} />}
-        open={doctorImageOpen}
-        onToggle={() => setDoctorImageOpen((v) => !v)}
-        optional
-      >
-        <DoctorImageSettings variant={PA_VARIANT} apiPath="/api/psychoanalyst/public-profile" />
-      </ProfileSettingsSection>
 
       {/* 4 — Documentos de formação */}
       <LicenseDocumentsUpload variant={PA_VARIANT} incomplete={missingDocuments} />

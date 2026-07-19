@@ -16,8 +16,6 @@ import PublicListingSettings from "@/components/PublicListingSettings";
 import HealthPlansSettings from "@/components/HealthPlansSettings";
 import LicenseDocumentsUpload from "@/components/LicenseDocumentsUpload";
 import OrganizationJoinSettings from "@/components/organization/OrganizationJoinSettings";
-import ProfileSettingsSection from "@/components/professional/ProfileSettingsSection";
-import DoctorImageSettings from "@/components/DoctorImageSettings";
 import RegistrationRegionSelect from "@/components/auth/RegistrationRegionSelect";
 import IncompleteSectionHighlight from "@/components/IncompleteSectionHighlight";
 import { useRegistrationChecklist } from "@/hooks/useRegistrationChecklist";
@@ -35,7 +33,6 @@ import {
   X,
   Globe,
   Calendar,
-  Sparkles,
 } from "lucide-react";
 import { initials as nameInitials } from "@/lib/format-name";
 
@@ -73,8 +70,6 @@ export default function IntegrativeTherapistSettingsPage() {
   const [clinicZip, setClinicZip] = useState("");
   const [accountRegion, setAccountRegion] = useState<RegistrationRegionCode>("BR");
   const [regionError, setRegionError] = useState("");
-  const [doctorImageOpen, setDoctorImageOpen] = useState(false);
-
   const { providerChecklist, refresh: refreshRegistration } = useRegistrationChecklist();
   const missingProfessionalData = providerChecklist?.professionalData === false;
   const missingDocuments = providerChecklist?.verificationDocuments === false;
@@ -83,11 +78,14 @@ export default function IntegrativeTherapistSettingsPage() {
   useEffect(() => {
     const hash = window.location.hash.replace("#", "");
     if (!hash) return;
-    if (hash === "section-doctor-image") setDoctorImageOpen(true);
+    if (hash === "section-doctor-image") {
+      router.replace("/integrative-therapist/settings/doctor-image");
+      return;
+    }
     requestAnimationFrame(() => {
       document.getElementById(hash)?.scrollIntoView({ behavior: "smooth", block: "start" });
     });
-  }, [loading]);
+  }, [loading, router]);
 
   useEffect(() => {
     async function load() {
@@ -497,18 +495,6 @@ export default function IntegrativeTherapistSettingsPage() {
 
       {/* 4 — Perfil público */}
       <PublicListingSettings variant={IT_VARIANT} apiPath="/api/integrative-therapist/public-profile" />
-
-      <ProfileSettingsSection
-        id="section-doctor-image"
-        title={t("it.settings.publicProfileTitle")}
-        description={t("it.settings.publicProfileDesc")}
-        icon={<Sparkles size={18} />}
-        open={doctorImageOpen}
-        onToggle={() => setDoctorImageOpen((v) => !v)}
-        optional
-      >
-        <DoctorImageSettings variant={IT_VARIANT} apiPath="/api/integrative-therapist/public-profile" />
-      </ProfileSettingsSection>
 
       {/* 5 — Certificações */}
       <LicenseDocumentsUpload variant={IT_VARIANT} incomplete={missingDocuments} />

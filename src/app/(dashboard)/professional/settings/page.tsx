@@ -32,9 +32,8 @@ import { validateProfessionalLicense } from "@/lib/license-validation";
 import {
   Loader2, CheckCircle2, User, Award, Camera, X, Plus,
   LayoutTemplate, Globe, Building2, Calendar, DollarSign,
-  PenLine, CreditCard, MapPin, Sparkles,
+  PenLine, CreditCard, MapPin,
 } from "lucide-react";
-import DoctorImageSettings from "@/components/DoctorImageSettings";
 import IntegrativePracticeToggle from "@/components/professional/IntegrativePracticeToggle";
 
 const inputClass =
@@ -83,7 +82,6 @@ export default function ProfessionalSettings() {
     clinic: false,
     region: false,
     publicDetails: false,
-    doctorImage: false,
     healthPlans: false,
     practice: false,
   });
@@ -136,6 +134,10 @@ export default function ProfessionalSettings() {
 
   useEffect(() => {
     const hash = window.location.hash.replace("#", "");
+    if (hash === "section-doctor-image") {
+      router.replace("/professional/settings/doctor-image");
+      return;
+    }
     const map: Record<string, string> = {
       "section-identity": "identity",
       "section-credentials": "credentials",
@@ -147,7 +149,6 @@ export default function ProfessionalSettings() {
       "section-clinic": "clinic",
       "section-region": "region",
       "section-public-details": "publicDetails",
-      "section-doctor-image": "doctorImage",
       "section-health-plans": "healthPlans",
       "section-practice": "practice",
       [registrationChecklistHash("professionalData")]: "credentials",
@@ -162,7 +163,7 @@ export default function ProfessionalSettings() {
         el?.scrollIntoView({ behavior: "smooth", block: "start" });
       });
     }
-  }, []);
+  }, [router]);
 
   useEffect(() => {
     async function load() {
@@ -643,19 +644,6 @@ export default function ProfessionalSettings() {
           />
           <p className="text-xs text-slate-400">{t("set.sectionRegionHint")}</p>
         </div>
-      </ProfileSettingsSection>
-
-      {/* Doctor Image — public profile personalization */}
-      <ProfileSettingsSection
-        id="section-doctor-image"
-        title={t("set.sectionDoctorImage")}
-        description={t("set.sectionDoctorImageDesc")}
-        icon={<Sparkles size={18} />}
-        open={openSections.doctorImage}
-        onToggle={() => toggleSection("doctorImage")}
-        optional
-      >
-        <DoctorImageSettings apiPath="/api/professional/public-profile" />
       </ProfileSettingsSection>
 
       {/* Public profile details (analytics, embed, google) */}
