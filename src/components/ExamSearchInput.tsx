@@ -15,7 +15,7 @@ interface ExamSearchInputProps {
   placeholder: string;
   manualLabel: string;
   manualHint: string;
-  noResults: string;
+  emptyManualWarning: string;
   onAdd: (exam: ExamSelection | { name: string }) => void;
   onOpenChange?: (open: boolean) => void;
 }
@@ -37,7 +37,7 @@ export default function ExamSearchInput({
   placeholder,
   manualLabel,
   manualHint,
-  noResults,
+  emptyManualWarning,
   onAdd,
   onOpenChange,
 }: ExamSearchInputProps) {
@@ -45,6 +45,7 @@ export default function ExamSearchInput({
   const [results, setResults] = useState<ExamSelection[]>([]);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
+  const [showEmptyWarning, setShowEmptyWarning] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
 
@@ -90,7 +91,11 @@ export default function ExamSearchInput({
 
   function addManual() {
     const name = query.trim();
-    if (!name) return;
+    if (!name) {
+      setShowEmptyWarning(true);
+      return;
+    }
+    setShowEmptyWarning(false);
     onAdd({ name });
     setQuery("");
     setOpen(false);
@@ -112,7 +117,10 @@ export default function ExamSearchInput({
         />
         <input
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            if (showEmptyWarning) setShowEmptyWarning(false);
+          }}
           onFocus={() => {
             if (results.length) setOpen(true);
           }}
@@ -125,35 +133,32 @@ export default function ExamSearchInput({
           }}
           placeholder={placeholder}
           className={searchInputClass}
+          aria-invalid={showEmptyWarning}
         />
         {loading && (
           <Loader2 size={14} className="absolute right-3 top-1/2 -translate-y-1/2 animate-spin text-slate-400" />
         )}
       </div>
 
-      {open && query.length >= 2 && (
+      {open && query.length >= 2 && results.length > 0 && (
         <div className="absolute z-[100] left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-56 overflow-y-auto">
-          {results.length === 0 && !loading ? (
-            <p className="text-xs text-slate-400 px-3 py-3">{noResults}</p>
-          ) : (
-            results.map((r) => (
-              <button
-                key={r.id || r.code}
-                type="button"
-                onMouseDown={keepFocusOnPointerDown}
-                onClick={() => selectExam(r)}
-                className="w-full text-left px-3 py-2.5 hover:bg-brand-50 border-b border-slate-50 last:border-0"
-              >
-                {r.code ? (
-                  <span className="text-[11px] font-bold text-brand-600">{r.code}</span>
-                ) : null}
-                <p className={`text-sm text-slate-700 line-clamp-2 ${r.code ? "mt-0.5" : ""}`}>{r.name}</p>
-                {r.groupName && (
-                  <p className="text-[10px] text-slate-400 mt-0.5 uppercase tracking-wide">{r.groupName}</p>
-                )}
-              </button>
-            ))
-          )}
+          {results.map((r) => (
+            <button
+              key={r.id || r.code}
+              type="button"
+              onMouseDown={keepFocusOnPointerDown}
+              onClick={() => selectExam(r)}
+              className="w-full text-left px-3 py-2.5 hover:bg-brand-50 border-b border-slate-50 last:border-0"
+            >
+              {r.code ? (
+                <span className="text-[11px] font-bold text-brand-600">{r.code}</span>
+              ) : null}
+              <p className={`text-sm text-slate-700 line-clamp-2 ${r.code ? "mt-0.5" : ""}`}>{r.name}</p>
+              {r.groupName && (
+                <p className="text-[10px] text-slate-400 mt-0.5 uppercase tracking-wide">{r.groupName}</p>
+              )}
+            </button>
+          ))}
         </div>
       )}
 
@@ -164,7 +169,13 @@ export default function ExamSearchInput({
       >
         <Plus size={16} /> {manualLabel}
       </button>
-      <p className="text-xs text-slate-400 text-center mt-1">{manualHint}</p>
+      {showEmptyWarning ? (
+        <p className="text-xs text-rose-600 text-center mt-1.5" role="alert">
+          {emptyManualWarning}
+        </p>
+      ) : (
+        <p className="text-xs text-slate-400 text-center mt-1">{manualHint}</p>
+      )}
     </div>
   );
 }

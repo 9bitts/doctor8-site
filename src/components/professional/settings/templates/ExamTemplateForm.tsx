@@ -124,7 +124,7 @@ export function ExamTemplateForm({
           placeholder={t("rx.searchExam")}
           manualLabel={t("rx.addExamManual")}
           manualHint={t("rx.manualExamHint")}
-          noResults={t("rx.examNoResults")}
+          emptyManualWarning={t("rx.emptyManualWarning")}
           onAdd={addExam}
           onOpenChange={setExamSearchOpen}
         />
