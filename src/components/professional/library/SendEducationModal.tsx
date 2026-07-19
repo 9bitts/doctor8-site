@@ -110,7 +110,7 @@ export default function SendEducationModal({
               <h2 className="font-bold text-slate-800 flex items-center gap-2">
                 <BookOpen size={18} className="text-brand-500" /> {t("libHub.sendEducation")}
               </h2>
-              <p className="text-xs text-slate-500 mt-0.5">{patientName}</p>
+              <p className="text-xs font-semibold text-accent-500 mt-0.5">{patientName}</p>
               <p className="text-xs text-slate-400 mt-1">{t("libHub.sendEducationDesc")}</p>
             </div>
             <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600"><X size={20} /></button>
@@ -124,7 +124,7 @@ export default function SendEducationModal({
                 {suggestions.length > 0 && (
                   <section>
                     <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">
-                      {t("libHub.suggestedForChart")}
+                      {t("libHub.tabMine")}
                     </h3>
                     {suggestions.map((r) => (
                       <div key={r.id} className="flex items-center justify-between gap-2 p-3 rounded-xl border border-slate-100 mb-2">
@@ -172,7 +172,7 @@ export default function SendEducationModal({
                 )}
 
                 {suggestions.length === 0 && packs.length === 0 && (
-                  <p className="text-sm text-slate-400 text-center py-4">{t("libHub.noSuggestions")}</p>
+                  <p className="text-sm text-slate-400 text-center py-4">{t("libHub.noLibraryMaterials")}</p>
                 )}
               </>
             )}

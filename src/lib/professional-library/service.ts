@@ -230,42 +230,39 @@ export async function suggestResourcesForChart(
     cidCodes.push(...diagnoses.map((d) => d.cidCode));
   }
 
-  const matchedPacks = packsForProfession(owner.professionKey).filter((pack) => {
-    if (!pack.cidPrefixes?.length) return false;
-    return cidCodes.some((code) =>
-      pack.cidPrefixes!.some((prefix) => code.toUpperCase().startsWith(prefix.toUpperCase())),
-    );
-  });
+  const professionPacks = packsForProfession(owner.professionKey);
+  const matchedPackIds = new Set(
+    professionPacks
+      .filter((pack) => {
+        if (!pack.cidPrefixes?.length || !cidCodes.length) return false;
+        return cidCodes.some((code) =>
+          pack.cidPrefixes!.some((prefix) => code.toUpperCase().startsWith(prefix.toUpperCase())),
+        );
+      })
+      .map((p) => p.id),
+  );
 
-  const packIds = matchedPacks.map((p) => p.id);
-  const categoryFallback =
-    owner.professionKey === "psychoanalyst" || owner.professionKey === "integrative_therapist"
-      ? ["mental_health", "general", "integrative"]
-      : ["condition", "mental_health", "nutrition"];
-
+  // All saved library materials can be sent — CID only prioritizes matching packs.
   const resources = await db.resource.findMany({
     where: {
       ...resourceOwnerWhere(owner),
       active: true,
-      OR: [
-        ...(packIds.length ? [{ sourcePackId: { in: packIds } }] : []),
-        { category: { in: categoryFallback } },
-      ],
     },
     orderBy: { updatedAt: "desc" },
-    take: 12,
     include: {
       collection: { select: { title: true } },
       ...shareInc,
     },
   });
 
-  const packs = matchedPacks.map((pack) => ({
-    id: pack.id,
-    title: translate(lang, pack.titleKey),
-    description: translate(lang, pack.descKey),
-    itemCount: pack.items.length,
-  }));
+  const packs = [...professionPacks]
+    .sort((a, b) => Number(matchedPackIds.has(b.id)) - Number(matchedPackIds.has(a.id)))
+    .map((pack) => ({
+      id: pack.id,
+      title: translate(lang, pack.titleKey),
+      description: translate(lang, pack.descKey),
+      itemCount: pack.items.length,
+    }));
 
   return {
     cidCodes,
