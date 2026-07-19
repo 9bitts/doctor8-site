@@ -1167,3 +1167,98 @@ export async function sendAngelMissionReminderEmail({
     tag: "angel-mission-reminder",
   });
 }
+
+/** Magic-link + PIN invite for the patient to upload prior exam results. */
+export async function sendExamResultRequestEmail({
+  email,
+  patientName,
+  doctorName,
+  url,
+  pin,
+  expiresAt,
+  language,
+}: {
+  email: string;
+  patientName: string;
+  doctorName: string;
+  url: string;
+  pin: string;
+  expiresAt: Date;
+  language?: string;
+}) {
+  const lang = normEmailLang(language);
+  const emailLocale = EMAIL_LOCALE[lang];
+  const { dateStr } = formatEmailAppointmentDateTime(expiresAt, DEFAULT_TIME_ZONE, emailLocale);
+
+  const copy = {
+    pt: {
+      heading: "Envio de resultados de exame",
+      subject: `${doctorName} pediu seus exames anteriores`,
+      hi: (name: string) => `Olá${name ? `, ${name}` : ""}!`,
+      body: (doc: string) =>
+        `${doc} pediu que você envie resultados de exames anteriores pelo Doctor8, para avaliar se precisa de uma consulta.`,
+      pinLabel: "Seu código de acesso (PIN)",
+      cta: "Enviar exames",
+      expires: (d: string) => `Este link é válido até ${d}.`,
+      footnote: "Não compartilhe o PIN com outras pessoas. Se você não reconhece este pedido, ignore este e-mail.",
+      orCopy: "Ou copie o link:",
+    },
+    en: {
+      heading: "Upload exam results",
+      subject: `${doctorName} requested your prior exam results`,
+      hi: (name: string) => `Hi${name ? ` ${name}` : ""}!`,
+      body: (doc: string) =>
+        `${doc} asked you to upload prior exam results on Doctor8 so they can decide if a consultation is needed.`,
+      pinLabel: "Your access code (PIN)",
+      cta: "Upload exams",
+      expires: (d: string) => `This link is valid until ${d}.`,
+      footnote: "Do not share the PIN with others. If you do not recognize this request, ignore this email.",
+      orCopy: "Or copy the link:",
+    },
+    es: {
+      heading: "Envío de resultados de examen",
+      subject: `${doctorName} pidió sus exámenes anteriores`,
+      hi: (name: string) => `¡Hola${name ? `, ${name}` : ""}!`,
+      body: (doc: string) =>
+        `${doc} le pidió enviar resultados de exámenes anteriores en Doctor8 para evaluar si necesita una consulta.`,
+      pinLabel: "Su código de acceso (PIN)",
+      cta: "Enviar exámenes",
+      expires: (d: string) => `Este enlace es válido hasta ${d}.`,
+      footnote: "No comparta el PIN con otras personas. Si no reconoce esta solicitud, ignore este correo.",
+      orCopy: "O copie el enlace:",
+    },
+  }[lang];
+
+  const body = `
+    <p style="color:#1a2a3a;font-size:16px;">${copy.hi(patientName)}</p>
+    <p style="color:#4a6070;font-size:14px;line-height:1.6;">${copy.body(doctorName)}</p>
+    <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:12px;padding:16px 20px;margin:24px 0;text-align:center;">
+      <p style="color:#0369a1;font-size:12px;font-weight:600;margin:0 0 6px;">${copy.pinLabel}</p>
+      <p style="color:#0c4a6e;font-size:28px;font-weight:800;letter-spacing:0.2em;margin:0;">${pin}</p>
+    </div>
+    <div style="text-align:center;margin:28px 0;">
+      <a href="${url}" style="background:#0891b2;color:white;padding:14px 36px;border-radius:12px;text-decoration:none;font-weight:700;font-size:15px;display:inline-block;">
+        ${copy.cta}
+      </a>
+    </div>
+    <p style="color:#6b7280;font-size:13px;line-height:1.6;">${copy.expires(dateStr)}</p>
+    <p style="color:#6b7280;font-size:13px;line-height:1.6;">${copy.footnote}</p>
+    <p style="color:#9ca3af;font-size:11px;margin-top:24px;word-break:break-all;">
+      ${copy.orCopy} <a href="${url}" style="color:#0a4d6e;">${url}</a>
+    </p>`;
+
+  await sendTransactionalEmail({
+    to: email,
+    subject: copy.subject,
+    html: emailShell(copy.heading, body, lang),
+    text: [
+      copy.hi(patientName),
+      copy.body(doctorName),
+      `${copy.pinLabel}: ${pin}`,
+      `${copy.cta}: ${url}`,
+      copy.expires(dateStr),
+      copy.footnote,
+    ].join("\n\n"),
+    tag: "exam-result-request",
+  });
+}

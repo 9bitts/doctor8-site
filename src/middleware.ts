@@ -93,6 +93,7 @@ const PUBLIC_ROUTES = [
   "/embed/",       // embeddable booking widget (iframe)
   "/share/",     // shared medical records (token-based)
   "/anamnese-psi/", // psychology digital anamnesis (token-based)
+  "/exame-resultado/", // prior exam-result upload (magic link + PIN)
   "/compliance/",   // public compliance pages
   "/psicologos",    // psychology marketing landing
   "/empresas/login",

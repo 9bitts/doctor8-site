@@ -2463,6 +2463,11 @@ export default function RecordDetailClient({
             view: "exam",
             returnUrl: chartReturnUrl,
           })}
+          chartId={chart.id}
+          patientName={`${displayFirstName} ${displayLastName}`.trim()}
+          patientPhone={reg.phone || chart.phone}
+          patientCountry={reg.country || chart.country}
+          patientEmail={chartEmail}
           lang={lang}
           t={t}
           onClose={() => setShowExamResultsModal(false)}

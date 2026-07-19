@@ -117,6 +117,8 @@ export const RATE_LIMITS = {
   partnerEmailCheckToken: { limit: 120, windowMs: 60 * 1000 },
   /** Public psychology anamnesis form (per IP) */
   anamnesisPublicIp: { limit: 30, windowMs: 60 * 60 * 1000 },
+  /** Public exam-result magic-link upload (per IP) */
+  examResultRequestPublicIp: { limit: 40, windowMs: 60 * 60 * 1000 },
   /** Clinical literature search (PubMed + AI) per provider user */
   literatureSearch: { limit: 20, windowMs: 60 * 60 * 1000 },
 } as const;

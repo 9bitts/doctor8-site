@@ -59,6 +59,7 @@ const TITLE_TO_BODY_KEY: Record<string, string> = {
   "notif.prescription.title": "notif.prescription.body",
   "notif.exam.title": "notif.exam.body",
   "notif.document.title": "notif.document.body",
+  "notif.examResultUploaded.title": "notif.examResultUploaded.body",
 };
 
 const LEGACY_TITLE_KEYS: Record<string, string> = {

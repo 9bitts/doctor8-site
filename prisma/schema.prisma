@@ -62,6 +62,13 @@ enum PsychologyAnamnesisStatus {
   EXPIRED
 }
 
+enum ExamResultRequestStatus {
+  PENDING
+  COMPLETED
+  EXPIRED
+  REVOKED
+}
+
 enum AppointmentStatus {
   PENDING
   CONFIRMED
@@ -954,6 +961,7 @@ model ProfessionalProfile {
   chartSharesReceived   PatientRecordShare[] @relation("ChartSharesReceived")
   chartInvitesSent      PatientChartInvite[]
   psychologyAnamnesisInvites PsychologyAnamnesisInvite[]
+  examResultRequests    ExamResultRequest[]
   googleCalendar        ProfessionalGoogleCalendar?
   vaccinationsRecorded  PatientVaccination[]
   odontogramsRecorded   PatientOdontogram[]
@@ -2050,6 +2058,7 @@ model PatientRecord {
   colleagueShares  PatientRecordShare[]
   chartInvites     PatientChartInvite[]
   psychologyAnamnesisInvites PsychologyAnamnesisInvite[]
+  examResultRequests ExamResultRequest[]
   nutritionAnthropometry NutritionAnthropometryEntry[]
   nutritionMealPlans     NutritionMealPlan[]
   nutritionIntakeForms   NutritionIntakeForm[]
@@ -2118,6 +2127,31 @@ model PsychologyAnamnesisInvite {
   expiresAt       DateTime
   completedAt     DateTime?
   createdAt       DateTime                  @default(now())
+
+  @@index([token])
+  @@index([patientRecordId])
+  @@index([professionalId])
+  @@index([status])
+}
+
+/// Magic-link + PIN invite for a patient to upload prior exam results without an account.
+model ExamResultRequest {
+  id              String                   @id @default(cuid())
+  token           String                   @unique
+  patientRecordId String
+  patientRecord   PatientRecord            @relation(fields: [patientRecordId], references: [id], onDelete: Cascade)
+  professionalId  String
+  professional    ProfessionalProfile      @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+  status          ExamResultRequestStatus  @default(PENDING)
+  viewPinHash     String
+  viewCount       Int                      @default(0)
+  maxViews        Int                      @default(40)
+  uploadCount     Int                      @default(0)
+  maxUploads      Int                      @default(5)
+  note            String?                  @db.Text // @encrypted optional doctor message
+  expiresAt       DateTime
+  completedAt     DateTime?
+  createdAt       DateTime                 @default(now())
 
   @@index([token])
   @@index([patientRecordId])
