@@ -1,6 +1,6 @@
 // src/app/(dashboard)/professional/page.tsx
-// Professional home dashboard — reorganized with JIT priority, clickable stats,
-// grouped quick actions, and verified navigation targets.
+// Professional home dashboard — JIT priority, compact quick access from nav registry,
+// clickable stats, and verified navigation targets.
 
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -10,14 +10,14 @@ import { translate, localeOf, greetingKey, Lang } from "@/lib/i18n/translations"
 import { getUserLang } from "@/lib/i18n/server-lang";
 import {
   Calendar, Users, DollarSign, Clock, ChevronRight, Video, Radio,
-  Inbox, MessageSquare, Stethoscope, BookOpen, UserCog, Settings,
-  TrendingUp, Activity, Sparkles, FileSignature, Sprout,
+  Inbox, MessageSquare, TrendingUp, FileSignature, Sprout,
 } from "lucide-react";
 import Link from "next/link";
 import MarketPricingCard from "@/components/professional/MarketPricingCard";
 import DoctorConnectionBanner from "@/components/professional/DoctorConnectionBanner";
 import HumanitarianVolunteerBanner from "@/components/humanitarian/HumanitarianVolunteerBanner";
 import ProfessionalInsightsBanner from "@/components/professional/ProfessionalInsightsBanner";
+import ProfessionalQuickAccess from "@/components/professional/ProfessionalQuickAccess";
 import { getActiveCampaignForRegion } from "@/lib/humanitarian/notify";
 import { getVolunteerDashboardState } from "@/lib/humanitarian/volunteer-dashboard";
 import { getProfessionalDashboardInsights } from "@/lib/professional-dashboard-insights";
@@ -233,42 +233,6 @@ export default async function ProfessionalDashboard() {
   const fmtCurrency = (cents: number) =>
     formatMoneyCents(cents, professional.currency, locale);
 
-  const quickGroups = [
-    {
-      title: t("prodash.quick.group.attend"),
-      items: [
-        { href: "/professional/jit", labelKey: "nav.jit", icon: <Radio size={20} />, accent: "bg-brand-50 hover:bg-brand-100 text-brand-600 border-brand-200" },
-        { href: "/professional/appointments", labelKey: "nav.appointments", icon: <Calendar size={20} />, accent: "bg-brand-50 hover:bg-brand-100 text-brand-600 border-brand-200" },
-        { href: "/professional/settings/availability", labelKey: "nav.availability", icon: <Clock size={20} />, accent: "bg-brand-50 hover:bg-brand-100 text-brand-600 border-brand-200" },
-      ],
-    },
-    {
-      title: t("prodash.quick.group.patients"),
-      items: [
-        { href: "/professional/patients", labelKey: "nav.patients", icon: <Users size={20} />, accent: "bg-brand-50 hover:bg-brand-100 text-brand-600 border-brand-200" },
-        { href: "/professional/shared", labelKey: "nav.sharedWithMe", icon: <Inbox size={20} />, accent: "bg-amber-50 hover:bg-amber-100 text-amber-700 border-amber-200", badge: sharedPending || undefined },
-      ],
-    },
-    {
-      title: t("prodash.quick.group.clinical"),
-      items: [
-        { href: "/professional/prescriptions", labelKey: "nav.prescriptions", icon: <Stethoscope size={20} />, accent: "bg-accent-50 hover:bg-accent-100 text-accent-600 border-accent-100" },
-        { href: PROFESSIONAL_INTEGRATIVE_HUB, labelKey: "nav.integrative", icon: <Sprout size={20} />, accent: "bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-200" },
-        { href: "/professional/resources", labelKey: "nav.library", icon: <BookOpen size={20} />, accent: "bg-brand-50 hover:bg-brand-100 text-brand-600 border-brand-200" },
-      ],
-    },
-    {
-      title: t("prodash.quick.group.manage"),
-      items: [
-        { href: "/professional/financeiro", labelKey: "nav.financeiro", icon: <TrendingUp size={20} />, accent: "bg-brand-50 hover:bg-brand-100 text-brand-600 border-brand-200" },
-        { href: "/professional/doctor-connection", labelKey: "nav.doctorConnection", icon: <Sparkles size={20} />, accent: "bg-brand-50 hover:bg-brand-100 text-brand-600 border-brand-200" },
-        { href: "/professional/messages", labelKey: "nav.messages", icon: <MessageSquare size={20} />, accent: "bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200", badge: unreadMessages || undefined },
-        { href: "/professional/settings", labelKey: "nav.myProfile", icon: <UserCog size={20} />, accent: "bg-orange-50 hover:bg-orange-100 text-orange-700 border-orange-200" },
-        { href: "/professional/account", labelKey: "nav.account", icon: <Settings size={20} />, accent: "bg-zinc-50 hover:bg-zinc-100 text-zinc-700 border-zinc-200" },
-      ],
-    },
-  ];
-
   const displayName = `${professional.firstName} ${professional.lastName}`.trim();
   const greetingText = t("prodash.greetingName")
     .replace("{{greeting}}", t(greetingKey()))
@@ -343,6 +307,12 @@ export default async function ProfessionalDashboard() {
           </div>
         </div>
       </Link>
+
+      <ProfessionalQuickAccess
+        t={t}
+        sharedPending={sharedPending}
+        unreadMessages={unreadMessages}
+      />
 
       <ProfessionalInsightsBanner insights={dashboardInsights} />
 
@@ -510,36 +480,6 @@ export default async function ProfessionalDashboard() {
             />
           </div>
         </Section>
-
-        {/* Quick actions — grouped */}
-        <div className="lg:col-span-2">
-          <Section title={t("prodash.quick.title")} icon={<Activity size={16} />} viewAllLabel={t("common.viewAll")}>
-            <div className="space-y-6">
-              {quickGroups.map((group) => (
-                <div key={group.title}>
-                  <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">{group.title}</p>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-                    {group.items.map((item) => (
-                      <Link
-                        key={item.href}
-                        href={item.href}
-                        className={`relative flex flex-col items-center gap-2 p-4 rounded-xl text-center transition font-medium text-sm border ${item.accent}`}
-                      >
-                        {item.badge ? (
-                          <span className="absolute top-2 right-2 min-w-[1.25rem] h-5 px-1 rounded-full bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center">
-                            {item.badge > 9 ? "9+" : item.badge}
-                          </span>
-                        ) : null}
-                        {item.icon}
-                        <span className="leading-tight">{t(item.labelKey)}</span>
-                      </Link>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </Section>
-        </div>
       </div>
     </div>
   );
