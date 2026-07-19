@@ -28,7 +28,7 @@ interface ExamItem {
   examItems: string[];
   examNotes: string;
   cid: string;
-  doctor: { name: string; specialty: string };
+  doctor: { professionalId: string; name: string; specialty: string };
 }
 
 export default function PatientExamRequestsPage() {
@@ -197,19 +197,32 @@ export default function PatientExamRequestsPage() {
                     </button>
                   )}
                 </div>
-                <button
-                  type="button"
-                  onClick={() => downloadPdf(p.id)}
-                  disabled={downloadingId === p.id}
-                  className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-60 text-white px-4 py-2 rounded-xl text-sm font-semibold transition shrink-0"
-                >
-                  {downloadingId === p.id ? (
-                    <Loader2 size={14} className="animate-spin" />
-                  ) : (
-                    <Download size={14} />
-                  )}
-                  {t("myexam.downloadPDF")}
-                </button>
+                <div className="flex flex-col gap-2 shrink-0">
+                  <Link
+                    href={
+                      p.doctor.professionalId
+                        ? `/patient/documents?new=1&type=EXAM_RESULT&shareWithProfessionalId=${encodeURIComponent(p.doctor.professionalId)}&doctorName=${encodeURIComponent(p.doctor.name)}`
+                        : "/patient/documents?new=1&type=EXAM_RESULT"
+                    }
+                    className="flex items-center justify-center gap-2 bg-cyan-600 hover:bg-cyan-500 text-white px-4 py-2 rounded-xl text-sm font-semibold transition"
+                  >
+                    <FileCheck size={14} />
+                    {t("myexam.sendResultForRequest")}
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => downloadPdf(p.id)}
+                    disabled={downloadingId === p.id}
+                    className="flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-60 text-white px-4 py-2 rounded-xl text-sm font-semibold transition"
+                  >
+                    {downloadingId === p.id ? (
+                      <Loader2 size={14} className="animate-spin" />
+                    ) : (
+                      <Download size={14} />
+                    )}
+                    {t("myexam.downloadPDF")}
+                  </button>
+                </div>
               </div>
             </div>
           ))}

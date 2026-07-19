@@ -15,10 +15,13 @@ import { useI18n } from "@/lib/i18n/I18nProvider";
 import {
   buildWhatsAppUrl,
   getThemeTokens,
+  parseVideoEmbedUrl,
   themeCssVars,
   type DoctorImageData,
   type SocialLinkKey,
 } from "@/lib/doctor-image";
+import type { DoctorImageBookingPreview } from "@/lib/doctor-image-booking-preview";
+import { localeOf } from "@/lib/i18n/translations";
 
 function SocialIcon({ platform }: { platform: SocialLinkKey }) {
   const size = 16;
@@ -390,24 +393,54 @@ export function PublicDoctorImageBlocks({ blocks }: { blocks: DoctorImageData["c
   );
 }
 
-/** Mini live preview for the settings editor. */
+function fmtPreviewPrice(cents: number, currency: string, locale: string): string {
+  try {
+    return new Intl.NumberFormat(locale, {
+      style: "currency",
+      currency: currency || "BRL",
+    }).format(cents / 100);
+  } catch {
+    return `R$ ${(cents / 100).toFixed(2)}`;
+  }
+}
+
+/** Full live preview for the settings editor — mirrors public Doctor Image content. */
 export function DoctorImageLivePreview({
   data,
+  bookingPreview = null,
   name = "Dr. Nome",
   specialty = "Especialidade",
 }: {
   data: DoctorImageData;
+  bookingPreview?: DoctorImageBookingPreview | null;
   name?: string;
   specialty?: string;
 }) {
+  const { lang, t } = useI18n();
+  const locale = localeOf(lang);
   const tokens = getThemeTokens(data.themePreset, data.accentColor);
+  const initials =
+    name
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((p) => p[0])
+      .join("")
+      .toUpperCase() || "DR";
+  const socialEntries = Object.entries(data.socialLinks).filter(([, url]) => url);
+  const blocks = data.contentBlocks.filter((b) => b.title.trim());
+  const videoEmbed = parseVideoEmbedUrl(data.videoUrl);
+  const videoSrc = typeof videoEmbed === "string" ? videoEmbed : null;
+  const chipClass =
+    "inline-flex items-center gap-1 text-[10px] font-medium px-2 py-1 border border-slate-200 text-slate-700";
+
   return (
     <div
       className="rounded-2xl border border-slate-200 overflow-hidden shadow-sm"
       style={themeCssVars(tokens)}
     >
       <div
-        className="p-3 min-h-[220px]"
+        className="p-2.5 max-h-[min(70vh,640px)] overflow-y-auto"
         style={{
           background: "var(--pub-page-bg)",
           backgroundImage: "var(--pub-page-bg-image)",
@@ -423,71 +456,274 @@ export function DoctorImageLivePreview({
             boxShadow: "var(--pub-card-shadow)",
           }}
         >
+          {/* Cover / hero strip */}
           {data.coverImageUrl ? (
-            <div className="h-16 relative">
+            <div className="h-20 sm:h-24 relative">
               <img src={data.coverImageUrl} alt="" className="w-full h-full object-cover" />
               <div className="absolute inset-0" style={{ background: "var(--pub-hero-overlay)" }} />
             </div>
           ) : (
             <div
-              className="h-10"
+              className="h-12"
               style={{
                 background:
                   "linear-gradient(135deg, var(--pub-accent-soft), var(--pub-accent-light))",
               }}
             />
           )}
-          <div className="p-3 -mt-5 relative">
-            <div
-              className="w-12 h-12 rounded-xl ring-2 ring-white flex items-center justify-center text-white text-sm font-bold mb-2"
-              style={{ background: "var(--pub-accent)" }}
-            >
-              {name
-                .split(/\s+/)
-                .filter(Boolean)
-                .slice(0, 2)
-                .map((p) => p[0])
-                .join("")
-                .toUpperCase() || "DR"}
+
+          <div className="p-3 -mt-6 relative space-y-3">
+            {/* Identity */}
+            <div>
+              <div
+                className="w-14 h-14 rounded-xl ring-2 ring-white flex items-center justify-center text-white text-sm font-bold mb-2 shadow-sm"
+                style={{
+                  background: "var(--pub-accent)",
+                  borderRadius: "var(--pub-card-radius)",
+                }}
+              >
+                {initials}
+              </div>
+              <p
+                className="text-sm text-slate-900"
+                style={{
+                  fontFamily: "var(--pub-heading-font)",
+                  fontWeight: "var(--pub-heading-weight)" as CSSProperties["fontWeight"],
+                }}
+              >
+                {name}
+              </p>
+              <p className="text-xs font-medium" style={{ color: "var(--pub-accent)" }}>
+                {specialty}
+              </p>
             </div>
-            <p
-              className="text-sm text-slate-900 truncate"
-              style={{
-                fontFamily: "var(--pub-heading-font)",
-                fontWeight: "var(--pub-heading-weight)" as CSSProperties["fontWeight"],
-              }}
-            >
-              {name}
-            </p>
-            <p className="text-xs font-medium" style={{ color: "var(--pub-accent)" }}>
-              {specialty}
-            </p>
+
             {data.headline && (
               <p
-                className="mt-2 text-[11px] italic text-slate-600 pl-2 line-clamp-2"
-                style={{ borderLeft: "2px solid var(--pub-accent)" }}
+                className="text-[11px] italic text-slate-600 pl-2 leading-relaxed whitespace-pre-wrap"
+                style={{
+                  borderLeft: "3px solid var(--pub-accent)",
+                  fontFamily: "var(--pub-heading-font)",
+                }}
               >
                 {data.headline}
               </p>
             )}
-            <div className="mt-3 flex gap-1.5 flex-wrap">
+
+            {/* Contact + social */}
+            {(data.website || data.whatsappNumber || socialEntries.length > 0) && (
+              <div className="flex flex-wrap gap-1.5 pt-1">
+                {data.website && (
+                  <span
+                    className={chipClass}
+                    style={{ borderRadius: "var(--pub-chip-radius)" }}
+                    title={data.website}
+                  >
+                    <Globe size={11} /> {t("doctorImagePub.website")}
+                  </span>
+                )}
+                {data.whatsappNumber && (
+                  <span
+                    className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-1 border border-emerald-200 bg-emerald-50 text-emerald-700"
+                    style={{ borderRadius: "var(--pub-chip-radius)" }}
+                  >
+                    <MessageCircle size={11} /> WhatsApp
+                  </span>
+                )}
+                {socialEntries.map(([platform]) => (
+                  <span
+                    key={platform}
+                    className={`${chipClass} capitalize`}
+                    style={{ borderRadius: "var(--pub-chip-radius)" }}
+                  >
+                    <SocialIcon platform={platform as SocialLinkKey} />
+                    {t(`doctorImage.social.${platform}`)}
+                  </span>
+                ))}
+              </div>
+            )}
+
+            {/* Gallery */}
+            {data.galleryImages.length > 0 && (
+              <div className="pt-2 border-t border-slate-100 space-y-1.5">
+                <p className="text-[10px] font-medium text-slate-400">
+                  {t("doctorImage.gallery")} ({data.galleryImages.length})
+                </p>
+                <div className="grid grid-cols-3 gap-1.5">
+                  {data.galleryImages.map((img, i) => (
+                    <div
+                      key={i}
+                      className="aspect-square overflow-hidden border border-slate-100"
+                      style={{ borderRadius: "calc(var(--pub-cover-radius) * 0.6)" }}
+                    >
+                      <img src={img} alt="" className="w-full h-full object-cover" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Video */}
+            {videoSrc && (
+              <div className="pt-2 border-t border-slate-100 space-y-1.5">
+                <p className="text-[10px] font-medium text-slate-400">{t("doctorImage.video")}</p>
+                <div
+                  className="aspect-video overflow-hidden border border-slate-100 bg-slate-900"
+                  style={{ borderRadius: "calc(var(--pub-cover-radius) * 0.6)" }}
+                >
+                  <iframe
+                    src={videoSrc}
+                    title="Video preview"
+                    className="w-full h-full pointer-events-none"
+                    tabIndex={-1}
+                    allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Content blocks */}
+            {blocks.length > 0 && (
+              <div className="pt-2 border-t border-slate-100 space-y-2.5">
+                {blocks.map((block) => (
+                  <article
+                    key={block.id}
+                    className="rounded-lg p-2.5"
+                    style={{ background: "var(--pub-accent-light)" }}
+                  >
+                    <h3
+                      className="text-xs mb-1"
+                      style={{
+                        color: "var(--pub-accent)",
+                        fontFamily: "var(--pub-heading-font)",
+                        fontWeight: "var(--pub-heading-weight)" as CSSProperties["fontWeight"],
+                      }}
+                    >
+                      {block.title}
+                    </h3>
+                    {block.body && (
+                      <p className="text-[11px] text-slate-600 leading-relaxed whitespace-pre-wrap line-clamp-4">
+                        {block.body}
+                      </p>
+                    )}
+                  </article>
+                ))}
+              </div>
+            )}
+
+            {/* Services & prices */}
+            {bookingPreview && (
+              <div className="pt-2 border-t border-slate-100 space-y-2">
+                <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">
+                  {t("pubPhase3.servicesTitle")}
+                </p>
+                {bookingPreview.services.length > 0 ? (
+                  <ul className="space-y-1.5">
+                    {bookingPreview.services.map((svc) => (
+                      <li
+                        key={svc.id}
+                        className="flex items-center justify-between gap-2 text-[11px]"
+                      >
+                        <span className="text-slate-700 truncate">{svc.name}</span>
+                        <span
+                          className="font-semibold shrink-0"
+                          style={{ color: "var(--pub-accent)" }}
+                        >
+                          {svc.priceCents === 0
+                            ? t("consultServices.volunteerPrice")
+                            : svc.priceCents != null
+                              ? fmtPreviewPrice(
+                                  svc.priceCents,
+                                  svc.currency || bookingPreview.currency,
+                                  locale
+                                )
+                              : t("pubPhase3.priceUnavailable")}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : bookingPreview.consultPrice > 0 ? (
+                  <div className="flex items-center justify-between text-[11px]">
+                    <span className="text-slate-600">{t("pub.consultPrice")}</span>
+                    <span className="font-semibold" style={{ color: "var(--pub-accent)" }}>
+                      {fmtPreviewPrice(
+                        bookingPreview.consultPrice,
+                        bookingPreview.currency,
+                        locale
+                      )}
+                    </span>
+                  </div>
+                ) : (
+                  <p className="text-[10px] text-slate-400 italic">
+                    {t("doctorImage.previewNoPrices")}
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Upcoming slots */}
+            {bookingPreview && (
+              <div className="pt-2 border-t border-slate-100 space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">
+                    {t("pub.bookTitle")}
+                  </p>
+                  {bookingPreview.services[0]?.priceCents != null &&
+                    bookingPreview.services[0].priceCents > 0 && (
+                      <span
+                        className="text-[11px] font-bold"
+                        style={{ color: "var(--pub-accent)" }}
+                      >
+                        {fmtPreviewPrice(
+                          bookingPreview.services[0].priceCents,
+                          bookingPreview.services[0].currency || bookingPreview.currency,
+                          locale
+                        )}
+                      </span>
+                    )}
+                </div>
+                {bookingPreview.days.some((d) => d.slots.some((s) => s.available)) ? (
+                  <div className="space-y-2">
+                    {bookingPreview.days.map((day) => {
+                      const available = day.slots.filter((s) => s.available);
+                      if (!available.length) return null;
+                      return (
+                        <div key={day.date}>
+                          <p className="text-[10px] font-medium text-slate-500 mb-1">
+                            {day.label}
+                          </p>
+                          <div className="flex flex-wrap gap-1">
+                            {available.map((slot) => (
+                              <span
+                                key={slot.datetime}
+                                className="text-[10px] px-2 py-1 border border-slate-200 text-slate-700 bg-white"
+                                style={{ borderRadius: "var(--pub-chip-radius)" }}
+                              >
+                                {slot.time}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p className="text-[10px] text-slate-400 italic">{t("pub.noSlots")}</p>
+                )}
+              </div>
+            )}
+
+            {/* CTA mirrors public booking accent */}
+            <div className="pt-1">
               <span
-                className="text-[10px] px-2 py-0.5 text-white"
+                className="inline-flex items-center justify-center w-full text-[11px] font-semibold text-white py-2"
                 style={{
                   background: "var(--pub-accent)",
                   borderRadius: "var(--pub-chip-radius)",
                 }}
               >
-                Agendar
+                {t("pub.bookCta")}
               </span>
-              {data.whatsappNumber && (
-                <span
-                  className="text-[10px] px-2 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200"
-                  style={{ borderRadius: "var(--pub-chip-radius)" }}
-                >
-                  WhatsApp
-                </span>
-              )}
             </div>
           </div>
         </div>

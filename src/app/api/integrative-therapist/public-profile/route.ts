@@ -12,6 +12,8 @@ import {
   doctorImageFromCard,
   parsePublicProfilePatch,
 } from "@/lib/public-profile-patch";
+import { buildDoctorImageBookingPreview } from "@/lib/doctor-image-booking-preview";
+import { localeOf, normalizeLang } from "@/lib/i18n/translations";
 
 export async function GET() {
   const ctx = await requireIntegrativeTherapist();
@@ -20,7 +22,7 @@ export async function GET() {
 
   const profile = await db.integrativeTherapistProfile.findUnique({
     where: { id: therapist.id },
-    include: { virtualCard: true },
+    include: { virtualCard: true, user: { select: { language: true } } },
   });
   if (!profile) return NextResponse.json({ error: "Profile not found" }, { status: 404 });
 
@@ -40,6 +42,14 @@ export async function GET() {
   if (!card) return NextResponse.json({ error: "Card not found" }, { status: 500 });
 
   const status = getPublicListingStatus(profile.verified, card.isPublic);
+  const locale = localeOf(normalizeLang(profile.user?.language));
+  const bookingPreview = await buildDoctorImageBookingPreview({
+    providerId: profile.id,
+    practiceType: "integrative_therapist",
+    consultPrice: profile.consultPrice,
+    currency: profile.currency || "BRL",
+    locale,
+  });
 
   return NextResponse.json({
     slug: card.slug,
@@ -54,6 +64,7 @@ export async function GET() {
     embedUrl: buildEmbedAgendaUrl(card.slug),
     analytics: null,
     doctorImage: doctorImageFromCard(card),
+    bookingPreview,
   });
 }
 

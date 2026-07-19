@@ -16,6 +16,8 @@ import {
   doctorImageFromCard,
   parsePublicProfilePatch,
 } from "@/lib/public-profile-patch";
+import { buildDoctorImageBookingPreview } from "@/lib/doctor-image-booking-preview";
+import { localeOf, normalizeLang } from "@/lib/i18n/translations";
 
 export async function GET() {
   const session = await auth();
@@ -25,7 +27,7 @@ export async function GET() {
 
   const profile = await db.psychoanalystProfile.findUnique({
     where: { userId: session.user.id },
-    include: { virtualCard: true },
+    include: { virtualCard: true, user: { select: { language: true } } },
   });
   if (!profile) return NextResponse.json({ error: "Profile not found" }, { status: 404 });
 
@@ -46,6 +48,14 @@ export async function GET() {
 
   const status = getPublicListingStatus(profile.verified, card.isPublic);
   const analytics = await getPublicProfileAnalytics(card.id, profile.id, "psychoanalyst");
+  const locale = localeOf(normalizeLang(profile.user?.language));
+  const bookingPreview = await buildDoctorImageBookingPreview({
+    providerId: profile.id,
+    practiceType: "psychoanalyst",
+    consultPrice: profile.consultPrice,
+    currency: profile.currency || "BRL",
+    locale,
+  });
 
   return NextResponse.json({
     slug: card.slug,
@@ -60,6 +70,7 @@ export async function GET() {
     embedUrl: buildEmbedAgendaUrl(card.slug),
     analytics,
     doctorImage: doctorImageFromCard(card),
+    bookingPreview,
   });
 }
 

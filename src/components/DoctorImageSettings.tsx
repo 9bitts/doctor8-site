@@ -44,6 +44,7 @@ import {
   type ProviderSettingsVariant,
 } from "@/lib/provider-settings-variant";
 import { DoctorImageLivePreview } from "@/components/public/PublicDoctorImageContent";
+import type { DoctorImageBookingPreview } from "@/lib/doctor-image-booking-preview";
 
 const EMPTY: DoctorImageData = {
   headline: null,
@@ -120,6 +121,7 @@ export default function DoctorImageSettings({
   const [error, setError] = useState("");
   const [publicUrl, setPublicUrl] = useState<string | null>(null);
   const [data, setData] = useState<DoctorImageData>(EMPTY);
+  const [bookingPreview, setBookingPreview] = useState<DoctorImageBookingPreview | null>(null);
   const [showPreview, setShowPreview] = useState(true);
   const [uploadingCover, setUploadingCover] = useState(false);
   const [uploadingGallery, setUploadingGallery] = useState(false);
@@ -141,6 +143,9 @@ export default function DoctorImageSettings({
         setPublicUrl(json.publicUrl || null);
         if (json.doctorImage) {
           setData(forEditor(json.doctorImage as DoctorImageData));
+        }
+        if (json.bookingPreview) {
+          setBookingPreview(json.bookingPreview as DoctorImageBookingPreview);
         }
       }
     } catch { /* ignore */ }
@@ -328,13 +333,13 @@ export default function DoctorImageSettings({
         </div>
       )}
 
-      <div className="lg:grid lg:grid-cols-[1fr_280px] gap-6 items-start">
+      <div className="lg:grid lg:grid-cols-[1fr_min(360px,38%)] gap-6 items-start">
       {showPreview && (
         <aside className="mb-2 lg:mb-0 lg:col-start-2 lg:row-start-1 lg:sticky lg:top-4 space-y-2">
           <p className="text-xs font-medium text-slate-500">
             {t("doctorImage.livePreview")}
           </p>
-          <DoctorImageLivePreview data={data} />
+          <DoctorImageLivePreview data={data} bookingPreview={bookingPreview} />
           <p className="text-[10px] text-slate-400">{t("doctorImage.livePreviewHint")}</p>
         </aside>
       )}

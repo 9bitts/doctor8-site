@@ -26,14 +26,14 @@ export async function GET() {
   const [direct, chart, shares] = await Promise.all([
     db.medicalDocument.findMany({
       where: { patientId: patientProfileId, type: "EXAM_REQUEST" },
-      include: { professional: { select: { firstName: true, lastName: true, specialty: true } } },
+      include: { professional: { select: { id: true, firstName: true, lastName: true, specialty: true } } },
       orderBy: { createdAt: "desc" },
       take: 100,
     }),
     recordIds.length
       ? db.medicalDocument.findMany({
           where: { patientRecordId: { in: recordIds }, type: "EXAM_REQUEST" },
-          include: { professional: { select: { firstName: true, lastName: true, specialty: true } } },
+          include: { professional: { select: { id: true, firstName: true, lastName: true, specialty: true } } },
           orderBy: { createdAt: "desc" },
           take: 100,
         })
@@ -42,7 +42,7 @@ export async function GET() {
       where: { sharedWithUserId: userId },
       include: {
         document: {
-          include: { professional: { select: { firstName: true, lastName: true, specialty: true } } },
+          include: { professional: { select: { id: true, firstName: true, lastName: true, specialty: true } } },
         },
       },
       orderBy: { createdAt: "desc" },
@@ -81,10 +81,11 @@ export async function GET() {
       cid: exam.cid || "",
       doctor: pro
         ? {
+            professionalId: pro.id,
             name: `${pro.firstName} ${pro.lastName}`.trim(),
             specialty: pro.specialty || "",
           }
-        : { name: "", specialty: "" },
+        : { professionalId: "", name: "", specialty: "" },
     };
   });
 

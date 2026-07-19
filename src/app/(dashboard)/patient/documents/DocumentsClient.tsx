@@ -85,6 +85,8 @@ export default function DocumentsClient({ initialItems }: { initialItems: Item[]
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [file, setFile] = useState<File | null>(null);
+  const [autoShareProfessionalId, setAutoShareProfessionalId] = useState<string | null>(null);
+  const [autoShareDoctorName, setAutoShareDoctorName] = useState<string>("");
 
   // Fallback label for a legacy type (translated)
   const legacyLabel = (type: string) => t(LEGACY_KEYS[type] || "doctype.OTHER");
@@ -118,6 +120,10 @@ export default function DocumentsClient({ initialItems }: { initialItems: Item[]
     const sp = new URLSearchParams(window.location.search);
     if (sp.get("new") !== "1") return;
     if (categoriesLoading) return;
+    const shareId = sp.get("shareWithProfessionalId");
+    const doctorName = sp.get("doctorName");
+    if (shareId) setAutoShareProfessionalId(shareId);
+    if (doctorName) setAutoShareDoctorName(doctorName);
     if (sp.get("type") === "EXAM_RESULT") {
       openNewExamResultForm();
     } else {
@@ -204,6 +210,25 @@ export default function DocumentsClient({ initialItems }: { initialItems: Item[]
         return;
       }
       const newId = data.id;
+      const sharedDoctors: SharedDoctor[] = [];
+      const pendingShareId = autoShareProfessionalId;
+      const pendingShareName = autoShareDoctorName;
+      let autoShareSucceeded = false;
+
+      if (pendingShareId) {
+        const doctorList = await loadDoctors(true);
+        const doctor = doctorList.find((d) => d.professionalId === pendingShareId) || null;
+        const name = doctor?.name || pendingShareName || "";
+        autoShareSucceeded = await shareWithDoctorSilent(newId, pendingShareId);
+        if (autoShareSucceeded) {
+          sharedDoctors.push({ professionalId: pendingShareId, name: name || "—" });
+        } else {
+          setActionError(t("docs.autoShareFailed").replace("{{name}}", name || "—"));
+        }
+        setAutoShareProfessionalId(null);
+        setAutoShareDoctorName("");
+      }
+
       setItems((prev) => [
         {
           id: newId,
@@ -215,18 +240,40 @@ export default function DocumentsClient({ initialItems }: { initialItems: Item[]
           hasFile: data.hasFile,
           createdAt: new Date().toISOString(),
           sharedBy: null,
-          sharedWithDoctors: [],
+          sharedWithDoctors: sharedDoctors,
         },
         ...prev,
       ]);
       resetForm();
       setShowForm(false);
       setSaving(false);
-      await loadDoctors(true);
-      setShareDocId(newId);
+
+      // Open share picker when there was no auto-share target, or auto-share failed.
+      if (!pendingShareId || !autoShareSucceeded) {
+        await loadDoctors(true);
+        setShareDocId(newId);
+      }
     } catch {
       setError(t("docs.err.network"));
       setSaving(false);
+    }
+  }
+
+  async function shareWithDoctorSilent(
+    docId: string,
+    professionalId: string,
+  ): Promise<boolean> {
+    try {
+      const res = await fetch(`/api/patient/documents/${docId}/share-with-doctor`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({ professionalId }),
+      });
+      const data = await res.json();
+      return !!(res.ok && data.shared);
+    } catch {
+      return false;
     }
   }
 
@@ -510,6 +557,17 @@ export default function DocumentsClient({ initialItems }: { initialItems: Item[]
               </button>
             </div>
             <div className="p-5 space-y-4">
+              {autoShareProfessionalId && (
+                <div className="flex items-start gap-2 text-sm text-cyan-800 bg-cyan-50 border border-cyan-100 rounded-xl px-3 py-2.5">
+                  <Stethoscope size={16} className="shrink-0 mt-0.5" />
+                  <span>
+                    {t("docs.autoShareHint").replace(
+                      "{{name}}",
+                      autoShareDoctorName || "—",
+                    )}
+                  </span>
+                </div>
+              )}
               <div>
                 <label className="block text-xs font-medium text-slate-600 mb-1">{t("docs.modal.category")}</label>
                 {categoriesLoading ? (

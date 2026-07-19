@@ -67,11 +67,35 @@ export async function POST(
     select: { email: true },
   });
 
-  const eligible = await db.appointment.findFirst({
+  const eligibleAppointment = await db.appointment.findFirst({
     where: patientDoctorEligibleAppointmentWhere(patientProfileId, professional.id),
     select: { id: true },
   });
-  if (!eligible) {
+
+  // Also allow share when this professional issued an exam request for the patient
+  // (covers chart-only relationships without a recent eligible appointment).
+  let eligibleByExamRequest = false;
+  if (!eligibleAppointment) {
+    const chartIdForPro = await findChartForPatient(
+      professional.id,
+      userId,
+      patientUser?.email ?? null,
+    );
+    const examRequest = await db.medicalDocument.findFirst({
+      where: {
+        type: "EXAM_REQUEST",
+        professionalId: professional.id,
+        OR: [
+          { patientId: patientProfileId },
+          ...(chartIdForPro ? [{ patientRecordId: chartIdForPro }] : []),
+        ],
+      },
+      select: { id: true },
+    });
+    eligibleByExamRequest = !!examRequest;
+  }
+
+  if (!eligibleAppointment && !eligibleByExamRequest) {
     return NextResponse.json(
       { error: "You can only share with a doctor you have a confirmed appointment with." },
       { status: 403 }

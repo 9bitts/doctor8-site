@@ -489,7 +489,7 @@ export default function ProfessionalAppointmentsView({
                       </Link>
                       <Link
                         href={(() => {
-                          const sp = new URLSearchParams({ newRecord: "1", docType: "EXAM_RESULT" });
+                          const sp = new URLSearchParams({ viewExamResults: "1" });
                           sp.set("returnUrl", `${portalBase}/appointments`);
                           return `${portalBase}/patients/${chartId}?${sp.toString()}`;
                         })()}

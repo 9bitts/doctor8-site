@@ -47,6 +47,7 @@ import PsychologistClinicalHub, {
   type PsychologistHubSectionId,
 } from "@/components/psychologist/PsychologistClinicalHub";
 import ChartDocsList from "@/components/professional/ChartDocsList";
+import PatientExamResultsModal from "@/components/professional/PatientExamResultsModal";
 import { buildEmissionReuseUrl } from "@/lib/emission-reuse-nav";
 import { openAuthenticatedPdf } from "@/lib/open-url-safely";
 import { uploadFileToApi } from "@/lib/upload-client";
@@ -309,6 +310,7 @@ export default function RecordDetailClient({
   const [shareStatus, setShareStatus] = useState<Record<string, string>>({});
   const [sharingId, setSharingId] = useState<string | null>(null);
   const [showEducationModal, setShowEducationModal] = useState(false);
+  const [showExamResultsModal, setShowExamResultsModal] = useState(false);
   const [signConfig, setSignConfig] = useState<{ configured: boolean; cpfMasked: string; recentAuth?: boolean } | null>(null);
   const [signTarget, setSignTarget] = useState<SignTarget | null>(null);
 
@@ -388,10 +390,14 @@ export default function RecordDetailClient({
   }, [chart.id, userId]);
 
   useEffect(() => {
+    if (searchParams.get("viewExamResults") === "1") {
+      openExamResultsView();
+      return;
+    }
     if (searchParams.get("newRecord") !== "1" || categoriesLoading) return;
     const docType = searchParams.get("docType");
     if (docType === "EXAM_RESULT") {
-      openExamResultForm();
+      openExamResultsView();
     } else {
       openNewRecordForm();
     }
@@ -563,16 +569,35 @@ export default function RecordDetailClient({
     setShowForm(true);
   }
 
+  function focusExamsHub() {
+    setChartTab("records");
+    setRecordFilter("exam");
+    if (isDoctorPortal) setDoctorHubOpenId("exams");
+  }
+
+  function openExamResultsView() {
+    focusExamsHub();
+    setShowExamResultsModal(true);
+  }
+
   function openExamResultForm() {
     resetForm();
     const catId =
       findCategoryIdByLegacyType(groups, "EXAM_RESULT") ||
       findCategoryIdByKeyword(sortedCategories, ["exame", "exam", "laboratorial", "sangue"]);
     if (catId) setCategoryId(catId);
-    setChartTab("records");
-    setRecordFilter("exam");
-    if (isDoctorPortal) setDoctorHubOpenId("exams");
+    focusExamsHub();
+    setShowExamResultsModal(false);
     setShowForm(true);
+  }
+
+  function openPatientExamResultInChart(docId: string) {
+    setShowExamResultsModal(false);
+    focusExamsHub();
+    setExpandedIds((prev) => new Set(prev).add(docId));
+    setTimeout(() => {
+      document.getElementById(`record-${docId}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 120);
   }
 
   function openVitalsRecordForm() {
@@ -1470,7 +1495,7 @@ export default function RecordDetailClient({
                     </button>
                   )}
                   {!isPsychologistPortal && (
-                    <button type="button" onClick={openExamResultForm} className="inline-flex items-center gap-1.5 text-xs font-medium text-cyan-700 bg-cyan-50 hover:bg-cyan-100 border border-cyan-200 px-3 py-1.5 rounded-lg transition">
+                    <button type="button" onClick={openExamResultsView} className="inline-flex items-center gap-1.5 text-xs font-medium text-cyan-700 bg-cyan-50 hover:bg-cyan-100 border border-cyan-200 px-3 py-1.5 rounded-lg transition">
                       <FileCheck size={13} /> {t("chartAct.examResult")}
                     </button>
                   )}
@@ -1772,7 +1797,7 @@ export default function RecordDetailClient({
                 {canEdit && (
                   <button
                     type="button"
-                    onClick={openExamResultForm}
+                    onClick={openExamResultsView}
                     className="inline-flex items-center gap-2 text-xs font-semibold text-cyan-800 bg-white border border-cyan-200 px-3 py-2 rounded-xl"
                   >
                     <FileCheck size={14} /> {t("chartAct.examResult")}
@@ -2419,6 +2444,30 @@ export default function RecordDetailClient({
           chartId={chart.id}
           patientName={`${displayFirstName} ${displayLastName}`.trim()}
           onClose={() => setShowEducationModal(false)}
+        />
+      )}
+
+      {showExamResultsModal && (
+        <PatientExamResultsModal
+          results={docs
+            .filter((d) => d.type === "EXAM_RESULT" && !!d.sourceDocumentId)
+            .map((d) => ({
+              id: d.id,
+              title: d.title,
+              content: d.content,
+              hasFile: d.hasFile,
+              attachmentCount: d.attachmentCount,
+              createdAt: d.createdAt,
+            }))}
+          requestExamHref={chartActionUrl(prescriptionsPath, chart.id, {
+            view: "exam",
+            returnUrl: chartReturnUrl,
+          })}
+          lang={lang}
+          t={t}
+          onClose={() => setShowExamResultsModal(false)}
+          onRegisterManually={openExamResultForm}
+          onOpenResult={openPatientExamResultInChart}
         />
       )}
     </div>
