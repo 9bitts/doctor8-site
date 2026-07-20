@@ -168,7 +168,8 @@ export async function POST(
   }
 
   const docTitle = safeDecrypt(doc.title);
-  const patientName = `${patient.firstName} ${patient.lastName}`.trim() || "A patient";
+  const patientName =
+    `${safeDecrypt(patient.firstName)} ${safeDecrypt(patient.lastName)}`.trim() || "A patient";
   const docLink = chartId
     ? `${patientChartPathForSpecialty(professional.specialty, chartId)}?recordId=${doc.id}`
     : `${professionalSharedPathForSpecialty(professional.specialty)}?documentId=${doc.id}`;
@@ -310,7 +311,8 @@ export async function DELETE(
   // Only notify the doctor when the share was already visible (not held).
   if (del.count > 0 && !heldShare) {
     const docTitle = safeDecrypt(doc.title);
-    const patientName = `${patient.firstName} ${patient.lastName}`.trim() || "A patient";
+    const patientName =
+      `${safeDecrypt(patient.firstName)} ${safeDecrypt(patient.lastName)}`.trim() || "A patient";
 
     await db.message.create({
       data: {

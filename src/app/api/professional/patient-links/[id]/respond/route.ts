@@ -11,6 +11,7 @@ import {
 } from "@/lib/held-shared-records";
 import { createNotification } from "@/lib/notifications";
 import { storedNotificationText } from "@/lib/notification-i18n";
+import { patientChartPathForSpecialty } from "@/lib/patient-chart-path";
 import { z } from "zod";
 
 const schema = z.object({
@@ -60,14 +61,18 @@ export async function POST(
     select: { id: true, specialty: true, firstName: true, lastName: true },
   });
 
+  let released = 0;
+  let chartId: string | null = null;
   if (pro) {
     if (parsed.data.action === "accept") {
-      await releaseHeldSharesForPair({
+      const release = await releaseHeldSharesForPair({
         patientUserId: link.patientUserId,
         professionalId: pro.id,
         professionalUserId: ctx.userId,
         specialty: pro.specialty,
       });
+      released = release.released;
+      chartId = release.chartId;
     } else {
       await revokeHeldSharesForPair({
         patientUserId: link.patientUserId,
@@ -106,5 +111,18 @@ export async function POST(
     details: { status: newStatus, respondedBy: "PROFESSIONAL" },
   });
 
-  return NextResponse.json({ id: updated.id, status: updated.status });
+  const documentsUrl =
+    accept && released > 0
+      ? chartId
+        ? patientChartPathForSpecialty(pro?.specialty ?? null, chartId)
+        : "/professional/shared"
+      : null;
+
+  return NextResponse.json({
+    id: updated.id,
+    status: updated.status,
+    released,
+    chartId,
+    documentsUrl,
+  });
 }

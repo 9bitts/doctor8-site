@@ -8,6 +8,17 @@ import { createNotification } from "@/lib/notifications";
 import { createAuditLog } from "@/lib/audit";
 import { AuditAction } from "@prisma/client";
 import { countHeldSharesForPair } from "@/lib/held-shared-records";
+import { decrypt } from "@/lib/encryption";
+import { formatPatientDisplayName } from "@/lib/patient-professional-link";
+
+function safeDecrypt(v: string | null | undefined): string {
+  if (v == null) return "";
+  try {
+    return decrypt(v);
+  } catch {
+    return String(v);
+  }
+}
 
 const schema = z.object({
   patientUserId: z.string().min(1),
@@ -145,7 +156,10 @@ export async function GET(req: NextRequest) {
           createdAt: link.createdAt.toISOString(),
           patientUserId: link.patientUserId,
           patientName: p
-            ? `${p.firstName} ${p.lastName}`.trim() || "Patient"
+            ? formatPatientDisplayName(
+                safeDecrypt(p.firstName),
+                safeDecrypt(p.lastName),
+              ) || "Patient"
             : "Patient",
           heldDocumentCount: heldDocs,
         };

@@ -8,7 +8,18 @@ import { createNotification } from "@/lib/notifications";
 import { storedNotificationText } from "@/lib/notification-i18n";
 import { createAuditLog } from "@/lib/audit";
 import { AuditAction } from "@prisma/client";
+import { decrypt } from "@/lib/encryption";
+import { formatPatientDisplayName } from "@/lib/patient-professional-link";
 import { z } from "zod";
+
+function safeDecrypt(v: string | null | undefined): string {
+  if (v == null) return "";
+  try {
+    return decrypt(v);
+  } catch {
+    return String(v);
+  }
+}
 
 const postSchema = z.object({
   professionalUserId: z.string().min(1),
@@ -133,8 +144,12 @@ export async function POST(req: NextRequest) {
     where: { userId: ctx.userId },
     select: { firstName: true, lastName: true },
   });
-  const patientName =
-    patient ? `${patient.firstName} ${patient.lastName}`.trim() || "A patient" : "A patient";
+  const patientName = patient
+    ? formatPatientDisplayName(
+        safeDecrypt(patient.firstName),
+        safeDecrypt(patient.lastName),
+      ) || "A patient"
+    : "A patient";
 
   const notifCopy = storedNotificationText(
     "notif.patientLinkRequest.title",

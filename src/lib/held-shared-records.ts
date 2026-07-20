@@ -7,6 +7,7 @@ import { createNotification } from "@/lib/notifications";
 import { storedNotificationText } from "@/lib/notification-i18n";
 import { decrypt } from "@/lib/encryption";
 import { patientChartPathForSpecialty } from "@/lib/patient-chart-path";
+import { formatPatientDisplayName } from "@/lib/patient-professional-link";
 
 function safeDecrypt(v: string | null): string {
   if (v == null) return "";
@@ -43,7 +44,7 @@ export async function releaseHeldSharesForPair(params: {
   professionalId: string;
   professionalUserId: string;
   specialty: string | null;
-}): Promise<{ released: number }> {
+}): Promise<{ released: number; chartId: string | null }> {
   const held = await db.sharedRecord.findMany({
     where: {
       sharedByUserId: params.patientUserId,
@@ -59,7 +60,7 @@ export async function releaseHeldSharesForPair(params: {
     },
   });
 
-  if (held.length === 0) return { released: 0 };
+  if (held.length === 0) return { released: 0, chartId: null };
 
   await db.sharedRecord.updateMany({
     where: { id: { in: held.map((h) => h.id) } },
@@ -90,7 +91,10 @@ export async function releaseHeldSharesForPair(params: {
     }
 
     const patientName =
-      `${share.patient.firstName} ${share.patient.lastName}`.trim() || "A patient";
+      formatPatientDisplayName(
+        safeDecrypt(share.patient.firstName),
+        safeDecrypt(share.patient.lastName),
+      ) || "A patient";
     const docTitle = safeDecrypt(share.document.title);
     const docLink = chartId
       ? `${patientChartPathForSpecialty(params.specialty, chartId)}?recordId=${share.documentId}`
@@ -117,7 +121,7 @@ export async function releaseHeldSharesForPair(params: {
     });
   }
 
-  return { released: held.length };
+  return { released: held.length, chartId };
 }
 
 /** On REJECTED: revoke held shares so they never become visible. */

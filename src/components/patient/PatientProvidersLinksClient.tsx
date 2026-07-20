@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import {
   Loader2,
@@ -11,6 +12,7 @@ import {
   Search,
   FileText,
   Clock,
+  Plus,
 } from "lucide-react";
 
 type LinkRow = {
@@ -345,7 +347,15 @@ export default function PatientProvidersLinksClient() {
               <Loader2 className="animate-spin text-slate-400" size={22} />
             </div>
           ) : ownDocs.length === 0 ? (
-            <p className="text-sm text-slate-500 py-4">{t("providers.sharePrompt.noDocs")}</p>
+            <div className="py-4 space-y-3">
+              <p className="text-sm text-slate-500">{t("providers.sharePrompt.noDocs")}</p>
+              <Link
+                href="/patient/documents"
+                className="inline-flex items-center gap-1.5 text-xs font-semibold bg-brand-500 hover:bg-brand-600 text-white px-3 py-2 rounded-lg min-h-[44px]"
+              >
+                <Plus size={14} /> {t("providers.sharePrompt.addFirstDoc")}
+              </Link>
+            </div>
           ) : (
             <ul className="space-y-2 max-h-64 overflow-y-auto mb-3">
               {ownDocs.map((doc) => (
