@@ -24,7 +24,11 @@ export type AcuraVolunteerStats = {
   volunteers: AcuraVolunteerRow[];
 };
 
-function toLegacyRow(r: AcuraVolunteerAdminRow): AcuraVolunteerRow {
+type LegacyAcuraKind = AcuraVolunteerRow["kind"];
+
+function toLegacyRow(
+  r: AcuraVolunteerAdminRow & { kind: LegacyAcuraKind },
+): AcuraVolunteerRow {
   return {
     id: r.id,
     kind: r.kind,
