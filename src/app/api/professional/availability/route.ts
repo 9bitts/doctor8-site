@@ -148,15 +148,13 @@ export async function PUT(req: NextRequest) {
     });
   }
 
+  // Merge date + volunteer blocks in one write so the second update cannot wipe the first.
+  let nextAvailability = parseAvailabilityJson(proRow.availability);
+  let availabilityDirty = false;
+
   if (dateBlocks !== undefined) {
-    const merged = mergeAvailabilityJson(
-      proRow.availability,
-      dateBlocks as DateAvailabilityBlock[],
-    );
-    await db.professionalProfile.update({
-      where: { id: proRow.id },
-      data: { availability: merged } as never,
-    });
+    nextAvailability = mergeAvailabilityJson(nextAvailability, dateBlocks as DateAvailabilityBlock[]);
+    availabilityDirty = true;
   }
 
   if (volunteerBlocks !== undefined) {
@@ -169,8 +167,7 @@ export async function PUT(req: NextRequest) {
       slotGap: b.slotGap ?? 0,
     }));
 
-    const parsedAvail = parseAvailabilityJson(proRow.availability);
-    const oldVolunteerBlocks = parsedAvail.volunteerBlocks ?? [];
+    const oldVolunteerBlocks = parseAvailabilityJson(proRow.availability).volunteerBlocks ?? [];
     const proTz = proRow.timezone ?? DEFAULT_TIME_ZONE;
     const locale = localeOf("pt");
 
@@ -234,10 +231,14 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: overlapKey }, { status: 400 });
     }
 
-    const mergedVolunteer = mergeVolunteerBlocksJson(proRow.availability, normalizedVolunteer);
+    nextAvailability = mergeVolunteerBlocksJson(nextAvailability, normalizedVolunteer);
+    availabilityDirty = true;
+  }
+
+  if (availabilityDirty) {
     await db.professionalProfile.update({
       where: { id: proRow.id },
-      data: { availability: mergedVolunteer } as never,
+      data: { availability: nextAvailability } as never,
     });
   }
 

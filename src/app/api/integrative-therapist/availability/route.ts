@@ -105,12 +105,13 @@ export async function PUT(req: NextRequest) {
     });
   }
 
+  // Merge date + volunteer blocks in one write so the second update cannot wipe the first.
+  let nextAvailability = parseAvailabilityJson(therapist.availability);
+  let availabilityDirty = false;
+
   if (dateBlocks !== undefined) {
-    const merged = mergeAvailabilityJson(therapist.availability, dateBlocks as DateAvailabilityBlock[]);
-    await db.integrativeTherapistProfile.update({
-      where: { id: therapist.id },
-      data: { availability: merged },
-    });
+    nextAvailability = mergeAvailabilityJson(nextAvailability, dateBlocks as DateAvailabilityBlock[]);
+    availabilityDirty = true;
   }
 
   if (volunteerBlocks !== undefined) {
@@ -130,10 +131,14 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: "ACURA_VOLUNTEER_REQUIRED" }, { status: 400 });
     }
 
-    const mergedVolunteer = mergeVolunteerBlocksJson(therapist.availability, normalizedVolunteer);
+    nextAvailability = mergeVolunteerBlocksJson(nextAvailability, normalizedVolunteer);
+    availabilityDirty = true;
+  }
+
+  if (availabilityDirty) {
     await db.integrativeTherapistProfile.update({
       where: { id: therapist.id },
-      data: { availability: mergedVolunteer },
+      data: { availability: nextAvailability },
     });
   }
 

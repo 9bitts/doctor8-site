@@ -71,7 +71,7 @@ function newVolunteerBlock(dayOfWeek = 1): VolunteerWeeklyBlock {
 const defaultSchedules = (slotDuration = 30): DaySchedule[] =>
   Array.from({ length: 7 }, (_, i) => ({
     dayOfWeek: i,
-    enabled: i >= 1 && i <= 5,
+    enabled: false,
     blocks: [newBlock(slotDuration)],
   }));
 
@@ -176,50 +176,44 @@ export default function AvailabilitySettings({
         if (Array.isArray(d.dateBlocks)) setDateBlocks(d.dateBlocks);
         if (Array.isArray(d.volunteerBlocks)) setVolunteerBlocks(d.volunteerBlocks);
         if (Array.isArray(d.slots)) {
+          // Avoid persisting the hydrated state (empty → all days off).
           skipAutoSaveRef.current = true;
-          const hasOtherConfig =
-            (Array.isArray(d.volunteerBlocks) && d.volunteerBlocks.length > 0) ||
-            (Array.isArray(d.dateBlocks) && d.dateBlocks.length > 0);
-          if (d.slots.length === 0 && !hasOtherConfig) {
-            setSchedules(defaultSchedules(defaultSlotDuration));
-          } else {
-            setSchedules(
-              defaultSchedules(defaultSlotDuration).map((def) => {
-                const daySlots = d.slots.filter(
-                  (s: { dayOfWeek: number }) => s.dayOfWeek === def.dayOfWeek,
-                );
-                if (daySlots.length === 0) {
-                  return {
-                    ...def,
-                    enabled: false,
-                    blocks: [newBlock(defaultSlotDuration)],
-                  };
-                }
+          setSchedules(
+            defaultSchedules(defaultSlotDuration).map((def) => {
+              const daySlots = d.slots.filter(
+                (s: { dayOfWeek: number }) => s.dayOfWeek === def.dayOfWeek,
+              );
+              if (daySlots.length === 0) {
                 return {
                   ...def,
-                  enabled: true,
-                  blocks: daySlots.map(
-                    (s: {
-                      startTime: string;
-                      endTime: string;
-                      slotDuration?: number;
-                      slotDurationMins?: number;
-                      slotGap?: number;
-                      slotGapMins?: number;
-                      volunteerOnly?: boolean;
-                    }) => ({
-                      id: crypto.randomUUID(),
-                      startTime: s.startTime,
-                      endTime: s.endTime,
-                      slotDuration: s.slotDuration ?? s.slotDurationMins ?? defaultSlotDuration,
-                      slotGap: s.slotGap ?? s.slotGapMins ?? 0,
-                      volunteerOnly: !!s.volunteerOnly,
-                    }),
-                  ),
+                  enabled: false,
+                  blocks: [newBlock(defaultSlotDuration)],
                 };
-              }),
-            );
-          }
+              }
+              return {
+                ...def,
+                enabled: true,
+                blocks: daySlots.map(
+                  (s: {
+                    startTime: string;
+                    endTime: string;
+                    slotDuration?: number;
+                    slotDurationMins?: number;
+                    slotGap?: number;
+                    slotGapMins?: number;
+                    volunteerOnly?: boolean;
+                  }) => ({
+                    id: crypto.randomUUID(),
+                    startTime: s.startTime,
+                    endTime: s.endTime,
+                    slotDuration: s.slotDuration ?? s.slotDurationMins ?? defaultSlotDuration,
+                    slotGap: s.slotGap ?? s.slotGapMins ?? 0,
+                    volunteerOnly: !!s.volunteerOnly,
+                  }),
+                ),
+              };
+            }),
+          );
         }
       }
     } finally {
@@ -288,13 +282,17 @@ export default function AvailabilitySettings({
 
       const overlapKey = validateAvailabilityBlocks(slots);
       if (overlapKey) {
-        setSaveError(t(overlapKey));
+        const msg = t(overlapKey);
+        setSaveError(msg);
+        toast.error(msg);
         return;
       }
 
       const paidVolunteerOverlap = validatePaidVolunteerOverlap(slots, volunteerBlocks);
       if (paidVolunteerOverlap) {
-        setSaveError(t(paidVolunteerOverlap));
+        const msg = t(paidVolunteerOverlap);
+        setSaveError(msg);
+        toast.error(msg);
         return;
       }
 
@@ -360,6 +358,9 @@ export default function AvailabilitySettings({
     }
   }, [schedules, timezone, dateBlocks, volunteerBlocks, apiPath, hideAdvancedSections, autoSave, t, onSaved, toast]);
 
+  const persistRef = useRef(persist);
+  persistRef.current = persist;
+
   async function confirmVolunteerBlockRemoval() {
     setConfirmingBlockRemoval(true);
     try {
@@ -387,12 +388,13 @@ export default function AvailabilitySettings({
     }
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
-      void persist();
+      // Use ref so identity changes to `persist` (i18n/toast) don't cancel a pending save.
+      void persistRef.current();
     }, 1500);
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [schedules, timezone, dateBlocks, volunteerBlocks, autoSave, persist]);
+  }, [schedules, timezone, dateBlocks, volunteerBlocks, autoSave]);
 
   function addDateBlock() {
     if (!blockStartDate) return;
