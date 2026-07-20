@@ -25,6 +25,9 @@ const STATIC_PUBLIC_PATHS = [
   "/medicinaintegrativa",
   "/pacientes",
   "/especialistas",
+  "/marketing",
+  "/empresas",
+  "/parceiros",
 ] as const;
 
 function buildProgrammaticEntries(now: Date): MetadataRoute.Sitemap {

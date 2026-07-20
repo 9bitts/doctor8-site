@@ -1,10 +1,13 @@
 import Link from "next/link";
 
 const AUDIENCE_LINKS = [
+  { label: "Mapa do ecossistema", href: "/marketing" },
   { label: "Empresas", href: "/empresas" },
   { label: "Pacientes", href: "/pacientes" },
   { label: "Especialistas", href: "/especialistas" },
   { label: "Parceiros", href: "/parceiros" },
+  { label: "Farmácias", href: "/farmacias" },
+  { label: "Laboratórios", href: "/laboratorios" },
 ];
 
 const LEGAL_LINKS = [
@@ -47,6 +50,9 @@ export default function MarketingFooter() {
             </p>
             <ul className="space-y-2 text-sm text-slate-600">
               <li>
+                <Link href="/marketing#acessos" className="hover:text-brand-600 transition">Todos os acessos</Link>
+              </li>
+              <li>
                 <Link href="/login" className="hover:text-brand-600 transition">Entrar</Link>
               </li>
               <li>
@@ -56,7 +62,7 @@ export default function MarketingFooter() {
                 <Link href="/empresas/cadastro" className="hover:text-brand-600 transition">Demo empresarial</Link>
               </li>
               <li>
-                <Link href="/farmacias" className="hover:text-brand-600 transition">Farmácias</Link>
+                <Link href="/marketing#contato" className="hover:text-brand-600 transition">Falar com comercial</Link>
               </li>
             </ul>
           </div>

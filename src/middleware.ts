@@ -136,6 +136,7 @@ function isPublicRoute(pathname: string): boolean {
   if (pathname === "/laboratorios") return true;
   if (pathname === "/laboratorios/buscar") return true;
   if (pathname === "/distribuidores") return true;
+  if (pathname === "/marketing") return true;
   return PUBLIC_ROUTES.some((route) => {
     // "/" must be exact — every path starts with "/"
     if (route === "/") return pathname === "/";
@@ -153,6 +154,7 @@ function isPublicApi(pathname: string): boolean {
     || pathname.startsWith("/api/cep/")
     || pathname.startsWith("/api/buying-club/public")
     || pathname.startsWith("/api/support")
+    || pathname.startsWith("/api/marketing")
     || pathname.startsWith("/api/payments/webhook")
     || pathname.startsWith("/api/webhooks/")
     || pathname.startsWith("/api/cron/")
@@ -615,6 +617,9 @@ export default auth((req) => {
 
   // Public support chat (rate-limited in route handler)
   if (pathname.startsWith("/api/support")) return NextResponse.next();
+
+  // Public marketing hub lead form (rate-limited in route handler)
+  if (pathname.startsWith("/api/marketing")) return NextResponse.next();
 
   // Webhooks & scheduled jobs (verified inside route handlers)
   if (pathname.startsWith("/api/payments/webhook")) return NextResponse.next();

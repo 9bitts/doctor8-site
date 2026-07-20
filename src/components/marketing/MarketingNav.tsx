@@ -7,7 +7,8 @@ import { Menu, X } from "lucide-react";
 import { BrandLogoLink } from "@/components/brand/BrandLogo";
 import type { AudienceId } from "@/lib/audience-landing-content";
 
-const NAV_ITEMS: { id: AudienceId; label: string; href: string }[] = [
+const NAV_ITEMS: { id: AudienceId | "mapa"; label: string; href: string }[] = [
+  { id: "mapa", label: "Mapa", href: "/marketing" },
   { id: "empresas", label: "Empresas", href: "/empresas" },
   { id: "pacientes", label: "Pacientes", href: "/pacientes" },
   { id: "especialistas", label: "Especialistas", href: "/especialistas" },
@@ -23,19 +24,31 @@ function isActive(pathname: string, href: string): boolean {
 
 const PATIENT_HOME = "/";
 
-export default function MarketingNav({ active }: { active?: AudienceId }) {
+export default function MarketingNav({
+  active,
+  logoHref = "/marketing",
+}: {
+  active?: AudienceId;
+  logoHref?: string;
+}) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const mapaActive = pathname === "/marketing" || pathname.startsWith("/marketing/");
 
   return (
     <header className="sticky top-0 z-50 border-b border-white/10 bg-d8-dark/95 backdrop-blur-md">
       <div className="max-w-6xl mx-auto px-4">
         <div className="flex h-14 sm:h-16 items-center justify-between gap-4">
-          <BrandLogoLink href="/empresas" variant="on-dark" size="md" />
+          <BrandLogoLink href={logoHref} variant="on-dark" size="md" />
 
           <nav className="hidden md:flex items-center gap-1" aria-label="Audiências Doctor8">
             {NAV_ITEMS.map((item) => {
-              const activeItem = active ? item.id === active : isActive(pathname, item.href);
+              const activeItem =
+                item.id === "mapa"
+                  ? mapaActive
+                  : active
+                    ? item.id === active
+                    : isActive(pathname, item.href);
               return (
                 <Link
                   key={item.id}
@@ -80,7 +93,12 @@ export default function MarketingNav({ active }: { active?: AudienceId }) {
         {open && (
           <nav className="md:hidden pb-4 space-y-1 border-t border-white/10 pt-3" aria-label="Audiências Doctor8">
             {NAV_ITEMS.map((item) => {
-              const activeItem = active ? item.id === active : isActive(pathname, item.href);
+              const activeItem =
+                item.id === "mapa"
+                  ? mapaActive
+                  : active
+                    ? item.id === active
+                    : isActive(pathname, item.href);
               return (
                 <Link
                   key={item.id}
