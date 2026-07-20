@@ -8,7 +8,7 @@ export const ACURA_VOLUNTEER_TERMS_URL = "/acura-voluntariado";
 
 export type ProviderRole = "PROFESSIONAL" | "PSYCHOANALYST" | "INTEGRATIVE_THERAPIST";
 
-export type AcuraVolunteerKind = "professional" | "psychoanalyst" | "integrative";
+export type AcuraVolunteerKind = "professional" | "psychoanalyst" | "integrative" | "angel";
 
 export type AcuraVolunteerInterest = "yes" | "no";
 

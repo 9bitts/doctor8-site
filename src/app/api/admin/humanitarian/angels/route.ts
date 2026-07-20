@@ -8,12 +8,12 @@ import {
   screeningRequirementForTrack,
   screeningSatisfiesRequirement,
 } from "@/lib/humanitarian/angel-tracks";
-import {
-  sendAngelApprovedEmail,
-  sendAngelRejectedEmail,
-  sendAngelTrackApprovedEmail,
-} from "@/lib/email";
+import { sendAngelTrackApprovedEmail } from "@/lib/email";
 import type { AngelScreeningStatus, AngelTrack, AngelTrackStatus } from "@prisma/client";
+import {
+  approveAngelVolunteer,
+  rejectAngelVolunteer,
+} from "@/lib/humanitarian/angel-admin-approval";
 
 function randomId(): string {
   return randomBytes(16).toString("hex");
@@ -270,102 +270,23 @@ export async function PATCH(req: NextRequest) {
   }
 
   if (parsed.data.action === "reject") {
-    await db.$transaction(async (tx) => {
-      await tx.angelProfile.update({
-        where: { id: profile.id },
-        data: {
-          approvalStatus: "REJECTED",
-          rejectionReason: parsed.data.rejectionReason || null,
-          approvedAt: null,
-          approvedById: null,
-        },
-      });
-      await tx.humanitarianAngel.updateMany({
-        where: { userId: parsed.data.userId },
-        data: { active: false },
-      });
+    const result = await rejectAngelVolunteer({
+      profileId: profile.id,
+      rejectionReason: parsed.data.rejectionReason,
     });
-    await notifyAngelUser(parsed.data.userId, async (user) => {
-      const name = `${user.firstName} ${user.lastName}`.trim() || "Voluntário";
-      await sendAngelRejectedEmail({
-        email: user.email,
-        name,
-        rejectionReason: parsed.data.rejectionReason,
-        language: user.language ?? undefined,
-      });
-    });
+    if (!result.ok) {
+      return NextResponse.json({ error: result.error }, { status: result.status });
+    }
     return NextResponse.json({ success: true, status: "REJECTED" });
   }
 
-  const user = await db.user.findUnique({
-    where: { id: parsed.data.userId },
-    select: { emailVerified: true },
+  const result = await approveAngelVolunteer({
+    profileId: profile.id,
+    adminUserId: session.user.id,
+    campaignSlug,
   });
-  if (!user?.emailVerified) {
-    return NextResponse.json(
-      { error: "Email must be verified before approval" },
-      { status: 400 },
-    );
+  if (!result.ok) {
+    return NextResponse.json({ error: result.error }, { status: result.status });
   }
-
-  const campaign = await db.humanitarianCampaign.findUnique({
-    where: { slug: campaignSlug },
-    select: { id: true },
-  });
-  if (!campaign) {
-    return NextResponse.json({ error: "Campaign not found" }, { status: 404 });
-  }
-
-  await db.$transaction(async (tx) => {
-    await tx.angelProfile.update({
-      where: { id: profile.id },
-      data: {
-        approvalStatus: "APPROVED",
-        approvedAt: new Date(),
-        approvedById: session.user!.id,
-        rejectionReason: null,
-      },
-    });
-
-    // Back-compat: approving the angel also approves ESCUTA track unless explicitly set otherwise.
-    await tx.angelTrackEnrollment.upsert({
-      where: { profileId_track: { profileId: profile.id, track: "ESCUTA" } },
-      create: {
-        id: randomId(),
-        profileId: profile.id,
-        track: "ESCUTA",
-        status: "APPROVED",
-        approvedAt: new Date(),
-        approvedById: session.user!.id,
-      },
-      update: {
-        status: "APPROVED",
-        approvedAt: new Date(),
-        approvedById: session.user!.id,
-      },
-    });
-
-    await tx.humanitarianAngel.upsert({
-      where: {
-        campaignId_userId: { campaignId: campaign.id, userId: parsed.data.userId },
-      },
-      create: {
-        campaignId: campaign.id,
-        userId: parsed.data.userId,
-        active: true,
-      },
-      update: { active: true },
-    });
-  });
-
-  await notifyAngelUser(parsed.data.userId, async (user) => {
-    const name = `${user.firstName} ${user.lastName}`.trim() || "Voluntário";
-    await sendAngelApprovedEmail({
-      email: user.email,
-      name,
-      language: user.language ?? undefined,
-    });
-  });
-
   return NextResponse.json({ success: true, status: "APPROVED" });
 }

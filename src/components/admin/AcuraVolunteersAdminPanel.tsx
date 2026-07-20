@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import {
   Loader2,
@@ -10,6 +10,7 @@ import {
   Stethoscope,
   Brain,
   Leaf,
+  Heart,
   Search,
   Ban,
   KeyRound,
@@ -22,6 +23,7 @@ import {
   ACURA_CATEGORY_ORDER,
   type AcuraVolunteerAdminList,
   type AcuraVolunteerAdminRow,
+  type AcuraVolunteerCategory,
 } from "@/lib/acura-volunteer-admin-types";
 import AdminViewPhoneButton from "@/components/admin/AdminViewPhoneButton";
 import AdminViewLicenseDocsButton from "@/components/admin/AdminViewLicenseDocsButton";
@@ -32,18 +34,35 @@ const KIND_ICON: Record<string, React.ReactNode> = {
   professional: <Stethoscope size={12} />,
   psychoanalyst: <Brain size={12} />,
   integrative: <Leaf size={12} />,
+  angel: <Heart size={12} />,
 };
 
 type StatusFilter = "all" | "PENDING" | "ACTIVE" | "REVOKED";
 
-function verifyApiPath(kind: AcuraVolunteerAdminRow["kind"]): string {
+function verifyApiPath(kind: AcuraVolunteerAdminRow["kind"]): string | null {
+  if (kind === "angel") return null;
   if (kind === "psychoanalyst") return "/api/admin/psychoanalysts";
   if (kind === "integrative") return "/api/admin/integrative-therapists";
   return "/api/admin/doctors";
 }
 
-function StatusBadge({ status, verified }: { status: string; verified: boolean }) {
+function StatusBadge({
+  status,
+  verified,
+  kind,
+}: {
+  status: string;
+  verified: boolean;
+  kind: AcuraVolunteerAdminRow["kind"];
+}) {
   if (status === "ACTIVE") {
+    if (kind === "angel") {
+      return (
+        <span className="text-xs font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
+          Ativo
+        </span>
+      );
+    }
     return (
       <span className="text-xs font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
         {verified ? "Ativo · selo visível" : "Ativo · aguarda verificação"}
@@ -60,7 +79,7 @@ function StatusBadge({ status, verified }: { status: string; verified: boolean }
   if (status === "REVOKED") {
     return (
       <span className="text-xs font-medium text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full">
-        Revogado
+        {kind === "angel" ? "Rejeitado" : "Revogado"}
       </span>
     );
   }
@@ -89,6 +108,7 @@ function ProviderCommandCtas({
   onAcuraAction: (action: "approve" | "reject" | "include" | "revoke") => void;
 }) {
   const { t } = useI18n();
+  const isAngel = row.kind === "angel";
   return (
     <div className="flex flex-col gap-2 min-w-[160px]">
       <AdminViewPhoneButton userId={row.userId} />
@@ -113,35 +133,38 @@ function ProviderCommandCtas({
         {t("admin.account.resetPassword")}
       </button>
       <AdminViewLicenseDocsButton userId={row.userId} licenseDocCount={row.licenseDocCount ?? 0} />
-      <button
-        type="button"
-        onClick={onToggleListing}
-        disabled={busy}
-        className={`inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border transition disabled:opacity-50 ${
-          row.verified
-            ? "text-rose-600 border-rose-200 hover:bg-rose-50"
-            : "text-emerald-600 border-emerald-200 hover:bg-emerald-50"
-        }`}
-      >
-        {busy ? (
-          <Loader2 size={14} className="animate-spin" />
-        ) : row.verified ? (
-          <XCircle size={14} />
-        ) : (
-          <CheckCircle2 size={14} />
-        )}
-        {row.verified ? t("admin.providers.revoke") : t("admin.providers.approveListing")}
-      </button>
+      {!isAngel && (
+        <button
+          type="button"
+          onClick={onToggleListing}
+          disabled={busy}
+          className={`inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border transition disabled:opacity-50 ${
+            row.verified
+              ? "text-rose-600 border-rose-200 hover:bg-rose-50"
+              : "text-emerald-600 border-emerald-200 hover:bg-emerald-50"
+          }`}
+        >
+          {busy ? (
+            <Loader2 size={14} className="animate-spin" />
+          ) : row.verified ? (
+            <XCircle size={14} />
+          ) : (
+            <CheckCircle2 size={14} />
+          )}
+          {row.verified ? t("admin.providers.revoke") : t("admin.providers.approveListing")}
+        </button>
+      )}
 
       {row.status === "PENDING" && (
         <div className="flex flex-wrap gap-1.5 pt-1 border-t border-slate-100">
           <button
             type="button"
-            disabled={busy}
+            disabled={busy || (isAngel && !row.emailVerified)}
+            title={isAngel && !row.emailVerified ? t("angel.portal.verifyEmail") : undefined}
             onClick={() => onAcuraAction("approve")}
             className="text-[11px] font-semibold px-2 py-1 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50"
           >
-            Aprovar Acura
+            {isAngel ? "Aprovar anjo" : "Aprovar Acura"}
           </button>
           <button
             type="button"
@@ -149,28 +172,29 @@ function ProviderCommandCtas({
             onClick={() => onAcuraAction("reject")}
             className="text-[11px] font-semibold px-2 py-1 rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-50"
           >
-            Rejeitar Acura
+            {isAngel ? "Rejeitar" : "Rejeitar Acura"}
           </button>
         </div>
       )}
-      {row.status === "ACTIVE" && row.verified && (
+      {row.status === "ACTIVE" && (isAngel || row.verified) && (
         <button
           type="button"
           disabled={busy}
           onClick={() => onAcuraAction("revoke")}
           className="text-[11px] font-semibold px-2 py-1 rounded-lg border border-amber-200 text-amber-800 hover:bg-amber-50 disabled:opacity-50"
         >
-          Revogar só Acura
+          {isAngel ? "Revogar anjo" : "Revogar só Acura"}
         </button>
       )}
       {(row.status === "REVOKED" || row.status === "NONE") && (
         <button
           type="button"
-          disabled={busy}
+          disabled={busy || (isAngel && !row.emailVerified)}
+          title={isAngel && !row.emailVerified ? t("angel.portal.verifyEmail") : undefined}
           onClick={() => onAcuraAction("include")}
           className="text-[11px] font-semibold px-2 py-1 rounded-lg bg-sky-600 text-white hover:bg-sky-700 disabled:opacity-50"
         >
-          Incluir na Acura
+          {isAngel ? "Reativar anjo" : "Incluir na Acura"}
         </button>
       )}
     </div>
@@ -182,6 +206,7 @@ export default function AcuraVolunteersAdminPanel() {
   const [data, setData] = useState<AcuraVolunteerAdminList | null>(null);
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState<StatusFilter>("all");
+  const [category, setCategory] = useState<AcuraVolunteerCategory | "all">("all");
   const [q, setQ] = useState("");
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [verifyingEmailUserId, setVerifyingEmailUserId] = useState<string | null>(null);
@@ -207,6 +232,12 @@ export default function AcuraVolunteersAdminPanel() {
     load();
   }, [load]);
 
+  const filteredRows = useMemo(() => {
+    if (!data) return [];
+    if (category === "all") return data.rows;
+    return data.rows.filter((r) => r.category === category);
+  }, [data, category]);
+
   async function runAction(
     row: AcuraVolunteerAdminRow,
     action: "approve" | "reject" | "include" | "revoke",
@@ -224,6 +255,9 @@ export default function AcuraVolunteersAdminPanel() {
         if (action === "include") {
           setIncludeResults((prev) => prev.filter((r) => !(r.kind === row.kind && r.id === row.id)));
         }
+      } else {
+        const body = await res.json().catch(() => ({}));
+        alert(typeof body.error === "string" ? body.error : "Falha ao atualizar");
       }
     } finally {
       setBusyKey(null);
@@ -231,10 +265,12 @@ export default function AcuraVolunteersAdminPanel() {
   }
 
   async function toggleListing(row: AcuraVolunteerAdminRow) {
+    const path = verifyApiPath(row.kind);
+    if (!path) return;
     const key = `${row.kind}-${row.id}`;
     setBusyKey(key);
     try {
-      await fetch(`${verifyApiPath(row.kind)}/${row.id}`, {
+      await fetch(`${path}/${row.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ verified: !row.verified }),
@@ -283,7 +319,7 @@ export default function AcuraVolunteersAdminPanel() {
       setIncludeResults([]);
       return;
     }
-    const t = setTimeout(async () => {
+    const timer = setTimeout(async () => {
       setIncludeLoading(true);
       try {
         const res = await fetch(
@@ -298,8 +334,12 @@ export default function AcuraVolunteersAdminPanel() {
       }
       setIncludeLoading(false);
     }, 300);
-    return () => clearTimeout(t);
+    return () => clearTimeout(timer);
   }, [includeQ]);
+
+  function toggleCategory(cat: AcuraVolunteerCategory) {
+    setCategory((prev) => (prev === cat ? "all" : cat));
+  }
 
   return (
     <div className="space-y-6">
@@ -317,7 +357,7 @@ export default function AcuraVolunteersAdminPanel() {
             <div>
               <h2 className="font-semibold text-slate-800">Voluntários AcuraBrasil</h2>
               <p className="text-xs text-slate-500">
-                Lista oficial de contato — só quem pediu ou foi aprovado pelo admin
+                Lista oficial de contato — profissionais e anjos que pediram ou foram aprovados
               </p>
             </div>
           </div>
@@ -361,17 +401,40 @@ export default function AcuraVolunteersAdminPanel() {
                 </div>
               </div>
               <div className="bg-sky-50 rounded-xl p-3">
-                <p className="text-xs text-sky-700 mb-1.5">Ativos por tipo</p>
-                <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-xs text-sky-900">
+                <p className="text-xs text-sky-700 mb-1.5">Ativos por tipo — clique para filtrar</p>
+                <div className="flex flex-wrap gap-2">
                   {ACURA_CATEGORY_ORDER.map((cat) => {
-                    const n = data.totals.byCategory?.[cat] ?? 0;
-                    if (n <= 0) return null;
+                    const activeN = data.totals.byCategory?.[cat] ?? 0;
+                    const inList = data.rows.some((r) => r.category === cat);
+                    // Show chip if there are actives, or if the current status list has that type
+                    // (e.g. pending anjos when active count is still 0).
+                    if (activeN <= 0 && !inList) return null;
+                    const selected = category === cat;
+                    const n = activeN > 0 ? activeN : data.rows.filter((r) => r.category === cat).length;
                     return (
-                      <span key={cat}>
+                      <button
+                        key={cat}
+                        type="button"
+                        onClick={() => toggleCategory(cat)}
+                        className={`text-xs font-medium px-2.5 py-1 rounded-lg border transition ${
+                          selected
+                            ? "bg-sky-600 text-white border-sky-600"
+                            : "bg-white/70 text-sky-900 border-sky-200 hover:bg-white"
+                        }`}
+                      >
                         {t(`admin.providers.tab.${cat}`)}: <strong>{n}</strong>
-                      </span>
+                      </button>
                     );
                   })}
+                  {category !== "all" && (
+                    <button
+                      type="button"
+                      onClick={() => setCategory("all")}
+                      className="text-xs font-medium px-2.5 py-1 rounded-lg border border-slate-200 text-slate-600 hover:bg-white"
+                    >
+                      Limpar filtro
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -409,13 +472,13 @@ export default function AcuraVolunteersAdminPanel() {
               </div>
             </div>
 
-            {data.rows.length === 0 ? (
+            {filteredRows.length === 0 ? (
               <p className="text-sm text-slate-400 text-center py-10">
                 Nenhum voluntário neste filtro.
               </p>
             ) : (
               <div className="p-4 sm:p-5 space-y-3 bg-slate-50/60">
-                {data.rows.map((v) => {
+                {filteredRows.map((v) => {
                   const key = `${v.kind}-${v.id}`;
                   const busy = busyKey === key;
                   return (
@@ -435,9 +498,15 @@ export default function AcuraVolunteersAdminPanel() {
                             {KIND_ICON[v.kind]} {t(`admin.providers.tab.${v.category}`)}
                           </span>
                           <span className="text-slate-300">·</span>
-                          <span>{v.specialty ? getProfessionLabel(lang, v.specialty) : "—"}</span>
+                          <span>
+                            {v.specialty
+                              ? v.kind === "angel"
+                                ? v.specialty
+                                : getProfessionLabel(lang, v.specialty)
+                              : "—"}
+                          </span>
                         </div>
-                        <StatusBadge status={v.status} verified={v.verified} />
+                        <StatusBadge status={v.status} verified={v.verified} kind={v.kind} />
                       </div>
                       <ProviderCommandCtas
                         row={v}
@@ -502,7 +571,7 @@ export default function AcuraVolunteersAdminPanel() {
                         <span className="text-slate-300">·</span>
                         <span>{r.specialty ? getProfessionLabel(lang, r.specialty) : "—"}</span>
                       </div>
-                      <StatusBadge status={r.status} verified={r.verified} />
+                      <StatusBadge status={r.status} verified={r.verified} kind={r.kind} />
                     </div>
                     <ProviderCommandCtas
                       row={r}

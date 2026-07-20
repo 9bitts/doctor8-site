@@ -3,12 +3,13 @@ import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { audit } from "@/lib/audit";
 import {
+  AcuraVolunteerActionError,
   listAcuraVolunteersAdmin,
   setAcuraVolunteerStatus,
 } from "@/lib/acura-volunteer-admin";
 
 const patchSchema = z.object({
-  kind: z.enum(["professional", "psychoanalyst", "integrative"]),
+  kind: z.enum(["professional", "psychoanalyst", "integrative", "angel"]),
   id: z.string().min(1),
   action: z.enum(["approve", "reject", "include", "revoke"]),
 });
@@ -59,7 +60,10 @@ export async function PATCH(req: NextRequest) {
     await audit.updateRecord(session.user.id, "AcuraVolunteer", row.id);
 
     return NextResponse.json({ volunteer: row });
-  } catch {
+  } catch (err) {
+    if (err instanceof AcuraVolunteerActionError) {
+      return NextResponse.json({ error: err.message }, { status: err.status });
+    }
     return NextResponse.json({ error: "Update failed" }, { status: 500 });
   }
 }

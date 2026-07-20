@@ -56,6 +56,11 @@ export async function getAcuraVolunteerStats(limit = 50): Promise<AcuraVolunteer
         integrative: c.terapeutas,
       },
     },
-    volunteers: data.rows.map(toLegacyRow),
+    volunteers: data.rows
+      .filter(
+        (r): r is AcuraVolunteerAdminRow & { kind: "professional" | "psychoanalyst" | "integrative" } =>
+          r.kind !== "angel",
+      )
+      .map(toLegacyRow),
   };
 }

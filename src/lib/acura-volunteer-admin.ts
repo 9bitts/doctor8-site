@@ -1,4 +1,4 @@
-import type { AcuraVolunteerStatus } from "@prisma/client";
+import type { AcuraVolunteerStatus, AngelApprovalStatus } from "@prisma/client";
 import { db } from "@/lib/db";
 import { safeDecrypt } from "@/lib/psychoanalyst-api";
 import { decryptIntegrativeNameFields } from "@/lib/integrative-therapist-api";
@@ -9,6 +9,10 @@ import {
 import { resolveAdminTabForProfessional } from "@/lib/admin-provider-categories";
 import { PSYCHOANALYSIS_SPECIALTY } from "@/lib/professions";
 import { INTEGRATIVE_THERAPY_SPECIALTY } from "@/lib/integrative-therapy-specialty";
+import {
+  approveAngelVolunteer,
+  rejectAngelVolunteer,
+} from "@/lib/humanitarian/angel-admin-approval";
 import type {
   AcuraCategoryCounts,
   AcuraVolunteerAdminList,
@@ -33,10 +37,34 @@ function emptyCategoryCounts(): AcuraCategoryCounts {
     farmaceuticos: 0,
     psicanalistas: 0,
     terapeutas: 0,
+    anjos: 0,
   };
 }
 
 const PANEL_STATUSES: AcuraVolunteerStatus[] = ["PENDING", "ACTIVE", "REVOKED"];
+
+/** Map AngelApprovalStatus → AcuraVolunteerStatus for the shared admin panel. */
+export function angelApprovalToAcuraStatus(status: AngelApprovalStatus): AcuraVolunteerStatus {
+  if (status === "APPROVED") return "ACTIVE";
+  if (status === "REJECTED") return "REVOKED";
+  return "PENDING";
+}
+
+function acuraStatusToAngelApproval(status: AcuraVolunteerStatus | { in: AcuraVolunteerStatus[] }): AngelApprovalStatus | { in: AngelApprovalStatus[] } {
+  if (typeof status === "object" && "in" in status) {
+    const mapped = status.in.map((s) => {
+      if (s === "ACTIVE") return "APPROVED" as const;
+      if (s === "REVOKED") return "REJECTED" as const;
+      return "PENDING" as const;
+    });
+    return { in: mapped };
+  }
+  if (status === "ACTIVE") return "APPROVED";
+  if (status === "REVOKED") return "REJECTED";
+  if (status === "PENDING") return "PENDING";
+  // NONE has no angel equivalent — empty match
+  return "PENDING";
+}
 
 type UserSelect = {
   email: string;
@@ -141,15 +169,45 @@ function mapIntegrative(p: {
   };
 }
 
+function mapAngel(p: {
+  id: string;
+  userId: string;
+  firstName: string;
+  lastName: string;
+  profession: string | null;
+  approvalStatus: AngelApprovalStatus;
+  approvedAt: Date | null;
+  createdAt: Date;
+  user: UserSelect;
+}): AcuraVolunteerAdminRow {
+  const status = angelApprovalToAcuraStatus(p.approvalStatus);
+  const active = status === "ACTIVE";
+  return {
+    id: p.id,
+    userId: p.userId,
+    kind: "angel",
+    category: "anjos",
+    name: `${p.firstName} ${p.lastName}`.trim(),
+    specialty: p.profession || null,
+    verified: active,
+    ...mapUserFields(p.user),
+    status,
+    acuraVolunteer: active,
+    approvedAt: p.approvedAt?.toISOString() ?? null,
+    createdAt: p.createdAt.toISOString(),
+  };
+}
+
 async function countActiveByCategory(): Promise<AcuraCategoryCounts> {
   const counts = emptyCategoryCounts();
-  const [professionals, psychoanalysts, integrative] = await Promise.all([
+  const [professionals, psychoanalysts, integrative, angels] = await Promise.all([
     db.professionalProfile.findMany({
       where: { acuraVolunteerStatus: "ACTIVE" },
       select: { specialty: true, licenseNumber: true },
     }),
     db.psychoanalystProfile.count({ where: { acuraVolunteerStatus: "ACTIVE" } }),
     db.integrativeTherapistProfile.count({ where: { acuraVolunteerStatus: "ACTIVE" } }),
+    db.angelProfile.count({ where: { approvalStatus: "APPROVED" } }),
   ]);
   for (const p of professionals) {
     const tab = resolveAdminTabForProfessional(p.specialty, p.licenseNumber);
@@ -157,6 +215,7 @@ async function countActiveByCategory(): Promise<AcuraCategoryCounts> {
   }
   counts.psicanalistas += psychoanalysts;
   counts.terapeutas += integrative;
+  counts.anjos += angels;
   return counts;
 }
 
@@ -179,6 +238,24 @@ const selectFields = {
   },
 } as const;
 
+const angelSelectFields = {
+  id: true,
+  userId: true,
+  firstName: true,
+  lastName: true,
+  profession: true,
+  approvalStatus: true,
+  approvedAt: true,
+  createdAt: true,
+  user: {
+    select: {
+      email: true,
+      emailVerified: true,
+      _count: { select: { providerLicenseDocuments: true } },
+    },
+  },
+} as const;
+
 export async function listAcuraVolunteersAdmin(opts?: {
   status?: AcuraVolunteerStatus | "all";
   q?: string;
@@ -191,37 +268,49 @@ export async function listAcuraVolunteersAdmin(opts?: {
       : { in: PANEL_STATUSES };
 
   const whereBase = { acuraVolunteerStatus: statusFilter };
+  // Angels have no NONE status; skip them when filtering for NONE only.
+  const includeAngels = opts?.status !== "NONE";
+  const angelWhere = includeAngels
+    ? { approvalStatus: acuraStatusToAngelApproval(statusFilter) }
+    : null;
 
   const [
     pendingProf,
     pendingPa,
     pendingIt,
+    pendingAngel,
     activeProf,
     activePa,
     activeIt,
+    activeAngel,
     activeVerifiedProf,
     activeVerifiedPa,
     activeVerifiedIt,
     revokedProf,
     revokedPa,
     revokedIt,
+    revokedAngel,
     professionals,
     psychoanalysts,
     integrative,
+    angels,
     byCategory,
   ] = await Promise.all([
     db.professionalProfile.count({ where: { acuraVolunteerStatus: "PENDING" } }),
     db.psychoanalystProfile.count({ where: { acuraVolunteerStatus: "PENDING" } }),
     db.integrativeTherapistProfile.count({ where: { acuraVolunteerStatus: "PENDING" } }),
+    db.angelProfile.count({ where: { approvalStatus: "PENDING" } }),
     db.professionalProfile.count({ where: { acuraVolunteerStatus: "ACTIVE" } }),
     db.psychoanalystProfile.count({ where: { acuraVolunteerStatus: "ACTIVE" } }),
     db.integrativeTherapistProfile.count({ where: { acuraVolunteerStatus: "ACTIVE" } }),
+    db.angelProfile.count({ where: { approvalStatus: "APPROVED" } }),
     db.professionalProfile.count({ where: { acuraVolunteerStatus: "ACTIVE", verified: true } }),
     db.psychoanalystProfile.count({ where: { acuraVolunteerStatus: "ACTIVE", verified: true } }),
     db.integrativeTherapistProfile.count({ where: { acuraVolunteerStatus: "ACTIVE", verified: true } }),
     db.professionalProfile.count({ where: { acuraVolunteerStatus: "REVOKED" } }),
     db.psychoanalystProfile.count({ where: { acuraVolunteerStatus: "REVOKED" } }),
     db.integrativeTherapistProfile.count({ where: { acuraVolunteerStatus: "REVOKED" } }),
+    db.angelProfile.count({ where: { approvalStatus: "REJECTED" } }),
     db.professionalProfile.findMany({
       where: whereBase,
       select: { ...selectFields, specialty: true, licenseNumber: true },
@@ -240,6 +329,14 @@ export async function listAcuraVolunteersAdmin(opts?: {
       orderBy: { updatedAt: "desc" },
       take: limit,
     }),
+    angelWhere
+      ? db.angelProfile.findMany({
+          where: angelWhere,
+          select: angelSelectFields,
+          orderBy: { updatedAt: "desc" },
+          take: limit,
+        })
+      : Promise.resolve([]),
     countActiveByCategory(),
   ]);
 
@@ -247,6 +344,7 @@ export async function listAcuraVolunteersAdmin(opts?: {
     ...professionals.map(mapProfessional),
     ...psychoanalysts.map(mapPsychoanalyst),
     ...integrative.map(mapIntegrative),
+    ...angels.map(mapAngel),
   ];
 
   const q = opts?.q?.trim().toLowerCase();
@@ -268,10 +366,11 @@ export async function listAcuraVolunteersAdmin(opts?: {
 
   return {
     totals: {
-      pending: pendingProf + pendingPa + pendingIt,
-      active: activeProf + activePa + activeIt,
-      activeVerified: activeVerifiedProf + activeVerifiedPa + activeVerifiedIt,
-      revoked: revokedProf + revokedPa + revokedIt,
+      pending: pendingProf + pendingPa + pendingIt + pendingAngel,
+      active: activeProf + activePa + activeIt + activeAngel,
+      // Angels count as "active verified" once approved (no separate listing seal).
+      activeVerified: activeVerifiedProf + activeVerifiedPa + activeVerifiedIt + activeAngel,
+      revoked: revokedProf + revokedPa + revokedIt + revokedAngel,
       byCategory,
     },
     rows: rows.slice(0, limit),
@@ -326,12 +425,43 @@ export async function searchProvidersForAcuraInclude(q: string, limit = 20): Pro
 
 export type AcuraVolunteerAction = "approve" | "reject" | "include" | "revoke";
 
+export class AcuraVolunteerActionError extends Error {
+  status: number;
+  constructor(message: string, status = 400) {
+    super(message);
+    this.name = "AcuraVolunteerActionError";
+    this.status = status;
+  }
+}
+
 export async function setAcuraVolunteerStatus(opts: {
   kind: AcuraVolunteerKind;
   id: string;
   action: AcuraVolunteerAction;
   adminUserId: string;
 }): Promise<AcuraVolunteerAdminRow | null> {
+  if (opts.kind === "angel") {
+    if (opts.action === "approve" || opts.action === "include") {
+      const result = await approveAngelVolunteer({
+        profileId: opts.id,
+        adminUserId: opts.adminUserId,
+      });
+      if (!result.ok) {
+        throw new AcuraVolunteerActionError(result.error, result.status);
+      }
+    } else {
+      const result = await rejectAngelVolunteer({ profileId: opts.id });
+      if (!result.ok) {
+        throw new AcuraVolunteerActionError(result.error, result.status);
+      }
+    }
+    const updated = await db.angelProfile.findUnique({
+      where: { id: opts.id },
+      select: angelSelectFields,
+    });
+    return updated ? mapAngel(updated) : null;
+  }
+
   const nextStatus: AcuraVolunteerStatus =
     opts.action === "approve" || opts.action === "include"
       ? "ACTIVE"
