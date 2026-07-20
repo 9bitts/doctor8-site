@@ -53,7 +53,11 @@ export async function syncChartDocuments(opts: {
   }
 
   const shares = await db.sharedRecord.findMany({
-    where: { sharedWithProfessionalId: professionalId },
+    where: {
+      sharedWithProfessionalId: professionalId,
+      heldUntilLinkAccepted: false,
+      revokedAt: null,
+    },
     include: {
       patient: {
         include: { user: { select: { id: true, email: true } } },

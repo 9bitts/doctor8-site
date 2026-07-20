@@ -2,8 +2,13 @@
 // POST   — patient shares one of their OWN documents with an eligible doctor.
 // DELETE  — patient un-shares it (removes access + tells the doctor).
 //
-// Eligibility (POST, checked server-side): CONFIRMED/COMPLETED appointment, or
-// CANCELLED within the 30-day grace period with that professional.
+// Eligibility (POST, checked server-side):
+//   - CONFIRMED/COMPLETED appointment (or CANCELLED within 30-day grace), or
+//   - exam request from that professional, or
+//   - PatientProfessionalLink PENDING or ACCEPTED
+//
+// When link is PENDING (patient-requested path): share is heldUntilLinkAccepted
+// and invisible to the professional until they accept.
 import { NextRequest, NextResponse } from "next/server";
 import { requirePatient, isApiError } from "@/lib/api-auth";
 import { db } from "@/lib/db";
@@ -18,6 +23,7 @@ import {
 } from "@/lib/shared-document-attach";
 import { patientChartPathForSpecialty, professionalSharedPathForSpecialty } from "@/lib/patient-chart-path";
 import { ensurePatientRecord } from "@/lib/ensure-patient-record";
+import { getLink } from "@/lib/patient-professional-link";
 import { z } from "zod";
 
 const schema = z.object({
@@ -95,23 +101,61 @@ export async function POST(
     eligibleByExamRequest = !!examRequest;
   }
 
-  if (!eligibleAppointment && !eligibleByExamRequest) {
+  const link = await getLink(userId, professional.userId);
+  const eligibleByLink =
+    !!link && (link.status === "PENDING" || link.status === "ACCEPTED");
+
+  if (!eligibleAppointment && !eligibleByExamRequest && !eligibleByLink) {
     return NextResponse.json(
       { error: "You can only share with a doctor you have a confirmed appointment with." },
       { status: 403 }
     );
   }
 
+  // Hold docs when the only eligibility is a PENDING patient-initiated link.
+  const holdUntilAccepted =
+    !eligibleAppointment &&
+    !eligibleByExamRequest &&
+    !!link &&
+    link.status === "PENDING" &&
+    link.requestedBy === "PATIENT";
+
   const already = await db.sharedRecord.findFirst({
     where: {
       documentId: doc.id,
       sharedWithProfessionalId: professional.id,
       sharedByUserId: userId,
+      revokedAt: null,
     },
-    select: { id: true },
+    select: { id: true, heldUntilLinkAccepted: true },
   });
   if (already) {
-    return NextResponse.json({ shared: true, alreadyShared: true });
+    return NextResponse.json({
+      shared: true,
+      alreadyShared: true,
+      heldUntilLinkAccepted: already.heldUntilLinkAccepted,
+    });
+  }
+
+  await db.sharedRecord.create({
+    data: {
+      documentId: doc.id,
+      patientId: patientProfileId,
+      sharedWithUserId: professional.userId,
+      sharedByUserId: userId,
+      sharedWithProfessionalId: professional.id,
+      heldUntilLinkAccepted: holdUntilAccepted,
+    },
+  });
+
+  if (holdUntilAccepted) {
+    return NextResponse.json({
+      shared: true,
+      heldUntilLinkAccepted: true,
+      autoAttached: false,
+      chartId: null,
+      chartRecordId: null,
+    });
   }
 
   let chartId = await findChartForPatient(
@@ -128,16 +172,6 @@ export async function POST(
   const docLink = chartId
     ? `${patientChartPathForSpecialty(professional.specialty, chartId)}?recordId=${doc.id}`
     : `${professionalSharedPathForSpecialty(professional.specialty)}?documentId=${doc.id}`;
-
-  await db.sharedRecord.create({
-    data: {
-      documentId: doc.id,
-      patientId: patientProfileId,
-      sharedWithUserId: professional.userId,
-      sharedByUserId: userId,
-      sharedWithProfessionalId: professional.id,
-    },
-  });
 
   // Notify the professional.
   await db.message.create({
@@ -214,6 +248,7 @@ export async function POST(
 
   return NextResponse.json({
     shared: true,
+    heldUntilLinkAccepted: false,
     autoAttached,
     chartId,
     chartRecordId,
@@ -253,6 +288,16 @@ export async function DELETE(
   });
   if (!professional) return NextResponse.json({ error: "Doctor not found" }, { status: 404 });
 
+  const heldShare = await db.sharedRecord.findFirst({
+    where: {
+      documentId: doc.id,
+      sharedWithProfessionalId: professional.id,
+      patientId: patientProfileId,
+      heldUntilLinkAccepted: true,
+    },
+    select: { id: true },
+  });
+
   // Remove all shares of this doc with this professional from this patient.
   const del = await db.sharedRecord.deleteMany({
     where: {
@@ -262,11 +307,11 @@ export async function DELETE(
     },
   });
 
-  if (del.count > 0) {
+  // Only notify the doctor when the share was already visible (not held).
+  if (del.count > 0 && !heldShare) {
     const docTitle = safeDecrypt(doc.title);
     const patientName = `${patient.firstName} ${patient.lastName}`.trim() || "A patient";
 
-    // Tell the doctor it was un-shared.
     await db.message.create({
       data: {
         senderId: userId,

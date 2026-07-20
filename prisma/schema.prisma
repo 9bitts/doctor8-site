@@ -1479,12 +1479,15 @@ model SharedRecord {
   maxViews         Int       @default(50)
   revokedAt        DateTime?
   viewPinHash      String?   // optional bcrypt PIN for public link access
+  /// Patient queued share while connection is PENDING; invisible to professional until ACCEPTED.
+  heldUntilLinkAccepted Boolean @default(false)
 
   createdAt        DateTime  @default(now())
 
   @@index([patientId])
   @@index([accessToken])
   @@index([sharedWithProfessionalId])
+  @@index([sharedWithProfessionalId, heldUntilLinkAccepted])
 }
 
 // Consent-based patient ↔ medical professional link (prescribe/search without full chart read).

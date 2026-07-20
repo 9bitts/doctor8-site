@@ -51,7 +51,12 @@ export async function canProfessionalReadPatientAccount(params: {
       select: { id: true },
     }),
     db.sharedRecord.findFirst({
-      where: { sharedWithProfessionalId: professionalId, patientId: patientProfileId },
+      where: {
+        sharedWithProfessionalId: professionalId,
+        patientId: patientProfileId,
+        heldUntilLinkAccepted: false,
+        revokedAt: null,
+      },
       select: { id: true },
     }),
     hasAcceptedLink(patientUserId, professionalUserId),

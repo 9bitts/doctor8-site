@@ -80,6 +80,8 @@ async function sharedRecordBetweenUsers(
 ): Promise<boolean> {
   const share = await db.sharedRecord.findFirst({
     where: {
+      heldUntilLinkAccepted: false,
+      revokedAt: null,
       OR: [
         { sharedWithUserId: receiverId, patient: { userId: senderId } },
         { sharedWithUserId: senderId, patient: { userId: receiverId } },

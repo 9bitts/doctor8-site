@@ -16,6 +16,7 @@ import Link from "next/link";
 import MarketPricingCard from "@/components/professional/MarketPricingCard";
 import DoctorConnectionBanner from "@/components/professional/DoctorConnectionBanner";
 import HumanitarianVolunteerBanner from "@/components/humanitarian/HumanitarianVolunteerBanner";
+import ProfessionalIncomingLinkBanner from "@/components/professional/ProfessionalIncomingLinkBanner";
 import ProfessionalInsightsBanner from "@/components/professional/ProfessionalInsightsBanner";
 import ProfessionalQuickAccess from "@/components/professional/ProfessionalQuickAccess";
 import { getActiveCampaignForRegion } from "@/lib/humanitarian/notify";
@@ -165,6 +166,8 @@ export default async function ProfessionalDashboard() {
       where: {
         sharedWithProfessionalId: professional.id,
         viewedAt: null,
+        heldUntilLinkAccepted: false,
+        revokedAt: null,
       },
     }),
     db.message.count({
@@ -248,6 +251,8 @@ export default async function ProfessionalDashboard() {
           settingsHref="/professional/settings"
         />
       )}
+
+      <ProfessionalIncomingLinkBanner />
 
       <HumanitarianVolunteerBanner
         lang={lang}

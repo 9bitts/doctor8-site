@@ -160,7 +160,11 @@ export async function GET(req: NextRequest) {
   }
 
   const shares = await db.sharedRecord.findMany({
-    where: { sharedWithProfessionalId: ctx.professional.id },
+    where: {
+      sharedWithProfessionalId: ctx.professional.id,
+      heldUntilLinkAccepted: false,
+      revokedAt: null,
+    },
     select: { patientId: true },
     distinct: ["patientId"],
   });

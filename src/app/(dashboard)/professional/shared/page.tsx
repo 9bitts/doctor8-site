@@ -25,7 +25,11 @@ export default async function ProfessionalSharedPage() {
   if (!professional) redirect("/onboarding");
 
   const shares = await db.sharedRecord.findMany({
-    where: { sharedWithProfessionalId: professional.id },
+    where: {
+      sharedWithProfessionalId: professional.id,
+      heldUntilLinkAccepted: false,
+      revokedAt: null,
+    },
     orderBy: { createdAt: "desc" },
     take: 200,
     include: {

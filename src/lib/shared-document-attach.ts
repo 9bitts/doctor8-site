@@ -40,7 +40,12 @@ export async function attachSharedDocumentToChart(opts: {
   const { documentId, chartId, professionalId } = opts;
 
   const share = await db.sharedRecord.findFirst({
-    where: { documentId, sharedWithProfessionalId: professionalId },
+    where: {
+      documentId,
+      sharedWithProfessionalId: professionalId,
+      heldUntilLinkAccepted: false,
+      revokedAt: null,
+    },
     select: { id: true },
   });
   if (!share) return null;

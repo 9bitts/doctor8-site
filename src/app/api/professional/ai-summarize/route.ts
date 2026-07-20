@@ -38,7 +38,12 @@ async function canAccessDocument(professionalId: string, documentId: string) {
   if (doc.patientRecord?.professionalId === professionalId) return doc;
 
   const share = await db.sharedRecord.findFirst({
-    where: { documentId, sharedWithProfessionalId: professionalId },
+    where: {
+      documentId,
+      sharedWithProfessionalId: professionalId,
+      heldUntilLinkAccepted: false,
+      revokedAt: null,
+    },
   });
   if (share) return doc;
 

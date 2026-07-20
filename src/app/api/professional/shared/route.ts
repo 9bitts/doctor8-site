@@ -9,6 +9,7 @@ import { db } from "@/lib/db";
 import { decrypt } from "@/lib/encryption";
 import { getSignedReadUrl } from "@/lib/s3";
 import { documentHasStoredFile, resolveDocumentFileKey } from "@/lib/document-file";
+import { professionalVisibleShareWhere } from "@/lib/held-shared-records";
 
 function safeDecrypt(v: string | null): string {
   if (v == null) return "";
@@ -26,7 +27,11 @@ export async function GET(req: NextRequest) {
   // --- Single document: signed URL for download ---
   if (documentId) {
     const share = await db.sharedRecord.findFirst({
-      where: { documentId, sharedWithProfessionalId: ctx.professional.id },
+      where: {
+        documentId,
+        sharedWithProfessionalId: ctx.professional.id,
+        ...professionalVisibleShareWhere,
+      },
       select: { id: true },
     });
     if (!share) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -44,7 +49,10 @@ export async function GET(req: NextRequest) {
 
   // --- List of documents shared with this professional ---
   const shares = await db.sharedRecord.findMany({
-    where: { sharedWithProfessionalId: ctx.professional.id },
+    where: {
+      sharedWithProfessionalId: ctx.professional.id,
+      ...professionalVisibleShareWhere,
+    },
     orderBy: { createdAt: "desc" },
     take: 200,
     include: {
