@@ -466,6 +466,19 @@ export function RegisterAccountForm({
         </div>
       )}
 
+      <p className="text-sm text-slate-400 mb-3">{t("reg.googlePhoneHint")}</p>
+
+      <div className="mb-4">
+        <InternationalPhoneInput
+          lang={lang}
+          dark
+          region={region}
+          value={phone}
+          onChange={setPhone}
+          error={errors.phoneNational?.[0]}
+        />
+      </div>
+
       <button
         onClick={handleGoogleSignUp}
         disabled={googleLoading || loading || !isPhoneValid}
@@ -500,11 +513,7 @@ export function RegisterAccountForm({
                   : t("reg.googlePatient")}
       </button>
 
-      <div className="flex items-center gap-4 mb-4">
-        <div className="flex-1 h-px bg-white/10" />
-        <span className="text-slate-500 text-xs uppercase tracking-wider">{t("reg.or")}</span>
-        <div className="flex-1 h-px bg-white/10" />
-      </div>
+      <div className="h-px bg-white/10 mb-4" />
 
       <form onSubmit={handleSubmit} className="space-y-5">
         <div>
@@ -553,15 +562,6 @@ export function RegisterAccountForm({
           />
           {errors.email && <p className="text-red-400 text-xs mt-1">{errors.email[0]}</p>}
         </div>
-
-        <InternationalPhoneInput
-          lang={lang}
-          dark
-          region={region}
-          value={phone}
-          onChange={setPhone}
-          error={errors.phoneNational?.[0]}
-        />
 
         <div>
           <label className="block text-sm font-medium text-slate-300 mb-2">{t("reg.password")}</label>
