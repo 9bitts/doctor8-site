@@ -13,7 +13,8 @@ import {
   rateLimitResponse,
 } from "@/lib/rate-limit";
 
-const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL || "support@doctor8.org";
+const MARKETING_LEAD_EMAIL =
+  process.env.MARKETING_LEAD_EMAIL || "concierge@doctor8.com.br";
 const INTEREST_VALUES = MARKETING_LEAD_INTERESTS.map((i) => i.value) as [
   MarketingLeadInterest,
   ...MarketingLeadInterest[],
@@ -84,7 +85,7 @@ export async function POST(req: NextRequest) {
   });
 
   await sendTransactionalEmail({
-    to: SUPPORT_EMAIL,
+    to: MARKETING_LEAD_EMAIL,
     subject,
     html: `<pre style="font-family:sans-serif;white-space:pre-wrap;">${ticketBody.replace(/</g, "&lt;")}</pre>`,
     text: ticketBody,
