@@ -218,7 +218,25 @@ export default function PatientMapClient() {
   }, [t]);
 
   useEffect(() => {
-    loadProfessionals(undefined, undefined, "São Paulo, Brazil", specialty, radiusKm);
+    const fallbackQuery = "São Paulo, Brazil";
+    if (!navigator.geolocation) {
+      loadProfessionals(undefined, undefined, fallbackQuery, specialty, radiusKm);
+      return;
+    }
+    setGeoLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const c = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        setCenter(c);
+        loadProfessionals(c.lat, c.lng, undefined, specialty, radiusKm);
+        setGeoLoading(false);
+      },
+      () => {
+        loadProfessionals(undefined, undefined, fallbackQuery, specialty, radiusKm);
+        setGeoLoading(false);
+      },
+      { timeout: 8000, maximumAge: 300000 }
+    );
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -232,13 +250,18 @@ export default function PatientMapClient() {
     e.preventDefault();
     if (!searchQuery.trim()) return;
     setGeoLoading(true);
+    setError("");
     loadProfessionals(undefined, undefined, searchQuery.trim(), specialty, radiusKm)
       .finally(() => setGeoLoading(false));
   }
 
   function useMyLocation() {
-    if (!navigator.geolocation) return;
+    if (!navigator.geolocation) {
+      setError(t("map.err.geo"));
+      return;
+    }
     setGeoLoading(true);
+    setError("");
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         const c = { lat: pos.coords.latitude, lng: pos.coords.longitude };
@@ -247,8 +270,11 @@ export default function PatientMapClient() {
         loadProfessionals(c.lat, c.lng, undefined, specialty, radiusKm);
         setGeoLoading(false);
       },
-      () => setGeoLoading(false),
-      { timeout: 8000 }
+      () => {
+        setError(t("map.err.geo"));
+        setGeoLoading(false);
+      },
+      { timeout: 8000, enableHighAccuracy: true }
     );
   }
 

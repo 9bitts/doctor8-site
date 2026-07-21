@@ -54,7 +54,7 @@ const nextConfig = {
           {
             key: "Permissions-Policy",
             value:
-              'camera=(self "https://*.daily.co"), microphone=(self "https://*.daily.co"), display-capture=(self "https://*.daily.co"), fullscreen=(self "https://*.daily.co"), autoplay=(self "https://*.daily.co"), geolocation=()',
+              'camera=(self "https://*.daily.co"), microphone=(self "https://*.daily.co"), display-capture=(self "https://*.daily.co"), fullscreen=(self "https://*.daily.co"), autoplay=(self "https://*.daily.co"), geolocation=(self)',
           },
           {
             key: "Strict-Transport-Security",

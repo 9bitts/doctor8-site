@@ -141,8 +141,12 @@ export default function LandingMapPanel({ defaultQuery = "Rio de Janeiro" }: Pro
   }
 
   function useMyLocation() {
-    if (!navigator.geolocation) return;
+    if (!navigator.geolocation) {
+      setError(t("map.err.geo"));
+      return;
+    }
     setGeoLoading(true);
+    setError("");
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         const c = { lat: pos.coords.latitude, lng: pos.coords.longitude };
@@ -151,8 +155,11 @@ export default function LandingMapPanel({ defaultQuery = "Rio de Janeiro" }: Pro
         loadProfessionals(c.lat, c.lng, undefined, specialty, radiusKm);
         setGeoLoading(false);
       },
-      () => setGeoLoading(false),
-      { timeout: 8000 }
+      () => {
+        setError(t("map.err.geo"));
+        setGeoLoading(false);
+      },
+      { timeout: 8000, enableHighAccuracy: true }
     );
   }
 
