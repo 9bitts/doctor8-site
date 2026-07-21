@@ -117,6 +117,13 @@ export default function DrugLeafletPanel({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  const targetKey =
+    target == null
+      ? ""
+      : target.kind === "drug"
+        ? `drug:${target.drugId}`
+        : `mn:${target.slug}`;
+
   useEffect(() => {
     if (!target) {
       setLeaflet(null);
@@ -160,7 +167,9 @@ export default function DrugLeafletPanel({
     return () => {
       cancelled = true;
     };
-  }, [apiBase, target, t]);
+    // Intentionally depend on targetKey (not `t`) to avoid cancel/restart loops.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- stable fetch identity
+  }, [apiBase, targetKey]);
 
   if (!target) {
     return (
@@ -180,8 +189,10 @@ export default function DrugLeafletPanel({
         ? t("rx.leaflet.sourceAnvisa")
         : t("rx.leaflet.sourceCatalog");
 
+  const sections = leaflet?.sections ?? [];
+
   return (
-    <div className={`flex flex-col flex-1 min-h-0 bg-slate-50/50 max-lg:border-0 lg:border-l lg:border-slate-100 ${className ?? ""}`}>
+    <div className={`flex flex-col h-full min-h-0 bg-white ${className ?? ""}`}>
       <div className="flex items-start justify-between gap-2 p-3 border-b border-slate-100 bg-white shrink-0">
         <div className="min-w-0 flex-1">
           <p className="text-xs font-semibold text-brand-600 uppercase tracking-wide">
@@ -197,7 +208,7 @@ export default function DrugLeafletPanel({
         <button
           type="button"
           onClick={onClose}
-          className="shrink-0 p-2 -mr-1 rounded-lg text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition lg:hidden"
+          className="shrink-0 p-2 -mr-1 rounded-lg text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition"
           aria-label={t("rx.leaflet.close")}
         >
           <X size={20} />
@@ -216,13 +227,19 @@ export default function DrugLeafletPanel({
           <p className="text-sm text-slate-500 text-center py-8 px-2">{error}</p>
         )}
 
-        {!loading && leaflet && (
+        {!loading && leaflet && sections.length === 0 && (
+          <p className="text-sm text-slate-500 text-center py-8 px-2">
+            {t("rx.leaflet.notFound")}
+          </p>
+        )}
+
+        {!loading && leaflet && sections.length > 0 && (
           <>
             <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wide">
               {sourceLabel}
             </p>
             <LeafletAccordion
-              sections={leaflet.sections}
+              sections={sections}
               t={t}
               onInsertPosology={onInsertPosology}
               posologyExcerpt={leaflet.posologyExcerpt}

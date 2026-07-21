@@ -386,7 +386,7 @@ export function MedicationSearch({
           <div
             className={`bg-white rounded-2xl shadow-xl w-full flex flex-col overflow-hidden ${
               leafletTarget
-                ? "max-w-5xl h-[92dvh] max-h-[92dvh]"
+                ? "max-w-2xl h-[92dvh] max-h-[92dvh]"
                 : "max-w-lg max-h-[90vh]"
             }`}
             onClick={(e) => e.stopPropagation()}
@@ -410,12 +410,8 @@ export function MedicationSearch({
               </button>
             </div>
 
-            <div className="relative flex flex-col lg:flex-row flex-1 min-h-0 overflow-hidden">
-              <div
-                className={`p-4 overflow-y-auto overscroll-contain flex-1 min-h-0 lg:max-w-md lg:shrink-0 lg:border-r lg:border-slate-100 ${
-                  leafletTarget ? "max-lg:hidden" : ""
-                }`}
-              >
+            <div className="relative flex-1 min-h-0 overflow-hidden">
+              <div className="h-full overflow-y-auto overscroll-contain p-4">
                 {drugSearching ? (
                   <div className="flex flex-col items-center justify-center py-12 gap-3">
                     <Loader2 size={24} className="animate-spin text-brand-400" />
@@ -448,22 +444,18 @@ export function MedicationSearch({
                 ) : null}
               </div>
 
-              <div
-                className={
-                  leafletTarget
-                    ? "max-lg:absolute max-lg:inset-0 max-lg:z-10 max-lg:bg-white max-lg:shadow-[-8px_0_24px_rgba(15,23,42,0.08)] flex min-h-0 flex-col flex-1 lg:min-w-[320px]"
-                    : "hidden lg:flex lg:min-h-0 lg:flex-1 lg:min-w-[280px] lg:flex-col"
-                }
-              >
-                <DrugLeafletPanel
-                  target={leafletTarget}
-                  apiBase={cfg.apiBase}
-                  t={t}
-                  onClose={onCloseLeafletPanel}
-                  onInsertPosology={onInsertLeafletPosology}
-                  className="flex-1 min-h-0 w-full"
-                />
-              </div>
+              {leafletTarget && (
+                <div className="absolute inset-0 z-20 flex flex-col bg-white">
+                  <DrugLeafletPanel
+                    target={leafletTarget}
+                    apiBase={cfg.apiBase}
+                    t={t}
+                    onClose={onCloseLeafletPanel}
+                    onInsertPosology={onInsertLeafletPosology}
+                    className="h-full min-h-0 w-full"
+                  />
+                </div>
+              )}
             </div>
           </div>
         </div>
