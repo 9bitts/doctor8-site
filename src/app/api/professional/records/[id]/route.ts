@@ -15,6 +15,8 @@ import {
   patientDisplayName,
 } from "@/lib/chart-link-notify";
 import { markChartInvitesLinked } from "@/lib/patient-chart-link";
+import { documentHasStoredFile } from "@/lib/document-file";
+import { countRecordAttachments } from "@/lib/record-content";
 
 function safeDecrypt(v: string | null): string {
   if (v == null) return "";
@@ -56,7 +58,7 @@ export async function GET(
     include: {
       medicalDocuments: {
         orderBy: { createdAt: "desc" },
-        take: 20,
+        take: 50,
         include: { category: { select: { name: true } } },
       },
     },
@@ -69,13 +71,26 @@ export async function GET(
     id: record.id,
     firstName: safeDecrypt(record.firstName),
     lastName: safeDecrypt(record.lastName),
-    documents: record.medicalDocuments.map((d) => ({
-      id: d.id,
-      title: safeDecrypt(d.title),
-      content: d.content ? safeDecrypt(d.content) : null,
-      categoryName: d.category?.name ?? null,
-      createdAt: d.createdAt.toISOString(),
-    })),
+    email: record.email || null,
+    phone: record.phone ? safeDecrypt(record.phone) : null,
+    country: record.country || null,
+    linkedUserId: record.linkedUserId || null,
+    hasAccount: !!record.linkedUserId,
+    documents: record.medicalDocuments.map((d) => {
+      const content = d.content ? safeDecrypt(d.content) : null;
+      const hasFile = documentHasStoredFile(d);
+      return {
+        id: d.id,
+        type: d.type as string,
+        title: safeDecrypt(d.title),
+        content,
+        categoryName: d.category?.name ?? null,
+        hasFile,
+        attachmentCount: countRecordAttachments(hasFile, content),
+        sourceDocumentId: d.sourceDocumentId ?? null,
+        createdAt: d.createdAt.toISOString(),
+      };
+    }),
   });
 }
 

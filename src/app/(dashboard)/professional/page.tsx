@@ -19,6 +19,7 @@ import HumanitarianVolunteerBanner from "@/components/humanitarian/HumanitarianV
 import ProfessionalIncomingLinkBanner from "@/components/professional/ProfessionalIncomingLinkBanner";
 import ProfessionalInsightsBanner from "@/components/professional/ProfessionalInsightsBanner";
 import ProfessionalQuickAccess from "@/components/professional/ProfessionalQuickAccess";
+import ProfessionalExamResultsHomeBanner from "@/components/professional/ProfessionalExamResultsHomeBanner";
 import { getActiveCampaignForRegion } from "@/lib/humanitarian/notify";
 import { getVolunteerDashboardState } from "@/lib/humanitarian/volunteer-dashboard";
 import { getProfessionalDashboardInsights } from "@/lib/professional-dashboard-insights";
@@ -312,6 +313,8 @@ export default async function ProfessionalDashboard() {
           </div>
         </div>
       </Link>
+
+      <ProfessionalExamResultsHomeBanner />
 
       <ProfessionalQuickAccess
         t={t}
