@@ -9,6 +9,7 @@ import { ensurePatientRecord } from "@/lib/ensure-patient-record";
 import { hasTelemedicineTcle } from "@/lib/consent/telemedicine-tcle";
 import { isDailyCloudRecordingEnabled } from "@/lib/data-residency";
 import { expireStaleJitNoShows } from "@/lib/jit-no-show-expiry";
+import { expireStaleJitInProgress } from "@/lib/jit-queue-completion";
 import { providerPanelFromSpecialty, providerJitPath } from "@/lib/video-chart-nav";
 
 function safeDecrypt(v: string | null | undefined): string {
@@ -50,6 +51,7 @@ export async function GET(
   if (!entry) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   await expireStaleJitNoShows(entry.sessionId);
+  await expireStaleJitInProgress(entry.sessionId);
 
   const freshEntry = await db.jitQueue.findUnique({
     where: { id: params.queueId },

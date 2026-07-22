@@ -15,6 +15,7 @@ import { readJsonBody } from "@/lib/safe-json";
 import { refundPaymentIntentIdempotent, type RefundResult } from "@/lib/stripe-refund";
 import { stripe } from "@/lib/stripe";
 import { expireStaleJitNoShows } from "@/lib/jit-no-show-expiry";
+import { expireStaleJitInProgress, markJitQueuesDone } from "@/lib/jit-queue-completion";
 
 function safeDecrypt(v: string | null): string {
   if (!v) return "";
@@ -71,10 +72,12 @@ export async function GET(req: NextRequest) {
   if (searchParams.get("mine") === "1") {
     // Patient restoring their active queue entry (e.g. after page refresh).
     // Always scoped to the session user — userId is never accepted as a param.
+    await expireStaleJitInProgress();
+
     const entry0 = await db.jitQueue.findFirst({
       where: {
         patientUserId: session.user.id,
-        status: { in: ["WAITING", "CALLED"] },
+        status: { in: ["WAITING", "CALLED", "IN_PROGRESS"] },
       },
       orderBy: { enteredAt: "desc" },
       include: {
@@ -92,7 +95,10 @@ export async function GET(req: NextRequest) {
     await expireStaleJitNoShows(entry0.sessionId);
 
     const entry = await db.jitQueue.findFirst({
-      where: { id: entry0.id },
+      where: {
+        id: entry0.id,
+        status: { in: ["WAITING", "CALLED", "IN_PROGRESS"] },
+      },
       include: {
         session: {
           select: {
@@ -559,28 +565,7 @@ export async function PATCH(req: NextRequest) {
     }
 
     // Mark current IN_PROGRESS as DONE (only when confirmed or none active)
-    const finishing = await db.jitQueue.findMany({
-      where: { sessionId, status: "IN_PROGRESS" },
-      select: { id: true },
-    });
-    await db.jitQueue.updateMany({
-      where: { sessionId, status: "IN_PROGRESS" },
-      data:  { status: "DONE", endedAt: now },
-    });
-    for (const entry of finishing) {
-      try {
-        const { tryStampForCompletedJitQueue } = await import("@/lib/club-stamps");
-        await tryStampForCompletedJitQueue(entry.id);
-      } catch (e) {
-        console.error("[JIT] Club stamp failed:", e);
-      }
-      try {
-        const { settleEapCorporateJitQueue } = await import("@/lib/employer-eap-settlement");
-        await settleEapCorporateJitQueue(entry.id);
-      } catch (e) {
-        console.error("[JIT] EAP settlement failed:", e);
-      }
-    }
+    await markJitQueuesDone({ sessionId });
 
     // Get next WAITING entry
     const next = await db.jitQueue.findFirst({

@@ -209,6 +209,7 @@ export function usePrescriptionPage() {
   const [savingTemplate, setSavingTemplate] = useState(false);
   const [lockPatient, setLockPatient] = useState(false);
   const [consultReturnUrl, setConsultReturnUrl] = useState<string | null>(null);
+  const clearConsultReturnUrl = () => setConsultReturnUrl(null);
   const [pendingStarterId, setPendingStarterId] = useState<string | null>(null);
   const [pendingTemplateId, setPendingTemplateId] = useState<string | null>(null);
   const [pendingDocTemplateId, setPendingDocTemplateId] = useState<string | null>(null);
@@ -2269,6 +2270,7 @@ export function usePrescriptionPage() {
     editingPrescriptionId,
     editingClinicalDocId,
     consultReturnUrl,
+    clearConsultReturnUrl,
     reusePatient,
     reuseClinical,
     templateAppliedHint,

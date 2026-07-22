@@ -241,7 +241,7 @@ export default function RecordDetailClient({
   const { lang, t } = useI18n();
   const toast = useToast();
   const searchParams = useSearchParams();
-  const consultReturnUrl = searchParams.get("returnUrl");
+  const [consultReturnUrl, setConsultReturnUrl] = useState(searchParams.get("returnUrl"));
   const legacyLabel = (type: string) => t(LEGACY_KEYS[type] || "doctype.OTHER");
   const [docs, setDocs] = useState<Doc[]>(initialDocuments);
   const [chartTab, setChartTab] = useState<"activity" | "records" | "evolution" | "diagnoses" | "vaccines" | "growth" | "dental" | "audio" | "nutrition" | "nursing" | "pharmacy">("activity");
@@ -1235,6 +1235,7 @@ export default function RecordDetailClient({
         returnUrl={consultReturnUrl}
         patientName={`${displayFirstName} ${displayLastName}`}
         lang={lang}
+        onInactive={() => setConsultReturnUrl(null)}
       />
       <Link
         href={`${portalBase}/patients`}

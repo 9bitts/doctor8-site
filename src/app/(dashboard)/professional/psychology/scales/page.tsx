@@ -150,6 +150,7 @@ export default function PsychologyScalesPage() {
           returnUrl={consultReturnUrl}
           patientName={selectedPatient ? `${selectedPatient.firstName} ${selectedPatient.lastName}` : undefined}
           lang={lang as "pt" | "en" | "es"}
+          onInactive={() => setConsultReturnUrl(null)}
         />
         <button onClick={() => setView("list")} className="flex items-center gap-2 text-sm text-slate-500 hover:text-indigo-600 font-medium">
           <ArrowLeft size={16} /> {t("psy.scales.back")}

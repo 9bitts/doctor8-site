@@ -25,6 +25,7 @@ export type PrescriptionFormProps = {
   lang: string;
   cfg: PrescriptionsPortalConfig;
   consultReturnUrl: string | null;
+  onConsultReturnInactive?: () => void;
   templateAppliedHint: boolean;
   voicePrefillActive: boolean;
   reuseSource: Prescription | null;
@@ -62,6 +63,7 @@ export function PrescriptionForm({
   lang,
   cfg,
   consultReturnUrl,
+  onConsultReturnInactive,
   templateAppliedHint,
   voicePrefillActive,
   reuseSource,
@@ -98,7 +100,12 @@ export function PrescriptionForm({
 
   return (
     <div className="max-w-3xl mx-auto space-y-5 pb-24">
-      <VideoConsultReturnBanner returnUrl={consultReturnUrl} patientName={selectedPatient ? `${selectedPatient.firstName} ${selectedPatient.lastName}` : undefined} lang={lang as "pt" | "en" | "es"} />
+      <VideoConsultReturnBanner
+        returnUrl={consultReturnUrl}
+        patientName={selectedPatient ? `${selectedPatient.firstName} ${selectedPatient.lastName}` : undefined}
+        lang={lang as "pt" | "en" | "es"}
+        onInactive={onConsultReturnInactive}
+      />
       {draftRestoredHint && (
         <div className="bg-brand-50 border border-brand-200 rounded-xl px-4 py-3 text-sm text-brand-800">
           {t("rx.draftRestored")}

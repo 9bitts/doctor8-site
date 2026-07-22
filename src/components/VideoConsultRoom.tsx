@@ -757,6 +757,19 @@ export default function VideoConsultRoom({
         } catch { /* still leave room */ }
       }
 
+      if (roomData.kind === "jit" && roomData.queueId) {
+        try {
+          await Promise.race([
+            fetch("/api/jit/queue/end", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ queueId: roomData.queueId }),
+            }),
+            new Promise<void>((resolve) => setTimeout(resolve, 5_000)),
+          ]);
+        } catch { /* still leave room */ }
+      }
+
       await Promise.race([
         dailyRef.current?.leave() ?? Promise.resolve(),
         new Promise<void>((resolve) => setTimeout(resolve, 3_000)),

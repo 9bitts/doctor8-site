@@ -18,6 +18,7 @@ import Link from "next/link";
 import PatientChecklistWrapper from "./PatientChecklistWrapper";
 import { isPatientHistoryFilled } from "@/lib/patient-history-status";
 import { activeOnlineJitSessionWhere } from "@/lib/jit-session-lifecycle";
+import { reconcilePatientJitInProgress } from "@/lib/jit-queue-completion";
 import { isWithinAppointmentJoinWindow } from "@/lib/appointment-join-window";
 import ClubDoctorBanner from "@/components/patient/ClubDoctorBanner";
 import PatientUpcomingConsultBanner from "@/components/patient/PatientUpcomingConsultBanner";
@@ -157,6 +158,9 @@ export default async function PatientDashboard() {
   });
 
   if (!patient) redirect("/onboarding");
+
+  // Drop abandoned IN_PROGRESS JIT rows so the home banner does not stay stuck.
+  await reconcilePatientJitInProgress(userId);
 
   const [
     cancelledAppointments,
@@ -497,7 +501,9 @@ export default async function PatientDashboard() {
               </p>
             </div>
             <span className="flex items-center gap-1 text-xs sm:text-sm font-semibold shrink-0 text-brand-700">
-              {t("pdash.activeQueue.action")}
+              {queueInProgress
+                ? t("pdash.activeQueue.actionInProgress")
+                : t("pdash.activeQueue.action")}
               <ChevronRight size={16} aria-hidden />
             </span>
           </div>

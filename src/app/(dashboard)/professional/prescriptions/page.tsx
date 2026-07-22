@@ -47,7 +47,12 @@ export default function PrescriptionsPage() {
   if (p.view === "exam") {
     return (
       <>
-        <VideoConsultReturnBanner returnUrl={p.consultReturnUrl} patientName={p.reusePatient ? `${p.reusePatient.firstName} ${p.reusePatient.lastName}` : undefined} lang={p.lang as "pt" | "en" | "es"} />
+        <VideoConsultReturnBanner
+          returnUrl={p.consultReturnUrl}
+          patientName={p.reusePatient ? `${p.reusePatient.firstName} ${p.reusePatient.lastName}` : undefined}
+          lang={p.lang as "pt" | "en" | "es"}
+          onInactive={p.clearConsultReturnUrl}
+        />
         <ExamCreateView
           key={p.examTemplatePrefill?.templateId || p.editingClinicalDocId || "exam-new"}
           t={p.t} locale={p.locale} charts={p.charts} chartsLoading={p.chartsLoading}
@@ -73,7 +78,12 @@ export default function PrescriptionsPage() {
   if (p.view === "document") {
     return (
       <>
-        <VideoConsultReturnBanner returnUrl={p.consultReturnUrl} patientName={p.reusePatient ? `${p.reusePatient.firstName} ${p.reusePatient.lastName}` : undefined} lang={p.lang as "pt" | "en" | "es"} />
+        <VideoConsultReturnBanner
+          returnUrl={p.consultReturnUrl}
+          patientName={p.reusePatient ? `${p.reusePatient.firstName} ${p.reusePatient.lastName}` : undefined}
+          lang={p.lang as "pt" | "en" | "es"}
+          onInactive={p.clearConsultReturnUrl}
+        />
         <DocumentCreateView
           key={p.docTemplatePrefill?.templateId || p.editingClinicalDocId || "document-new"}
           t={p.t} charts={p.charts} chartsLoading={p.chartsLoading}
@@ -103,6 +113,7 @@ export default function PrescriptionsPage() {
           lang={p.lang}
           cfg={p.cfg}
           consultReturnUrl={p.consultReturnUrl}
+          onConsultReturnInactive={p.clearConsultReturnUrl}
           templateAppliedHint={p.templateAppliedHint}
           voicePrefillActive={p.voicePrefillActive}
           reuseSource={p.reuseSource}

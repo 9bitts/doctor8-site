@@ -408,21 +408,31 @@ function UrgentPageInner() {
     clearInterval(pollRef.current);
     // Entries that are already finished (NO_SHOW/CANCELLED screen) just
     // dismiss — there is nothing to cancel server-side.
-    if (!entry || !["WAITING", "CALLED"].includes(entry.status)) {
+    if (!entry || !["WAITING", "CALLED", "IN_PROGRESS"].includes(entry.status)) {
       setQueueEntry(null);
       loadAvailable();
       return;
     }
     try {
-      const res = await fetch("/api/jit/queue/cancel", {
+      const endpoint =
+        entry.status === "IN_PROGRESS"
+          ? "/api/jit/queue/end"
+          : "/api/jit/queue/cancel";
+      const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ queueId: entry.id }),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error("cancel failed");
+      if (!res.ok) throw new Error("leave failed");
       setQueueEntry(null);
-      toast.success(data.refunded ? t("urgent.leftQueueRefunded") : t("urgent.leftQueue"));
+      toast.success(
+        entry.status === "IN_PROGRESS"
+          ? t("urgent.endedConsult")
+          : data.refunded
+            ? t("urgent.leftQueueRefunded")
+            : t("urgent.leftQueue"),
+      );
       loadAvailable();
     } catch {
       // Revert: keep the queue screen and resume polling.
@@ -496,6 +506,13 @@ function UrgentPageInner() {
           >
             <Phone size={16} /> {t("urgent.enterRoom")}
           </Link>
+          <button
+            type="button"
+            onClick={leaveQueue}
+            className="text-xs text-slate-400 hover:text-rose-500 transition mt-4"
+          >
+            {t("urgent.endConsult")}
+          </button>
         </div>
       </div>
     );

@@ -121,6 +121,7 @@ export default function PsychologyDocumentsPage() {
         returnUrl={consultReturnUrl}
         patientName={selectedPatient ? `${selectedPatient.firstName} ${selectedPatient.lastName}` : undefined}
         lang={lang as "pt" | "en" | "es"}
+        onInactive={() => setConsultReturnUrl(null)}
       />
       <div>
         <Link href={hubHref} className="flex items-center gap-2 text-sm text-slate-500 hover:text-sky-600 font-medium mb-2">

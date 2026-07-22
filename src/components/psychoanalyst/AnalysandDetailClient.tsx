@@ -52,7 +52,7 @@ export default function AnalysandDetailClient({
   const { t, lang } = useI18n();
   const locale = localeOf(lang);
   const searchParams = useSearchParams();
-  const consultReturnUrl = searchParams.get("returnUrl");
+  const [consultReturnUrl, setConsultReturnUrl] = useState(searchParams.get("returnUrl"));
   const noteRef = useRef<HTMLTextAreaElement>(null);
   const [analysand, setAnalysand] = useState<AnalysandDetail | null>(null);
   const [analysandError, setAnalysandError] = useState(false);
@@ -156,6 +156,7 @@ export default function AnalysandDetailClient({
       <VideoConsultReturnBanner
         returnUrl={consultReturnUrl}
         lang={lang as "pt" | "en" | "es"}
+        onInactive={() => setConsultReturnUrl(null)}
       />
       <Link href="/psychoanalyst/analysands" className="inline-flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900">
         <ArrowLeft size={16} /> {t("pa.analysands.back")}

@@ -32,10 +32,21 @@ export async function closeJitSessionsForUser(userId: string): Promise<number> {
   });
   if (!professional) return 0;
 
-  const result = await db.jitSession.updateMany({
+  const open = await db.jitSession.findMany({
     where: { professionalId: professional.id, status: { in: ["ONLINE", "PAUSED"] } },
+    select: { id: true },
+  });
+  if (open.length === 0) return 0;
+
+  const ids = open.map((s) => s.id);
+  const result = await db.jitSession.updateMany({
+    where: { id: { in: ids }, status: { in: ["ONLINE", "PAUSED"] } },
     data: { status: "OFFLINE" },
   });
+
+  const { completeInProgressForSessions } = await import("@/lib/jit-queue-completion");
+  await completeInProgressForSessions(ids);
+
   return result.count;
 }
 
@@ -51,7 +62,7 @@ export async function touchJitHeartbeat(professionalId: string): Promise<boolean
 /** Mark ONLINE/PAUSED sessions without recent activity as OFFLINE. */
 export async function expireStaleJitSessions(): Promise<number> {
   const cutoff = getJitHeartbeatCutoff();
-  const result = await db.jitSession.updateMany({
+  const stale = await db.jitSession.findMany({
     where: {
       status: { in: ["ONLINE", "PAUSED"] },
       OR: [
@@ -59,7 +70,19 @@ export async function expireStaleJitSessions(): Promise<number> {
         { lastHeartbeatAt: null, updatedAt: { lt: cutoff } },
       ],
     },
+    select: { id: true },
+  });
+  if (stale.length === 0) return 0;
+
+  const ids = stale.map((s) => s.id);
+  const result = await db.jitSession.updateMany({
+    where: { id: { in: ids }, status: { in: ["ONLINE", "PAUSED"] } },
     data: { status: "OFFLINE" },
   });
+
+  // Plantão ended — leftover IN_PROGRESS rows would leave patients stuck on the banner.
+  const { completeInProgressForSessions } = await import("@/lib/jit-queue-completion");
+  await completeInProgressForSessions(ids);
+
   return result.count;
 }
