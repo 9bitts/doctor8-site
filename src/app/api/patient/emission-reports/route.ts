@@ -1,9 +1,13 @@
-// POST: patient reports an unsolicited emission ("I don't know this professional").
+// GET: recent emissions from professionals without a known relationship.
+// POST: report unknown professional, or accept connection after a known emission.
 import { NextRequest, NextResponse } from "next/server";
 import { requirePatient, isApiError } from "@/lib/api-auth";
 import { db } from "@/lib/db";
 import { emissionReportDb } from "@/lib/patient-professional-link-db";
-import { hasAcceptedLink } from "@/lib/patient-professional-link";
+import {
+  acceptOrCreateEmissionLink,
+  hasKnownProfessionalRelationship,
+} from "@/lib/patient-professional-link";
 import { createAuditLog } from "@/lib/audit";
 import { AuditAction } from "@prisma/client";
 import { z } from "zod";
@@ -12,7 +16,37 @@ const schema = z.object({
   professionalUserId: z.string().min(1),
   resourceType: z.enum(["PRESCRIPTION", "EXAM_REQUEST", "DOCUMENT"]),
   resourceId: z.string().min(1),
+  action: z.enum(["report", "accept"]).optional().default("report"),
 });
+
+async function assertRecentPrescriptionForPair(params: {
+  patientProfileId: string;
+  professionalUserId: string;
+  resourceId: string;
+}): Promise<{ ok: true } | { ok: false; status: number; error: string }> {
+  const pro = await db.professionalProfile.findUnique({
+    where: { userId: params.professionalUserId },
+    select: { id: true },
+  });
+  if (!pro) {
+    return { ok: false, status: 404, error: "Professional not found" };
+  }
+
+  const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  const rx = await db.prescription.findFirst({
+    where: {
+      id: params.resourceId,
+      professionalId: pro.id,
+      createdAt: { gte: since },
+      document: { patientId: params.patientProfileId },
+    },
+    select: { id: true },
+  });
+  if (!rx) {
+    return { ok: false, status: 404, error: "Resource not found" };
+  }
+  return { ok: true };
+}
 
 export async function POST(req: NextRequest) {
   const ctx = await requirePatient();
@@ -24,28 +58,48 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const { professionalUserId, resourceType, resourceId } = parsed.data;
-
-  const pro = await db.professionalProfile.findUnique({
-    where: { userId: professionalUserId },
-    select: { id: true },
-  });
-  if (!pro) {
-    return NextResponse.json({ error: "Professional not found" }, { status: 404 });
-  }
+  const { professionalUserId, resourceType, resourceId, action } = parsed.data;
 
   if (resourceType === "PRESCRIPTION") {
-    const rx = await db.prescription.findFirst({
-      where: {
-        id: resourceId,
-        professionalId: pro.id,
-        document: { patientId: ctx.patientProfileId },
-      },
+    const check = await assertRecentPrescriptionForPair({
+      patientProfileId: ctx.patientProfileId,
+      professionalUserId,
+      resourceId,
+    });
+    if (!check.ok) {
+      return NextResponse.json({ error: check.error }, { status: check.status });
+    }
+  } else {
+    const pro = await db.professionalProfile.findUnique({
+      where: { userId: professionalUserId },
       select: { id: true },
     });
-    if (!rx) {
-      return NextResponse.json({ error: "Resource not found" }, { status: 404 });
+    if (!pro) {
+      return NextResponse.json({ error: "Professional not found" }, { status: 404 });
     }
+  }
+
+  if (action === "accept") {
+    const link = await acceptOrCreateEmissionLink({
+      patientUserId: ctx.userId,
+      professionalUserId,
+    });
+
+    await createAuditLog({
+      userId: ctx.userId,
+      action: AuditAction.UPDATE_RECORD,
+      resource: "PatientProfessionalLink",
+      resourceId: link.id,
+      details: {
+        professionalUserId,
+        status: "ACCEPTED",
+        source: "emission_alert",
+        resourceType,
+        resourceId,
+      },
+    });
+
+    return NextResponse.json({ id: link.id, status: link.status, accepted: true });
   }
 
   const existing = await emissionReportDb().findFirst({
@@ -80,7 +134,7 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ id: report.id, reported: true }, { status: 201 });
 }
 
-// GET: recent emissions from professionals without accepted link (for patient UI).
+// GET: recent emissions from professionals without a known relationship (for patient UI).
 export async function GET() {
   const ctx = await requirePatient();
   if (isApiError(ctx)) return ctx.error;
@@ -105,8 +159,12 @@ export async function GET() {
   for (const rx of prescriptions) {
     if (!rx.professional) continue;
     const proUserId = rx.professional.userId;
-    const linked = await hasAcceptedLink(ctx.userId, proUserId);
-    if (linked) continue;
+    const known = await hasKnownProfessionalRelationship({
+      patientUserId: ctx.userId,
+      patientProfileId: ctx.patientProfileId,
+      professionalUserId: proUserId,
+    });
+    if (known) continue;
 
     const alreadyReported = await emissionReportDb().findFirst({
       where: {

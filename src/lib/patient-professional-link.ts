@@ -28,6 +28,82 @@ export async function hasAcceptedLink(
   return link?.status === "ACCEPTED";
 }
 
+/**
+ * True when the patient already has a real relationship with the professional:
+ * ACCEPTED consent link, linked chart, or any appointment history.
+ * Used to suppress "unknown emitter" safety banners.
+ */
+export async function hasKnownProfessionalRelationship(params: {
+  patientUserId: string;
+  patientProfileId: string;
+  professionalUserId: string;
+}): Promise<boolean> {
+  const { patientUserId, patientProfileId, professionalUserId } = params;
+
+  if (await hasAcceptedLink(patientUserId, professionalUserId)) return true;
+
+  const [chart, appointment] = await Promise.all([
+    db.patientRecord.findFirst({
+      where: {
+        linkedUserId: patientUserId,
+        professional: { userId: professionalUserId },
+      },
+      select: { id: true },
+    }),
+    db.appointment.findFirst({
+      where: {
+        patientId: patientProfileId,
+        professional: { userId: professionalUserId },
+      },
+      select: { id: true },
+    }),
+  ]);
+
+  return !!(chart || appointment);
+}
+
+/** Patient affirms they know an emitter: accept PENDING link or create ACCEPTED. */
+export async function acceptOrCreateEmissionLink(params: {
+  patientUserId: string;
+  professionalUserId: string;
+}): Promise<PatientProfessionalLinkRow> {
+  const { patientUserId, professionalUserId } = params;
+  const existing = await getLink(patientUserId, professionalUserId);
+
+  if (existing?.status === "ACCEPTED") return existing;
+
+  if (existing?.status === "PENDING") {
+    return linkDb().update({
+      where: { id: existing.id },
+      data: {
+        status: "ACCEPTED",
+        respondedAt: new Date(),
+      },
+    });
+  }
+
+  if (existing) {
+    return linkDb().update({
+      where: { id: existing.id },
+      data: {
+        status: "ACCEPTED",
+        requestedBy: "PROFESSIONAL",
+        respondedAt: new Date(),
+      },
+    });
+  }
+
+  return linkDb().create({
+    data: {
+      patientUserId,
+      professionalUserId,
+      status: "ACCEPTED",
+      requestedBy: "PROFESSIONAL",
+      respondedAt: new Date(),
+    },
+  });
+}
+
 export async function getLinkStatusForPair(
   patientUserId: string,
   professionalUserId: string,

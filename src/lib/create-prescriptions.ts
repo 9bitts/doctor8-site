@@ -4,7 +4,7 @@ import { audit } from "@/lib/audit";
 import { createNotification } from "@/lib/notifications";
 import { createAuditLog } from "@/lib/audit";
 import { AuditAction, Prisma } from "@prisma/client";
-import { hasAcceptedLink } from "@/lib/patient-professional-link";
+import { hasKnownProfessionalRelationship } from "@/lib/patient-professional-link";
 import { ensurePatientRecord } from "@/lib/ensure-patient-record";
 import { canEditChart, resolveChartAccess } from "@/lib/chart-access";
 import { assertCannabisPrescriptionAllowed } from "@/lib/cannabis-prescription-gate";
@@ -249,16 +249,13 @@ export async function createPrescriptionBatch(
     });
   }
 
-  if (input.patientUserId && !input.patientRecordId) {
-    const linked = await hasAcceptedLink(input.patientUserId, input.professionalUserId);
-    const hasAppointment = documentPatientId
-      ? await db.appointment.findFirst({
-          where: { professionalId: input.professionalId, patientId: documentPatientId },
-          select: { id: true },
-        })
-      : null;
-    const emitWithoutLink = !linked && !hasAppointment;
-    if (emitWithoutLink) {
+  if (input.patientUserId && !input.patientRecordId && documentPatientId) {
+    const known = await hasKnownProfessionalRelationship({
+      patientUserId: input.patientUserId,
+      patientProfileId: documentPatientId,
+      professionalUserId: input.professionalUserId,
+    });
+    if (!known) {
       await createAuditLog({
         userId: input.professionalUserId,
         action: AuditAction.CREATE_RECORD,
