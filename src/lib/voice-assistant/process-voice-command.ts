@@ -10,15 +10,24 @@ import {
 } from "./portal-resolver";
 import { parseVoiceIntent } from "./parse-intent";
 import { buildPrescriptionPrefill, resolvePatientById, resolvePatientMatches } from "./resolve-entities";
+import { sanitizeExamItems } from "./sanitize-exam-items";
 import { resolveSkillRoute } from "./skill-registry";
 import { resolveEffectiveSkillsPortal } from "./voice-profile";
-import type { VoicePortalId, VoiceProcessResult, PatientMatch } from "./types";
+import type { ParsedVoiceIntent, VoicePortalId, VoiceProcessResult, PatientMatch } from "./types";
 import type { VoiceAssistantAuth } from "./voice-assistant-auth";
 
 function msg(lang: Lang, pt: string, en: string, es: string): string {
   if (lang === "es") return es;
   if (lang === "en") return en;
   return pt;
+}
+
+function reviewFields(transcript: string, intent?: ParsedVoiceIntent | null) {
+  const cleaned = intent?.cleanedCommand?.trim();
+  return {
+    transcript,
+    reviewText: cleaned || transcript,
+  };
 }
 
 function buildRouteWithPatient(
@@ -63,7 +72,7 @@ export async function processVoiceCommand(params: {
         "I didn't understand well. Could you repeat or edit the transcript?",
         "No entendí bien. ¿Puede repetir o editar la transcripción?",
       ),
-      transcript,
+      ...reviewFields(transcript, intent),
     };
   }
 
@@ -75,14 +84,14 @@ export async function processVoiceCommand(params: {
       return {
         action: "unknown",
         message: msg(lang, "Não encontrei essa ferramenta no seu portal.", "I couldn't find that tool in your portal.", "No encontré esa herramienta en su portal."),
-        transcript,
+        ...reviewFields(transcript, intent),
       };
     }
     return {
       action: "navigate",
       route,
       message: intent.rawSummary || msg(lang, "Abrindo a ferramenta solicitada.", "Opening the requested tool.", "Abriendo la herramienta solicitada."),
-      transcript,
+      ...reviewFields(transcript, intent),
     };
   }
 
@@ -97,14 +106,14 @@ export async function processVoiceCommand(params: {
         action: "navigate",
         route: patientChartRouteForPortal(chartPortal, matches[0].patientRecordId),
         message: msg(lang, `Abrindo ficha de ${matches[0].displayName}.`, `Opening chart for ${matches[0].displayName}.`, `Abriendo ficha de ${matches[0].displayName}.`),
-        transcript,
+        ...reviewFields(transcript, intent),
       };
     }
     if (matches.length > 1) {
       return {
         action: "clarify",
         message: msg(lang, "Encontrei mais de um paciente.", "I found more than one patient.", "Encontré más de un paciente."),
-        transcript,
+        ...reviewFields(transcript, intent),
         question: msg(lang, "Qual paciente você quer abrir?", "Which patient do you want to open?", "¿Qué paciente desea abrir?"),
         options: matches.map((m) => m.displayName),
       };
@@ -115,7 +124,7 @@ export async function processVoiceCommand(params: {
       action: "navigate",
       route: `${base}${q}`,
       message: msg(lang, "Abrindo lista de pacientes.", "Opening patient list.", "Abriendo lista de pacientes."),
-      transcript,
+      ...reviewFields(transcript, intent),
     };
   }
 
@@ -130,7 +139,7 @@ export async function processVoiceCommand(params: {
       message: intent.scheduleHint
         ? msg(lang, `Abrindo agenda. ${intent.scheduleHint}`, `Opening schedule. ${intent.scheduleHint}`, `Abriendo agenda. ${intent.scheduleHint}`)
         : msg(lang, "Abrindo agenda.", "Opening schedule.", "Abriendo agenda."),
-      transcript,
+      ...reviewFields(transcript, intent),
     };
   }
 
@@ -145,7 +154,7 @@ export async function processVoiceCommand(params: {
       return {
         action: "clarify",
         message: msg(lang, "Encontrei mais de um paciente.", "I found more than one patient.", "Encontré más de un paciente."),
-        transcript,
+        ...reviewFields(transcript, intent),
         question: msg(lang, "Qual paciente?", "Which patient?", "¿Qué paciente?"),
         options: matches.map((m) => m.displayName),
       };
@@ -171,7 +180,7 @@ export async function processVoiceCommand(params: {
       message: patientName
         ? msg(lang, `Abrindo anamnese de ${patientName}.`, `Opening anamnesis for ${patientName}.`, `Abriendo anamnesis de ${patientName}.`)
         : msg(lang, "Abrindo anamnese psicológica.", "Opening psychological anamnesis.", "Abriendo anamnesis psicológica."),
-      transcript,
+      ...reviewFields(transcript, intent),
     };
   }
 
@@ -187,7 +196,7 @@ export async function processVoiceCommand(params: {
       return {
         action: "clarify",
         message: msg(lang, "Entendi que você quer prescrever.", "I understand you want to prescribe.", "Entendí que desea prescribir."),
-        transcript,
+        ...reviewFields(transcript, intent),
         question: msg(lang, "Qual medicamento e posologia?", "Which medication and dosage?", "¿Qué medicamento y posología?"),
       };
     }
@@ -196,7 +205,7 @@ export async function processVoiceCommand(params: {
       return {
         action: "clarify",
         message: msg(lang, "Encontrei mais de um paciente com esse nome.", "I found more than one patient with that name.", "Encontré más de un paciente con ese nombre."),
-        transcript,
+        ...reviewFields(transcript, intent),
         question: msg(lang, "Qual paciente?", "Which patient?", "¿Qué paciente?"),
         options: prefill.patientAmbiguities.map((p) => p.displayName),
       };
@@ -211,7 +220,7 @@ export async function processVoiceCommand(params: {
       action: "prescription_prefill",
       route: rxRoute,
       message: intent.rawSummary || msg(lang, "Receita pronta para conferência.", "Prescription ready for review.", "Receta lista para revisión."),
-      transcript,
+      ...reviewFields(transcript, intent),
       prefill,
     };
   }
@@ -229,7 +238,11 @@ export async function processVoiceCommand(params: {
 
   if (formSkills.has(intent.skillId)) {
     const formType = resolveFormType(skillsPortal, intent);
-    const clinicalText = intent.clinicalText?.trim() || transcript.trim();
+    const examItems = sanitizeExamItems(intent.examItems);
+    const clinicalText =
+      formType === "exam_request" && examItems.length > 0
+        ? examItems.join(", ")
+        : intent.clinicalText?.trim() || transcript.trim();
 
     const matches = await resolvePatientMatches({
       providerId: auth.providerId,
@@ -251,9 +264,28 @@ export async function processVoiceCommand(params: {
       return {
         action: "clarify",
         message: msg(lang, "Encontrei mais de um paciente.", "I found more than one patient.", "Encontré más de un paciente."),
-        transcript,
+        ...reviewFields(transcript, intent),
         question: msg(lang, "Qual paciente?", "Which patient?", "¿Qué paciente?"),
         options: matches.map((m) => m.displayName),
+      };
+    }
+
+    if (intent.skillId === "exam_request" && examItems.length === 0) {
+      return {
+        action: "clarify",
+        message: msg(
+          lang,
+          "Entendi o pedido de exames, mas não identifiquei quais exames.",
+          "I understood an exam request, but no specific exams were named.",
+          "Entendí el pedido de exámenes, pero no identifiqué cuáles.",
+        ),
+        ...reviewFields(transcript, intent),
+        question: msg(
+          lang,
+          "Quais exames deseja solicitar? Edite o texto ou fale de novo.",
+          "Which exams do you want to order? Edit the text or speak again.",
+          "¿Qué exámenes desea solicitar? Edite el texto o hable de nuevo.",
+        ),
       };
     }
 
@@ -268,11 +300,36 @@ export async function processVoiceCommand(params: {
         patientName,
       });
 
-      if (formType === "exam_request" && intent.examItems?.length) {
+      if (formType === "exam_request") {
+        const fromPrefill = sanitizeExamItems(
+          (data as { examItems?: string[] }).examItems,
+        );
+        const merged = examItems.length > 0 ? examItems : fromPrefill;
         data = {
           ...(data as Record<string, unknown>),
-          examItems: intent.examItems,
+          examItems: merged,
+          title:
+            (data as { title?: string }).title ||
+            msg(lang, "Pedido de exames", "Exam request", "Pedido de exámenes"),
         };
+        if (merged.length === 0) {
+          return {
+            action: "clarify",
+            message: msg(
+              lang,
+              "Entendi o pedido de exames, mas não identifiquei quais exames.",
+              "I understood an exam request, but no specific exams were named.",
+              "Entendí el pedido de exámenes, pero no identifiqué cuáles.",
+            ),
+            ...reviewFields(transcript, intent),
+            question: msg(
+              lang,
+              "Quais exames deseja solicitar? Edite o texto ou fale de novo.",
+              "Which exams do you want to order? Edit the text or speak again.",
+              "¿Qué exámenes desea solicitar? Edite el texto o hable de nuevo.",
+            ),
+          };
+        }
       }
       if (formType === "clinical_document" && intent.documentType) {
         const docType = intent.documentType.toUpperCase();
@@ -310,7 +367,7 @@ export async function processVoiceCommand(params: {
         action: "form_prefill",
         route,
         message: intent.rawSummary || msg(lang, "Formulário pronto para conferência.", "Form ready for review.", "Formulario listo para revisión."),
-        transcript,
+        ...reviewFields(transcript, intent),
         formType,
         patientRecordId,
         patientName,
@@ -325,7 +382,7 @@ export async function processVoiceCommand(params: {
     return {
       action: "clinical_note",
       message: intent.rawSummary || msg(lang, "Rascunho gerado. Confira antes de salvar.", "Draft generated. Review before saving.", "Borrador generado. Revise antes de guardar."),
-      transcript,
+      ...reviewFields(transcript, intent),
       draft: clinicalText,
       patientRecordId,
       patientName,
@@ -338,13 +395,13 @@ export async function processVoiceCommand(params: {
       action: "navigate",
       route: skillRoute,
       message: intent.rawSummary || msg(lang, "Abrindo ferramenta.", "Opening tool.", "Abriendo herramienta."),
-      transcript,
+      ...reviewFields(transcript, intent),
     };
   }
 
   return {
     action: "unknown",
     message: msg(lang, "Ainda não consigo executar esse comando neste portal.", "I can't execute that command in this portal yet.", "Aún no puedo ejecutar ese comando en este portal."),
-    transcript,
+    ...reviewFields(transcript, intent),
   };
 }

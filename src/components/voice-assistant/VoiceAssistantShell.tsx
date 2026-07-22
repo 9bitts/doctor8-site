@@ -63,8 +63,10 @@ export default function VoiceAssistantShell({ portalId, userId, variant = "fab" 
   const [consent, setConsent] = useState(false);
   const [recording, setRecording] = useState(false);
   const [processing, setProcessing] = useState(false);
+  const [phase, setPhase] = useState<"idle" | "transcribing" | "interpreting">("idle");
   const [error, setError] = useState<string | null>(null);
   const [transcript, setTranscript] = useState("");
+  const [reviewText, setReviewText] = useState("");
   const [manualText, setManualText] = useState("");
   const [result, setResult] = useState<VoiceProcessResult | null>(null);
   const [copied, setCopied] = useState(false);
@@ -143,8 +145,10 @@ export default function VoiceAssistantShell({ portalId, userId, variant = "fab" 
     setError(null);
     setResult(null);
     setTranscript("");
+    setReviewText("");
     setManualText("");
     setCopied(false);
+    setPhase("idle");
   }, []);
 
   useEffect(() => {
@@ -155,6 +159,54 @@ export default function VoiceAssistantShell({ portalId, userId, variant = "fab" 
     window.addEventListener("doctor8:voice-assistant:open", onOpenFromBanner);
     return () => window.removeEventListener("doctor8:voice-assistant:open", onOpenFromBanner);
   }, [resetSession]);
+
+  const interpretTranscript = useCallback(
+    async (payload: string) => {
+      if (!activePortal) return;
+      const trimmed = payload.trim();
+      if (!trimmed) return;
+
+      setProcessing(true);
+      setPhase("interpreting");
+      setError(null);
+      setResult(null);
+
+      try {
+        const session = getVoiceSessionContext();
+        const res = await fetch("/api/voice-assistant/process", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            consent: true,
+            mode: "process",
+            portalId: activePortal,
+            lang,
+            pathname,
+            transcript: trimmed,
+            sessionPatientRecordId: session?.patientRecordId,
+          }),
+        });
+        const data = (await res.json()) as VoiceProcessResult & { error?: string };
+        if (!res.ok) {
+          if (data.error === "AI_NOT_CONFIGURED" || data.error === "TRANSCRIBE_NOT_CONFIGURED") {
+            setError(t("aiNotConfigured"));
+          } else {
+            setError(t("genericError"));
+          }
+          return;
+        }
+        setTranscript(data.transcript || trimmed);
+        setReviewText(data.reviewText || data.transcript || trimmed);
+        setResult(data);
+      } catch {
+        setError(t("genericError"));
+      } finally {
+        setProcessing(false);
+        setPhase("idle");
+      }
+    },
+    [activePortal, lang, pathname, t],
+  );
 
   const processCommand = useCallback(
     async (text?: string, audioBlob?: Blob, mime?: string) => {
@@ -169,11 +221,11 @@ export default function VoiceAssistantShell({ portalId, userId, variant = "fab" 
       setResult(null);
 
       try {
-        let res: Response;
-
         if (audioBlob) {
+          setPhase("transcribing");
           const form = new FormData();
           form.append("consent", "true");
+          form.append("mode", "transcribe");
           form.append("portalId", activePortal);
           form.append("lang", lang);
           form.append("pathname", pathname);
@@ -182,45 +234,37 @@ export default function VoiceAssistantShell({ portalId, userId, variant = "fab" 
             form.append("sessionPatientRecordId", session.patientRecordId);
           }
           form.append("audio", audioBlob, `voice.${audioFileExtension(mime || "audio/webm")}`);
-          res = await fetch("/api/voice-assistant/process", { method: "POST", body: form });
-        } else {
-          const payload = (text || manualText || transcript).trim();
-          if (!payload) return;
-          setTranscript(payload);
-          const session = getVoiceSessionContext();
-          res = await fetch("/api/voice-assistant/process", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              consent: true,
-              portalId: activePortal,
-              lang,
-              pathname,
-              transcript: payload,
-              sessionPatientRecordId: session?.patientRecordId,
-            }),
-          });
-        }
-
-        const data = (await res.json()) as VoiceProcessResult & { error?: string };
-        if (!res.ok) {
-          if (data.error === "AI_NOT_CONFIGURED" || data.error === "TRANSCRIBE_NOT_CONFIGURED") {
-            setError(t("aiNotConfigured"));
-          } else {
-            setError(t("genericError"));
+          const res = await fetch("/api/voice-assistant/process", { method: "POST", body: form });
+          const data = (await res.json()) as VoiceProcessResult & { error?: string };
+          if (!res.ok) {
+            if (data.error === "AI_NOT_CONFIGURED" || data.error === "TRANSCRIBE_NOT_CONFIGURED") {
+              setError(t("aiNotConfigured"));
+            } else {
+              setError(t("genericError"));
+            }
+            return;
           }
+          const heard = data.transcript || "";
+          setTranscript(heard);
+          setReviewText(heard);
+          setProcessing(false);
+          await interpretTranscript(heard);
           return;
         }
 
-        setTranscript(data.transcript || text || manualText);
-        setResult(data);
+        const payload = (text || manualText || transcript).trim();
+        if (!payload) return;
+        setTranscript(payload);
+        setReviewText(payload);
+        setProcessing(false);
+        await interpretTranscript(payload);
       } catch {
         setError(t("genericError"));
-      } finally {
         setProcessing(false);
+        setPhase("idle");
       }
     },
-    [activePortal, consent, lang, manualText, pathname, t, transcript],
+    [activePortal, consent, interpretTranscript, lang, manualText, pathname, t, transcript],
   );
 
   const startRecording = useCallback(async () => {
@@ -427,7 +471,7 @@ export default function VoiceAssistantShell({ portalId, userId, variant = "fab" 
                 </div>
               )}
 
-              {!result && (
+              {!result && !transcript && (
                 <>
                   <p className="text-sm text-slate-500">{speakHint}</p>
                   {portalExamples.length > 1 && (
@@ -460,7 +504,13 @@ export default function VoiceAssistantShell({ portalId, userId, variant = "fab" 
                         {processing ? (
                           <>
                             <Loader2 size={32} className="animate-spin" />
-                            <span className="text-sm font-semibold">{t("processing")}</span>
+                            <span className="text-sm font-semibold">
+                              {phase === "transcribing"
+                                ? t("transcribing")
+                                : phase === "interpreting"
+                                  ? t("interpreting")
+                                  : t("processing")}
+                            </span>
                           </>
                         ) : (
                           <>
@@ -503,84 +553,159 @@ export default function VoiceAssistantShell({ portalId, userId, variant = "fab" 
                 </>
               )}
 
-              {result && (
+              {(result || transcript) && (!result || result.action !== "transcript_ready") && (
                 <div className="space-y-4">
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1">{t("transcript")}</p>
-                    <p className="text-sm text-slate-700 bg-slate-50 rounded-xl px-3 py-2 border border-slate-100">{transcript}</p>
+                    <textarea
+                      value={reviewText || transcript}
+                      onChange={(e) => setReviewText(e.target.value)}
+                      rows={3}
+                      className="w-full text-sm text-slate-800 bg-white rounded-xl px-3 py-2 border border-slate-200 focus:outline-none focus:ring-2 focus:ring-violet-500/30"
+                    />
+                    {transcript && reviewText && transcript.trim() !== reviewText.trim() && (
+                      <p className="mt-1 text-[11px] text-slate-400">
+                        STT: {transcript}
+                      </p>
+                    )}
+                    {(!result || processing) && (
+                      <div className="mt-3 flex items-center justify-center gap-2 text-sm text-violet-800">
+                        <Loader2 size={16} className="animate-spin" />
+                        {phase === "transcribing" ? t("transcribing") : t("interpreting")}
+                      </div>
+                    )}
+                    {result && (
+                      <button
+                        type="button"
+                        disabled={processing || !reviewText.trim()}
+                        onClick={() => void interpretTranscript(reviewText)}
+                        className="mt-2 w-full py-2 rounded-xl border border-violet-200 text-violet-800 text-sm font-medium bg-violet-50 disabled:opacity-40"
+                      >
+                        {processing && phase === "interpreting" ? (
+                          <span className="inline-flex items-center gap-2 justify-center">
+                            <Loader2 size={14} className="animate-spin" />
+                            {t("interpreting")}
+                          </span>
+                        ) : (
+                          t("reinterpret")
+                        )}
+                      </button>
+                    )}
                   </div>
+
+                  {!result ? null : (
+                  <>
 
                   <div className="rounded-xl border border-violet-100 bg-violet-50/60 p-4 space-y-3">
                     <div className="flex items-center gap-2 text-violet-800 font-semibold">
                       <CheckCircle2 size={18} />
-                      {t("understood")}
+                      {t("draftReady")}
                     </div>
                     <p className="text-sm text-slate-700">{result.message}</p>
                     <p className="text-xs text-violet-700">{t("reviewHint")}</p>
 
-                    {result.action === "form_prefill" && (
-                      <pre className="whitespace-pre-wrap text-xs bg-white rounded-lg border border-slate-200 p-3 max-h-40 overflow-y-auto font-sans text-slate-700">
-                        {JSON.stringify(result.data, null, 2)}
-                      </pre>
-                    )}
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-violet-700/80 mb-2">{t("fillPreview")}</p>
 
-                    {result.action === "prescription_prefill" && (
-                      <div className="text-sm space-y-2">
-                        {result.prefill.patient && (
-                          <p><span className="font-medium">{t("patient")}:</span> {result.prefill.patient.displayName}</p>
-                        )}
-                        {result.prefill.medications.length > 0 && (
-                          <div>
-                            <p className="font-medium">{t("medications")}:</p>
-                            <ul className="list-disc pl-5 text-slate-700">
-                              {result.prefill.medications.map((m, i) => (
-                                <li key={i}>
-                                  {m.name}
-                                  {m.dosage ? ` — ${m.dosage}` : ""}
-                                  {m.frequency ? `, ${m.frequency}` : ""}
-                                  {m.duration ? `, ${m.duration}` : ""}
+                      {result.action === "form_prefill" && (
+                        <div className="text-sm space-y-2 bg-white rounded-lg border border-slate-200 p-3">
+                          <p>
+                            <span className="font-medium">{t("formType")}:</span>{" "}
+                            {result.formType === "exam_request" ? t("examItems") : result.formType}
+                          </p>
+                          {result.patientName && (
+                            <p><span className="font-medium">{t("patient")}:</span> {result.patientName}</p>
+                          )}
+                          {result.formType === "exam_request" &&
+                            Array.isArray((result.data as { examItems?: string[] }).examItems) && (
+                              <div>
+                                <p className="font-medium">{t("examItems")}:</p>
+                                <ul className="list-disc pl-5 text-slate-700">
+                                  {((result.data as { examItems?: string[] }).examItems ?? []).map((item, i) => (
+                                    <li key={`${item}-${i}`}>{item}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                          {result.formType !== "exam_request" && (
+                            <pre className="whitespace-pre-wrap text-xs max-h-40 overflow-y-auto font-sans text-slate-700">
+                              {JSON.stringify(result.data, null, 2)}
+                            </pre>
+                          )}
+                        </div>
+                      )}
+
+                      {result.action === "prescription_prefill" && (
+                        <div className="text-sm space-y-2 bg-white rounded-lg border border-slate-200 p-3">
+                          {result.prefill.patient && (
+                            <p><span className="font-medium">{t("patient")}:</span> {result.prefill.patient.displayName}</p>
+                          )}
+                          {result.prefill.medications.length > 0 && (
+                            <div>
+                              <p className="font-medium">{t("medications")}:</p>
+                              <ul className="list-disc pl-5 text-slate-700">
+                                {result.prefill.medications.map((m, i) => (
+                                  <li key={i}>
+                                    {m.name}
+                                    {m.dosage ? ` — ${m.dosage}` : ""}
+                                    {m.frequency ? `, ${m.frequency}` : ""}
+                                    {m.duration ? `, ${m.duration}` : ""}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {result.action === "clinical_note" && (
+                        <div className="text-sm bg-white rounded-lg border border-slate-200 p-3">
+                          <p className="font-medium mb-1">{t("draft")}</p>
+                          <pre className="whitespace-pre-wrap text-xs max-h-48 overflow-y-auto font-sans text-slate-700">
+                            {result.draft}
+                          </pre>
+                        </div>
+                      )}
+
+                      {result.action === "navigate" && (
+                        <p className="text-sm bg-white rounded-lg border border-slate-200 p-3 text-slate-700">
+                          {result.route}
+                        </p>
+                      )}
+
+                      {result.action === "clarify" && (
+                        <div className="text-sm bg-white rounded-lg border border-slate-200 p-3 space-y-2">
+                          <p className="font-medium">{t("clarify")}</p>
+                          <p>{result.question}</p>
+                          {result.options && (
+                            <ul className="mt-2 space-y-1">
+                              {result.options.map((opt) => (
+                                <li key={opt}>
+                                  <button
+                                    type="button"
+                                    className="text-violet-700 underline text-left"
+                                    onClick={() => {
+                                      const next = `${reviewText || transcript}. ${opt}`;
+                                      setReviewText(next);
+                                      setResult(null);
+                                      void interpretTranscript(next);
+                                    }}
+                                  >
+                                    {opt}
+                                  </button>
                                 </li>
                               ))}
                             </ul>
-                          </div>
-                        )}
-                      </div>
-                    )}
+                          )}
+                        </div>
+                      )}
 
-                    {result.action === "clinical_note" && (
-                      <div className="text-sm">
-                        <p className="font-medium mb-1">{t("draft")}</p>
-                        <pre className="whitespace-pre-wrap text-xs bg-white rounded-lg border border-slate-200 p-3 max-h-48 overflow-y-auto font-sans text-slate-700">
-                          {result.draft}
-                        </pre>
-                      </div>
-                    )}
-
-                    {result.action === "clarify" && (
-                      <div className="text-sm">
-                        <p className="font-medium">{t("clarify")}</p>
-                        <p>{result.question}</p>
-                        {result.options && (
-                          <ul className="mt-2 space-y-1">
-                            {result.options.map((opt) => (
-                              <li key={opt}>
-                                <button
-                                  type="button"
-                                  className="text-violet-700 underline text-left"
-                                  onClick={() => {
-                                    setManualText(`${transcript}. ${opt}`);
-                                    setResult(null);
-                                    void processCommand(`${transcript}. ${opt}`);
-                                  }}
-                                >
-                                  {opt}
-                                </button>
-                              </li>
-                            ))}
-                          </ul>
-                        )}
-                      </div>
-                    )}
+                      {result.action === "unknown" && (
+                        <p className="text-sm bg-white rounded-lg border border-amber-200 p-3 text-amber-900">
+                          {result.message}
+                        </p>
+                      )}
+                    </div>
                   </div>
 
                   <div className="flex flex-wrap gap-2 pt-1">
@@ -590,12 +715,21 @@ export default function VoiceAssistantShell({ portalId, userId, variant = "fab" 
                       result.action === "clinical_note") && (
                       <button
                         type="button"
+                        disabled={
+                          processing ||
+                          reviewText.trim() !== (result.reviewText || result.transcript).trim()
+                        }
                         onClick={applyResult}
-                        className="flex-1 min-w-[140px] inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-white text-sm font-semibold"
+                        className="flex-1 min-w-[160px] inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-white text-sm font-semibold disabled:opacity-40"
                         style={{ backgroundColor: "#6d28d9" }}
+                        title={
+                          reviewText.trim() !== (result.reviewText || result.transcript).trim()
+                            ? t("reinterpret")
+                            : undefined
+                        }
                       >
                         {result.action === "navigate" ? <Navigation size={16} /> : <FileText size={16} />}
-                        {result.action === "navigate" ? t("navigate") : t("apply")}
+                        {t("confirmSend")}
                       </button>
                     )}
 
@@ -618,16 +752,18 @@ export default function VoiceAssistantShell({ portalId, userId, variant = "fab" 
                       onClick={resetSession}
                       className="py-2.5 px-4 rounded-xl border border-slate-200 text-sm font-medium text-slate-600"
                     >
-                      {t("editTranscript")}
+                      {t("speakAgain")}
                     </button>
                     <button
                       type="button"
                       onClick={() => setOpen(false)}
                       className="py-2.5 px-4 rounded-xl border border-slate-300 text-sm font-semibold text-slate-700 bg-slate-50"
                     >
-                      {t("closeAssistant")}
+                      {t("cancel")}
                     </button>
                   </div>
+                  </>
+                  )}
                 </div>
               )}
             </div>

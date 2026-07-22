@@ -197,6 +197,8 @@ export type ParsedVoiceIntent = {
     itemKind?: string;
   }>;
   clinicalText?: string | null;
+  /** Clean rewrite of the spoken command for professional review (not raw STT). */
+  cleanedCommand?: string | null;
   targetRoute?: string | null;
   targetLabel?: string | null;
   instructions?: string | null;
@@ -223,51 +225,57 @@ export type PrescriptionPrefill = {
   validDays?: number;
 };
 
+/** Shared review fields: raw STT vs cleaned command the doctor confirms. */
+type VoiceReviewFields = {
+  /** Raw speech-to-text (or pasted text). */
+  transcript: string;
+  /** Cleaned command for review; defaults to transcript when cleanup unavailable. */
+  reviewText: string;
+};
+
 export type VoiceProcessResult =
-  | {
+  | ({
+      action: "transcript_ready";
+      message: string;
+    } & VoiceReviewFields)
+  | ({
       action: "navigate";
       route: string;
       message: string;
-      transcript: string;
-    }
-  | {
+    } & VoiceReviewFields)
+  | ({
       action: "prescription_prefill";
       route: string;
       message: string;
-      transcript: string;
       prefill: PrescriptionPrefill;
-    }
-  | {
+    } & VoiceReviewFields)
+  | ({
       action: "form_prefill";
       route: string;
       message: string;
-      transcript: string;
       formType: VoiceFormType;
       patientRecordId?: string;
       patientName?: string;
       data: VoiceFormData;
-    }
-  | {
+    } & VoiceReviewFields)
+  | ({
       action: "clinical_note";
       message: string;
-      transcript: string;
       draft: string;
       patientRecordId?: string;
       patientName?: string;
       chartRoute?: string;
-    }
-  | {
+    } & VoiceReviewFields)
+  | ({
       action: "clarify";
       message: string;
-      transcript: string;
       question: string;
       options?: string[];
-    }
-  | {
+    } & VoiceReviewFields)
+  | ({
       action: "unknown";
       message: string;
-      transcript: string;
-    };
+    } & VoiceReviewFields);
 
 export type VoicePrefillPayload =
   | {

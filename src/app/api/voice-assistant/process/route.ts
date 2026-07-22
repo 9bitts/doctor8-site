@@ -7,7 +7,7 @@ import { transcribeAudio, isTranscribeConfigured } from "@/lib/ai-transcribe";
 import { normalizeLang, type Lang } from "@/lib/i18n/translations";
 import { processVoiceCommand } from "@/lib/voice-assistant/process-voice-command";
 import { requireVoiceAssistantApi } from "@/lib/voice-assistant/voice-assistant-auth";
-import type { VoicePortalId } from "@/lib/voice-assistant/types";
+import type { VoicePortalId, VoiceProcessResult } from "@/lib/voice-assistant/types";
 
 const portalIds = [
   "PROFESSIONAL",
@@ -27,7 +27,15 @@ const jsonSchema = z.object({
   portalId: z.enum(portalIds),
   pathname: z.string().optional(),
   sessionPatientRecordId: z.string().optional(),
+  /** transcribe = STT only; process = interpret (default). */
+  mode: z.enum(["transcribe", "process"]).optional(),
 });
+
+function transcriptReadyMessage(lang: Lang): string {
+  if (lang === "es") return "Transcripción lista. Revise el texto antes de continuar.";
+  if (lang === "en") return "Transcript ready. Review the text before continuing.";
+  return "Transcrição pronta. Confira o texto antes de continuar.";
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -37,6 +45,7 @@ export async function POST(req: NextRequest) {
     let pathname: string | undefined;
     let sessionPatientRecordId: string | undefined;
     let transcript: string | undefined;
+    let mode: "transcribe" | "process" = "process";
     let audioBuffer: Buffer | null = null;
     let audioMime = "audio/webm";
 
@@ -61,6 +70,9 @@ export async function POST(req: NextRequest) {
       const sessionRaw = form.get("sessionPatientRecordId");
       if (typeof sessionRaw === "string" && sessionRaw) sessionPatientRecordId = sessionRaw;
 
+      const modeRaw = form.get("mode");
+      if (modeRaw === "transcribe" || modeRaw === "process") mode = modeRaw;
+
       const transcriptField = form.get("transcript");
       if (typeof transcriptField === "string" && transcriptField.trim()) {
         transcript = transcriptField.trim();
@@ -82,6 +94,7 @@ export async function POST(req: NextRequest) {
       pathname = parsed.data.pathname;
       sessionPatientRecordId = parsed.data.sessionPatientRecordId;
       transcript = parsed.data.transcript?.trim();
+      mode = parsed.data.mode ?? "process";
     }
 
     const auth = await requireVoiceAssistantApi(portalId);
@@ -98,11 +111,34 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "NO_TRANSCRIPT" }, { status: 400 });
     }
 
+    const trimmed = transcript.trim();
+
+    if (mode === "transcribe") {
+      const result: VoiceProcessResult = {
+        action: "transcript_ready",
+        message: transcriptReadyMessage(lang),
+        transcript: trimmed,
+        reviewText: trimmed,
+      };
+      await createAuditLog({
+        userId: auth.userId,
+        action: AuditAction.CREATE_RECORD,
+        resource: "VoiceAssistant",
+        details: {
+          portalId,
+          pathname,
+          action: result.action,
+          skillPreview: trimmed.slice(0, 200),
+        },
+      });
+      return NextResponse.json(result);
+    }
+
     const result = await processVoiceCommand({
       auth,
       lang,
       portalId,
-      transcript: transcript.trim(),
+      transcript: trimmed,
       pathname,
       sessionPatientRecordId,
     });
@@ -115,7 +151,7 @@ export async function POST(req: NextRequest) {
         portalId,
         pathname,
         action: result.action,
-        skillPreview: transcript.slice(0, 200),
+        skillPreview: trimmed.slice(0, 200),
       },
     });
 

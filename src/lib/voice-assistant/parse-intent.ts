@@ -57,13 +57,18 @@ RULES:
 - confidence: 0.0 to 1.0
 - Extract patientName when mentioned (full name preferred).
 - For prescribe: extract medications array with name, dosage, frequency, duration, instructions when spoken.
-- For exam_request: extract examItems as array of exam names; notes and cid when spoken.
+- For exam_request:
+  - examItems MUST be real laboratory or imaging exam names only (e.g. "hemograma", "glicemia", "TSH").
+  - NEVER put sex, age, body habitus, obesity, "mulher/homem", or other patient descriptors into examItems.
+  - Clinical context (e.g. obesity) may appear only in clinicalText/notes as indication — never as an exam line.
+  - If the speaker said "pedido de exames" but named NO specific exams, set examItems to [] and lower confidence.
 - For clinical_document: put document body in clinicalText; infer documentType CERTIFICATE, REPORT or OTHER.
 - For clinical_note / sbar_note / sae_note / med_review / anamnesis / meal_plan: put spoken clinical content in clinicalText.
 - For navigate: set targetRoute to the best matching href from the navigation list, or null if unclear.
 - For search_patient: set patientName.
 - For schedule: set scheduleHint with date/time text if mentioned.
-- Never invent patient names, drugs, doses, or diagnoses not reasonably present in the transcript.
+- Never invent patient names, drugs, doses, exams, or diagnoses not reasonably present in the transcript.
+- cleanedCommand: rewrite the spoken command as a short clear clinical instruction in ${LANG_LABEL[params.lang]}, fixing STT noise. Example for exams: "Pedido de exames para Sonia Batista: hemograma, glicemia". Do not invent exams.
 - Write rawSummary as a one-line human summary in ${LANG_LABEL[params.lang]}.
 
 Return JSON shape:
@@ -73,6 +78,7 @@ Return JSON shape:
   "patientName": string|null,
   "medications": [{"name":"","dosage":"","frequency":"","duration":"","instructions":""}]|null,
   "clinicalText": string|null,
+  "cleanedCommand": string|null,
   "targetRoute": string|null,
   "targetLabel": string|null,
   "instructions": string|null,

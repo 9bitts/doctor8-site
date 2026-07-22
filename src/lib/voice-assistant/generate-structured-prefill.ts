@@ -137,7 +137,8 @@ RULES:
 - Write text values in ${LANG_LABEL[params.lang]}.
 - Include ONLY information reasonably present in the transcript.
 - Use empty strings or omit optional fields when not mentioned.
-- Do NOT invent clinical facts, doses, or diagnoses.
+- Do NOT invent clinical facts, doses, exams, or diagnoses.
+- For exam_request: examItems must be real lab/imaging exam names only. Never use patient descriptors (sex, obesity, age labels) as exam items. Put clinical indication in notes if relevant.
 - This is a DRAFT for licensed professional review before saving.`;
 
   const userText = [
