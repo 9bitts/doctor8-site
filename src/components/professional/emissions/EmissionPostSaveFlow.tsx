@@ -44,6 +44,9 @@ export interface SavedEmission {
   packageDocuments?: SavedPrescriptionDoc[];
   /** Primary document form kind (NRB/RCE/SIMPLE) */
   prescriptionFormKind?: string;
+  /** Clinical dossier bundling report + exams */
+  dossierId?: string | null;
+  dossierDocumentIds?: string[];
 }
 
 interface EmissionPostSaveFlowProps {
@@ -100,22 +103,31 @@ export function EmissionPostSaveFlow({
       const ids = emission.packageDocuments?.length
         ? emission.packageDocuments.map((d) => d.id)
         : [emission.id];
+      // Also deliver dossier exam items with the report (E9)
+      const dossierExtras = (emission.dossierDocumentIds || []).filter((id) => !ids.includes(id));
+      const allIds = [...ids, ...dossierExtras];
       let lastShareUrl = "";
-      for (const id of ids) {
+      for (const id of allIds) {
+        const kindForId = ids.includes(id) ? deliverKind : "document";
+        const isPrimary = ids.includes(id);
         const res = await fetch(`${apiBase}/emissions/deliver`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "same-origin",
           body: JSON.stringify({
-            kind: deliverKind,
+            kind: kindForId,
             id,
             sendWhatsApp: false,
           }),
         });
         const data = await res.json();
         if (!res.ok) {
-          setDeliverError(typeof data.error === "string" ? data.error : t("rx.flow.deliverError"));
-          return false;
+          // Dossier extras are best-effort; primary document must succeed
+          if (isPrimary) {
+            setDeliverError(typeof data.error === "string" ? data.error : t("rx.flow.deliverError"));
+            return false;
+          }
+          continue;
         }
         lastShareUrl = data.shareUrl || lastShareUrl;
       }
@@ -148,7 +160,31 @@ export function EmissionPostSaveFlow({
       setDeliverError(t("rx.controlledSignRequired"));
       return;
     }
+    if (emission.kind !== "prescription") {
+      const ok = window.confirm(t("rx.flow.sendUnsignedConfirm"));
+      if (!ok) return;
+    }
     await deliverToPatient();
+  }
+
+  async function handleDeleteEmission() {
+    if (emission.kind === "prescription") return;
+    if (!window.confirm(t("docs.deleteConfirm"))) return;
+    setDelivering(true);
+    setDeliverError("");
+    try {
+      const res = await fetch(`${apiBase}/documents/${emission.id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setDeliverError(typeof data.error === "string" ? data.error : t("rec.updateFailed"));
+        return;
+      }
+      onDone();
+    } catch {
+      setDeliverError(t("rec.updateFailed"));
+    } finally {
+      setDelivering(false);
+    }
   }
 
   function handleSign(doc?: SavedPrescriptionDoc) {
@@ -474,6 +510,26 @@ export function EmissionPostSaveFlow({
           <MessageCircle size={18} /> {t("rx.flow.whatsappShare")}
         </button>
 
+        {patient.id && (
+          <button
+            type="button"
+            onClick={() => {
+              const returnTo =
+                typeof window !== "undefined"
+                  ? new URLSearchParams(window.location.search).get("returnTo")
+                  : null;
+              const base = returnTo && returnTo.startsWith("/")
+                ? returnTo
+                : `/professional/patients/${patient.id}`;
+              const sep = base.includes("?") ? "&" : "?";
+              window.location.href = `${base}${sep}documentId=${encodeURIComponent(emission.id)}`;
+            }}
+            className="w-full py-3 rounded-xl border border-brand-200 bg-brand-50 hover:bg-brand-100 text-brand-700 font-semibold text-sm transition"
+          >
+            {t("rx.openChart")}
+          </button>
+        )}
+
         <button onClick={onDone}
           className="w-full py-3 rounded-xl bg-brand-500 hover:bg-brand-600 text-white font-semibold text-sm transition">
           {t("rx3.done")}
@@ -523,6 +579,12 @@ export function EmissionPostSaveFlow({
             <button onClick={onEdit} disabled={delivering}
               className="w-full py-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 font-semibold text-sm transition disabled:opacity-50">
               {t("rx.review.backEdit")}
+            </button>
+          )}
+          {emission.kind !== "prescription" && (
+            <button onClick={() => void handleDeleteEmission()} disabled={delivering}
+              className="w-full py-3 rounded-xl border border-rose-200 bg-white hover:bg-rose-50 text-rose-600 font-semibold text-sm transition disabled:opacity-50">
+              {t("docs.delete")}
             </button>
           )}
         </div>

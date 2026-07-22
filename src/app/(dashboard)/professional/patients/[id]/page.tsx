@@ -119,6 +119,7 @@ export default async function PatientChartDetail({
       id: d.id,
       type: d.type as string,
       recordKind: d.recordKind,
+      categoryId: d.categoryId ?? null,
       categoryName: d.category?.name ?? null,
       categoryGroup: d.category?.groupName ?? null,
       title: safeDecrypt(d.title),

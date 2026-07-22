@@ -48,7 +48,7 @@ import PsychologistClinicalHub, {
 } from "@/components/psychologist/PsychologistClinicalHub";
 import ChartDocsList from "@/components/professional/ChartDocsList";
 import PatientExamResultsModal from "@/components/professional/PatientExamResultsModal";
-import { buildEmissionReuseUrl } from "@/lib/emission-reuse-nav";
+import { buildEmissionEditUrl, buildEmissionReuseUrl } from "@/lib/emission-reuse-nav";
 import { openAuthenticatedPdf } from "@/lib/open-url-safely";
 import { uploadFileToApi } from "@/lib/upload-client";
 import {
@@ -126,6 +126,7 @@ interface Doc {
   id: string;
   type: string;
   recordKind?: ClinicalRecordKind | string;
+  categoryId?: string | null;
   categoryName: string | null;
   categoryGroup: string | null;
   title: string;
@@ -442,7 +443,7 @@ export default function RecordDetailClient({
   }, [searchParams, isNutritionistPortal, isNursePortal, isPharmacistPortal, isDoctorPortal, isPsychologistPortal]);
 
   useEffect(() => {
-    const recordId = searchParams.get("recordId");
+    const recordId = searchParams.get("recordId") || searchParams.get("documentId");
     if (!recordId) return;
     setChartTab("records");
     setRecordFilter("all");
@@ -625,6 +626,18 @@ export default function RecordDetailClient({
   }
 
   function openEditForm(doc: Doc) {
+    const emissionKind = emissionKindFromDocType(doc.type);
+    // Emissions (reports, certificates, exams) edit in the prescriptions hub via PATCH
+    if (emissionKind && emissionKind !== "prescription") {
+      window.location.href = buildEmissionEditUrl(
+        `${portalBase}/prescriptions`,
+        chart.id,
+        emissionKind,
+        doc.id,
+        `${portalBase}/patients/${chart.id}`,
+      );
+      return;
+    }
     resetForm();
     setEditingDoc(doc);
     const parsed = parseRecordContent(doc.content);
@@ -641,7 +654,24 @@ export default function RecordDetailClient({
     }
     setContent(parsed.body || parsed.notes || (parsed.items ? "" : (doc.content || "")));
     setRecordKind((doc.recordKind as ClinicalRecordKind) || "OTHER");
+    if (doc.categoryId) setCategoryId(doc.categoryId);
     setShowForm(true);
+  }
+
+  async function deleteEmissionDoc(d: Doc) {
+    const kind = emissionKindFromDocType(d.type);
+    if (!kind || kind === "prescription") return;
+    try {
+      const res = await fetch(`/api/professional/documents/${d.id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setError(typeof data.error === "string" ? data.error : t("rec.updateFailed"));
+        return;
+      }
+      setDocs((prev) => prev.filter((doc) => doc.id !== d.id));
+    } catch {
+      setError(t("rec.updateFailed"));
+    }
   }
 
   async function uploadRecordFile(f: File): Promise<string | null> {
@@ -905,6 +935,7 @@ export default function RecordDetailClient({
       chart.id,
       kind,
       emissionId,
+      `${portalBase}/patients/${chart.id}`,
     );
   }
 
@@ -1075,6 +1106,7 @@ export default function RecordDetailClient({
           cid: cidSelection?.code || "",
           cidLabel: cidSelection?.description || "",
           recordKind,
+          ...(categoryId ? { categoryId } : {}),
           ...(appendFileKeys.length ? { appendFileKeys } : {}),
         }),
       });
@@ -1086,7 +1118,7 @@ export default function RecordDetailClient({
         return;
       }
 
-      setDocs((prev) => prev.map((d) => (d.id === editingDoc.id ? { ...d, ...data } : d)));
+      setDocs((prev) => prev.map((d) => (d.id === editingDoc.id ? { ...d, ...data, categoryId: data.categoryId ?? d.categoryId } : d)));
       resetForm();
       setShowForm(false);
       toast.success(t("toast.saveSuccess"));
@@ -1748,6 +1780,7 @@ export default function RecordDetailClient({
                   onShare={handleShare}
                   onInvite={handleInvite}
                   onReuse={reuseEmissionDoc}
+                  onDelete={deleteEmissionDoc}
                   onSign={signEmissionDoc}
                   onDelivered={markEmissionDelivered}
                   onPdfError={(msg) => toast.error(msg)}
@@ -1785,6 +1818,7 @@ export default function RecordDetailClient({
                 onShare={handleShare}
                 onInvite={handleInvite}
                 onReuse={reuseEmissionDoc}
+                onDelete={deleteEmissionDoc}
                 onSign={signEmissionDoc}
                 onDelivered={markEmissionDelivered}
                 onPdfError={(msg) => toast.error(msg)}
@@ -1822,6 +1856,7 @@ export default function RecordDetailClient({
                   onShare={handleShare}
                   onInvite={handleInvite}
                   onReuse={reuseEmissionDoc}
+                  onDelete={deleteEmissionDoc}
                   onSign={signEmissionDoc}
                   onDelivered={markEmissionDelivered}
                   onPdfError={(msg) => toast.error(msg)}
@@ -1850,6 +1885,7 @@ export default function RecordDetailClient({
                 onShare={handleShare}
                 onInvite={handleInvite}
                 onReuse={reuseEmissionDoc}
+                onDelete={deleteEmissionDoc}
                 onSign={signEmissionDoc}
                 onDelivered={markEmissionDelivered}
                 onPdfError={(msg) => toast.error(msg)}
@@ -1877,6 +1913,7 @@ export default function RecordDetailClient({
                 onShare={handleShare}
                 onInvite={handleInvite}
                 onReuse={reuseEmissionDoc}
+                onDelete={deleteEmissionDoc}
                 onSign={signEmissionDoc}
                 onDelivered={markEmissionDelivered}
                 onPdfError={(msg) => toast.error(msg)}
@@ -1994,6 +2031,7 @@ export default function RecordDetailClient({
                       onShare={handleShare}
                       onInvite={handleInvite}
                       onReuse={reuseEmissionDoc}
+                  onDelete={deleteEmissionDoc}
                       onSign={signEmissionDoc}
                       onDelivered={markEmissionDelivered}
                       onPdfError={(msg) => toast.error(msg)}
@@ -2033,6 +2071,7 @@ export default function RecordDetailClient({
                 onShare={handleShare}
                 onInvite={handleInvite}
                 onReuse={reuseEmissionDoc}
+                onDelete={deleteEmissionDoc}
                 onSign={signEmissionDoc}
                 onDelivered={markEmissionDelivered}
                 onPdfError={(msg) => toast.error(msg)}
@@ -2060,6 +2099,7 @@ export default function RecordDetailClient({
                 onShare={handleShare}
                 onInvite={handleInvite}
                 onReuse={reuseEmissionDoc}
+                onDelete={deleteEmissionDoc}
                 onSign={signEmissionDoc}
                 onDelivered={markEmissionDelivered}
                 onPdfError={(msg) => toast.error(msg)}
@@ -2087,6 +2127,7 @@ export default function RecordDetailClient({
                 onShare={handleShare}
                 onInvite={handleInvite}
                 onReuse={reuseEmissionDoc}
+                onDelete={deleteEmissionDoc}
                 onSign={signEmissionDoc}
                 onDelivered={markEmissionDelivered}
                 onPdfError={(msg) => toast.error(msg)}
@@ -2114,6 +2155,7 @@ export default function RecordDetailClient({
                 onShare={handleShare}
                 onInvite={handleInvite}
                 onReuse={reuseEmissionDoc}
+                onDelete={deleteEmissionDoc}
                 onSign={signEmissionDoc}
                 onDelivered={markEmissionDelivered}
                 onPdfError={(msg) => toast.error(msg)}
@@ -2260,6 +2302,7 @@ export default function RecordDetailClient({
         onShare={handleShare}
         onInvite={handleInvite}
         onReuse={reuseEmissionDoc}
+        onDelete={deleteEmissionDoc}
         onSign={signEmissionDoc}
         onDelivered={markEmissionDelivered}
         onPdfError={(msg) => toast.error(msg)}
@@ -2288,7 +2331,6 @@ export default function RecordDetailClient({
                   {t("rec.draftRestored")}
                 </p>
               )}
-              {!editingDoc && (
               <div>
                 {categoriesLoading ? (
                   <div className="flex items-center gap-2 text-sm text-slate-400 py-2">
@@ -2305,7 +2347,6 @@ export default function RecordDetailClient({
                   />
                 )}
               </div>
-              )}
               <CidSearchInput
                 value={cidSelection}
                 onChange={setCidSelection}

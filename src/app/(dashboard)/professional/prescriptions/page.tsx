@@ -77,12 +77,13 @@ export default function PrescriptionsPage() {
         <DocumentCreateView
           key={p.docTemplatePrefill?.templateId || p.editingClinicalDocId || "document-new"}
           t={p.t} charts={p.charts} chartsLoading={p.chartsLoading}
-          reuseHint={!!p.reuseClinical}
+          reuseHint={!!p.reuseClinical && !p.editingClinicalDocId}
           templateHint={p.templateAppliedHint}
           initialPatient={p.reusePatient}
           lockPatient={p.lockPatient}
           initialBody={p.docTemplatePrefill?.body || p.reuseClinical?.content || ""}
           initialType={p.docTemplatePrefill?.documentType || p.reuseClinical?.type || "CERTIFICATE"}
+          initialCategoryId={p.reuseClinical?.categoryId || null}
           initialTemplateId={p.docTemplatePrefill?.templateId || null}
           editingDocumentId={p.editingClinicalDocId}
           portal={p.cfg.portal}

@@ -704,15 +704,40 @@ export default function VideoConsultRoom({
     setLeavingCall(true);
     try {
       if (!skipConfirm && assistant?.isRecording() && assistant.shouldAutoSaveOnLeave()) {
-        await Promise.race([
+        const result = await Promise.race([
           assistant.finalizeOnLeave(),
-          new Promise<void>((resolve) =>
+          new Promise<"timeout">((resolve) =>
             setTimeout(() => {
               console.warn("[daily] finalizeOnLeave timeout");
-              resolve();
-            }, 10_000),
+              resolve("timeout");
+            }, 45_000),
           ),
         ]);
+        if (result === "timeout" || result === "failed") {
+          const leaveAnyway = window.confirm(
+            lang === "pt"
+              ? "O salvamento das notas ainda não terminou. Sair mesmo assim?"
+              : lang === "es"
+                ? "El guardado de notas aún no terminó. ¿Salir de todos modos?"
+                : "Notes are still saving. Leave anyway?",
+          );
+          if (!leaveAnyway) {
+            setLeavingCall(false);
+            return;
+          }
+        }
+      } else if (!skipConfirm && assistant?.isProcessing()) {
+        const leaveAnyway = window.confirm(
+          lang === "pt"
+            ? "Ainda estamos processando a transcrição. Sair mesmo assim?"
+            : lang === "es"
+              ? "Aún se está procesando la transcripción. ¿Salir de todos modos?"
+              : "Transcription is still processing. Leave anyway?",
+        );
+        if (!leaveAnyway) {
+          setLeavingCall(false);
+          return;
+        }
       }
 
       if (

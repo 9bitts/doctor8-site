@@ -50,9 +50,10 @@ export async function GET(
     where: {
       id: params.id,
       professionalId: ctx.professional.id,
+      deletedAt: null,
     },
     include: {
-      category: { select: { name: true } },
+      category: { select: { id: true, name: true, slug: true } },
       patientRecord: { select: { id: true, firstName: true, lastName: true } },
       patient: { select: { firstName: true, lastName: true } },
     },
@@ -79,7 +80,9 @@ export async function GET(
     document: {
       id: document.id,
       type: document.type,
+      categoryId: document.categoryId,
       categoryName: document.category?.name || null,
+      categorySlug: document.category?.slug || null,
       title: safeDecrypt(document.title),
       content: isExamType(document.type) ? null : contentRaw,
       examItems: exam?.items || [],
@@ -92,6 +95,7 @@ export async function GET(
       digitalSignature: document.digitalSignature,
       signed: document.signatureStatus === "SIGNED",
       createdAt: document.createdAt,
+      dossierId: document.dossierId,
       document: {
         patient: firstName || lastName ? { firstName, lastName } : null,
       },
@@ -114,7 +118,9 @@ export async function PATCH(
     },
   });
 
-  if (!document) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (!document || document.deletedAt) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
   if (document.signatureStatus === "SIGNED") {
     return NextResponse.json({ error: "Signed documents cannot be edited" }, { status: 403 });
   }
@@ -233,6 +239,7 @@ export async function PATCH(
     id: updated.id,
     type: updated.type,
     recordKind: updated.recordKind,
+    categoryId: updated.categoryId,
     categoryName: updated.category?.name ?? null,
     categoryGroup: updated.category?.groupName ?? null,
     title: safeDecrypt(updated.title),
@@ -243,4 +250,53 @@ export async function PATCH(
     canEdit: true,
     sourceDocumentId: null,
   });
+}
+
+/** Soft-delete an unsigned clinical document issued by this professional. */
+export async function DELETE(
+  _req: NextRequest,
+  { params }: { params: { id: string } },
+) {
+  const ctx = await requireProfessionalApi();
+  if (isApiError(ctx)) return ctx.error;
+
+  const document = await db.medicalDocument.findFirst({
+    where: {
+      id: params.id,
+      professionalId: ctx.professional.id,
+      deletedAt: null,
+    },
+    select: {
+      id: true,
+      signatureStatus: true,
+      patientRecordId: true,
+    },
+  });
+
+  if (!document) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+  if (document.signatureStatus === "SIGNED") {
+    return NextResponse.json({ error: "Signed documents cannot be deleted" }, { status: 403 });
+  }
+  if (document.patientRecordId) {
+    const access = await resolveChartAccess(ctx.professional.id, document.patientRecordId);
+    if (!canEditChart(access)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+  }
+
+  const now = new Date();
+  await db.$transaction([
+    db.medicalDocument.update({
+      where: { id: document.id },
+      data: { deletedAt: now },
+    }),
+    // Hide from patient immediately if previously delivered
+    db.sharedRecord.deleteMany({
+      where: { documentId: document.id },
+    }),
+  ]);
+
+  return NextResponse.json({ ok: true, id: document.id });
 }

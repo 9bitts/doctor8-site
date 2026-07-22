@@ -156,6 +156,7 @@ export default function ChartDocsList({
   onShare,
   onInvite,
   onReuse,
+  onDelete,
   onSign,
   onDelivered,
   onPdfError,
@@ -180,6 +181,7 @@ export default function ChartDocsList({
   onShare: (id: string) => void;
   onInvite: (id: string) => void;
   onReuse: (d: ChartListDoc) => void;
+  onDelete?: (d: ChartListDoc) => void | Promise<void>;
   onSign: (d: ChartListDoc) => void;
   onDelivered: (id: string) => void;
   onPdfError: (msg: string) => void;
@@ -294,25 +296,34 @@ export default function ChartDocsList({
                 )}
 
                 {isEmission && emissionKind ? (
-                  <EmissionCardActions
-                    kind={emissionKind}
-                    emissionId={emissionKind === "prescription" ? (d.prescriptionId || d.id) : d.id}
-                    signatureStatus={d.signatureStatus}
-                    patientNotifiedAt={d.patientNotifiedAt}
-                    whatsappNotifyStatus={d.whatsappNotifyStatus}
-                    patientName={patientName}
-                    medications={d.medications || undefined}
-                    examItems={parsedContent?.items}
-                    title={d.title}
-                    content={d.content}
-                    t={t}
-                    onCopy={() => onCopy(d, label)}
-                    onPrint={() => onPrint(d.id)}
-                    onReuse={() => onReuse(d)}
-                    onSign={canEdit ? () => onSign(d) : undefined}
-                    onPdfError={onPdfError}
-                    onDelivered={() => onDelivered(d.id)}
-                  />
+                  <div className="mt-3 space-y-2">
+                    <EmissionCardActions
+                      kind={emissionKind}
+                      emissionId={emissionKind === "prescription" ? (d.prescriptionId || d.id) : d.id}
+                      signatureStatus={d.signatureStatus}
+                      patientNotifiedAt={d.patientNotifiedAt}
+                      whatsappNotifyStatus={d.whatsappNotifyStatus}
+                      patientName={patientName}
+                      medications={d.medications || undefined}
+                      examItems={parsedContent?.items}
+                      title={d.title}
+                      content={d.content}
+                      t={t}
+                      onCopy={() => onCopy(d, label)}
+                      onPrint={() => onPrint(d.id)}
+                      onEdit={canEdit && d.canEdit !== false && !d.sourceDocumentId ? () => onEdit(d) : undefined}
+                      onDelete={canEdit && onDelete && d.canEdit !== false && !d.sourceDocumentId
+                        ? () => onDelete(d)
+                        : undefined}
+                      onReuse={() => onReuse(d)}
+                      onSign={canEdit ? () => onSign(d) : undefined}
+                      onPdfError={onPdfError}
+                      onDelivered={() => onDelivered(d.id)}
+                    />
+                    {emissionKind !== "prescription" && (
+                      <AiSummarizeButton documentId={d.id} variant="compact" />
+                    )}
+                  </div>
                 ) : (
                   <div className="mt-3 flex items-center gap-2 flex-wrap">
                     <button

@@ -6,12 +6,13 @@ export function emissionReuseView(kind: EmissionKind): "prescription" | "exam" |
   return "document";
 }
 
-/** Build prescriptions-page URL to reopen an emission for reuse/editing. */
+/** Build prescriptions-page URL to reopen an emission for reuse (creates a new row on save). */
 export function buildEmissionReuseUrl(
   prescriptionsPath: string,
   chartId: string,
   kind: EmissionKind,
   emissionId: string,
+  returnTo?: string,
 ): string {
   const params = new URLSearchParams({
     patientRecordId: chartId,
@@ -22,5 +23,23 @@ export function buildEmissionReuseUrl(
   } else {
     params.set("reuseDoc", emissionId);
   }
+  if (returnTo) params.set("returnTo", returnTo);
+  return `${prescriptionsPath}?${params.toString()}`;
+}
+
+/** Build prescriptions-page URL to edit an existing unsigned emission (PATCH on save). */
+export function buildEmissionEditUrl(
+  prescriptionsPath: string,
+  chartId: string,
+  kind: EmissionKind,
+  emissionId: string,
+  returnTo?: string,
+): string {
+  const params = new URLSearchParams({
+    patientRecordId: chartId,
+    view: emissionReuseView(kind),
+    editDoc: emissionId,
+  });
+  if (returnTo) params.set("returnTo", returnTo);
   return `${prescriptionsPath}?${params.toString()}`;
 }

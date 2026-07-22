@@ -221,7 +221,7 @@ export async function deliverEmissionToPatient(
       patient: { select: { userId: true, firstName: true, lastName: true, phone: true } },
     },
   });
-  if (!document || document.professionalId !== professional.id) {
+  if (!document || document.professionalId !== professional.id || document.deletedAt) {
     return { error: "Not found", status: 404 };
   }
 

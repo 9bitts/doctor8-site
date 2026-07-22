@@ -33,6 +33,7 @@ const T: Record<string, Record<Lang, string>> = {
   summary: { pt: "Rascunho de evolução", en: "Evolution draft", es: "Borrador de evolución" },
   saveToChart: { pt: "Salvar na ficha", en: "Save to chart", es: "Guardar en la ficha" },
   regenerate: { pt: "Regenerar resumo", en: "Regenerate summary", es: "Regenerar resumen" },
+  retryAudio: { pt: "Tentar novamente com o áudio", en: "Retry with last recording", es: "Reintentar con el audio" },
   close: { pt: "Fechar", en: "Close", es: "Cerrar" },
   needConsent: { pt: "Marque o consentimento para iniciar.", en: "Check consent to start.", es: "Marque el consentimiento para iniciar." },
   micError: { pt: "Não foi possível acessar o microfone.", en: "Could not access the microphone.", es: "No se pudo acceder al micrófono." },
@@ -141,12 +142,42 @@ const ConsultNotesAssistant = forwardRef<ConsultNotesAssistantHandle, Props>(fun
   const [transcribeOk, setTranscribeOk] = useState(true);
   const [summarizeOk, setSummarizeOk] = useState(true);
   const [elapsed, setElapsed] = useState(0);
+  const [lastAudio, setLastAudio] = useState<{ blob: Blob; name: string } | null>(null);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const saveOnCompleteRef = useRef(false);
   const finalizeResolveRef = useRef<((v: "saved" | "failed") => void) | null>(null);
+  const draftKey = `d8-consult-notes:${appointmentId || chartId || "none"}`;
+
+  // Restore draft so transcription edits survive refresh / error loops (E1)
+  useEffect(() => {
+    if (typeof window === "undefined" || !draftKey) return;
+    try {
+      const raw = localStorage.getItem(draftKey);
+      if (!raw) return;
+      const draft = JSON.parse(raw) as { transcript?: string; summary?: string; manualText?: string };
+      if (draft.transcript) setTranscript(draft.transcript);
+      if (draft.summary) setSummary(draft.summary);
+      if (draft.manualText) setManualText(draft.manualText);
+      if (draft.transcript || draft.summary) setShowResult(true);
+    } catch { /* ignore */ }
+  }, [draftKey]);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !draftKey) return;
+    if (!transcript && !summary && !manualText) return;
+    const timer = window.setTimeout(() => {
+      try {
+        localStorage.setItem(
+          draftKey,
+          JSON.stringify({ transcript, summary, manualText, updatedAt: Date.now() }),
+        );
+      } catch { /* ignore */ }
+    }, 400);
+    return () => window.clearTimeout(timer);
+  }, [draftKey, transcript, summary, manualText]);
 
   useEffect(() => {
     fetch(aiNotesApi)
@@ -215,15 +246,25 @@ const ConsultNotesAssistant = forwardRef<ConsultNotesAssistantHandle, Props>(fun
         else if (data.error === "TRANSCRIBE_NOT_CONFIGURED") setError(t("transcribeNotConfigured"));
         else if (data.error === "CONSENT_REQUIRED") setError(t("needConsent"));
         else setError(t("genericError"));
+        // Keep any partial transcript returned on error; never wipe existing content
+        if (typeof data.transcript === "string" && data.transcript.trim()) {
+          setTranscript(data.transcript);
+          setShowResult(true);
+        }
         resolveFinalize("failed");
         return false;
       }
 
-      setTranscript(data.transcript || "");
-      setSummary(data.summary || "");
+      if (typeof data.transcript === "string" && data.transcript.trim()) {
+        setTranscript(data.transcript);
+      }
+      if (typeof data.summary === "string" && data.summary.trim()) {
+        setSummary(data.summary);
+      }
 
       if (data.saved) {
         setSuccess(t("savedToChart"));
+        try { localStorage.removeItem(draftKey); } catch { /* ignore */ }
         onSaved?.();
         resolveFinalize("saved");
       } else if (showModal) {
@@ -274,9 +315,11 @@ const ConsultNotesAssistant = forwardRef<ConsultNotesAssistantHandle, Props>(fun
           resolveFinalize("failed");
           return;
         }
+        const fileName = `consult.${audioFileExtension(effectiveMime)}`;
+        setLastAudio({ blob, name: fileName });
         const form = new FormData();
         form.append("consent", "true");
-        form.append("audio", blob, `consult.${audioFileExtension(effectiveMime)}`);
+        form.append("audio", blob, fileName);
         form.append("lang", lang);
         Object.entries(chartFields()).forEach(([k, v]) => form.append(k, v));
         if (appointmentId) form.append("appointmentId", appointmentId);
@@ -375,6 +418,17 @@ const ConsultNotesAssistant = forwardRef<ConsultNotesAssistantHandle, Props>(fun
     } finally {
       setProcessing(false);
     }
+  }
+
+  async function retryLastAudio() {
+    if (!lastAudio) return;
+    const form = new FormData();
+    form.append("consent", "true");
+    form.append("audio", lastAudio.blob, lastAudio.name);
+    form.append("lang", lang);
+    Object.entries(chartFields()).forEach(([k, v]) => form.append(k, v));
+    if (appointmentId) form.append("appointmentId", appointmentId);
+    await processPayload(form, { saveToChart: false, showModal: true });
   }
 
   async function regenerateSummary() {
@@ -513,9 +567,21 @@ const ConsultNotesAssistant = forwardRef<ConsultNotesAssistantHandle, Props>(fun
         )}
 
         {error && (
-          <p className="text-[11px] text-rose-400 flex items-start gap-1">
-            <AlertCircle size={12} className="shrink-0 mt-0.5" /> {error}
-          </p>
+          <div className="space-y-1.5">
+            <p className="text-[11px] text-rose-400 flex items-start gap-1">
+              <AlertCircle size={12} className="shrink-0 mt-0.5" /> {error}
+            </p>
+            {lastAudio && (
+              <button
+                type="button"
+                disabled={processing}
+                onClick={() => void retryLastAudio()}
+                className="text-[11px] font-semibold text-violet-300 hover:text-violet-200 underline disabled:opacity-40"
+              >
+                {t("retryAudio")}
+              </button>
+            )}
+          </div>
         )}
       </div>
 

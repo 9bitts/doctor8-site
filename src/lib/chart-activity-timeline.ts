@@ -139,7 +139,7 @@ export async function buildChartActivityTimeline(
     audiograms,
   ] = await Promise.all([
     db.medicalDocument.findMany({
-      where: { patientRecordId: chartId },
+      where: { patientRecordId: chartId, deletedAt: null },
       include: {
         category: { select: { name: true } },
         prescriptions: { select: { id: true, medications: true }, take: 1 },

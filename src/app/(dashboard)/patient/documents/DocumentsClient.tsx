@@ -31,7 +31,13 @@ interface Item {
   createdAt: string;
   sharedBy: string | null;
   sharedWithDoctors: SharedDoctor[];
+  signatureStatus?: string | null;
+  dossierId?: string | null;
+  dossierTitle?: string | null;
 }
+
+type DocSort = "newest" | "oldest" | "az";
+type DocFilter = "all" | "unsigned" | "signed" | "shared";
 
 interface CategoryItem {
   id: string; name: string; slug: string; groupName: string; icon: string | null; legacyType: string | null;
@@ -87,6 +93,8 @@ export default function DocumentsClient({ initialItems }: { initialItems: Item[]
   const [file, setFile] = useState<File | null>(null);
   const [autoShareProfessionalId, setAutoShareProfessionalId] = useState<string | null>(null);
   const [autoShareDoctorName, setAutoShareDoctorName] = useState<string>("");
+  const [sortMode, setSortMode] = useState<DocSort>("newest");
+  const [filterMode, setFilterMode] = useState<DocFilter>("all");
 
   // Fallback label for a legacy type (translated)
   const legacyLabel = (type: string) => t(LEGACY_KEYS[type] || "doctype.OTHER");
@@ -377,11 +385,30 @@ export default function DocumentsClient({ initialItems }: { initialItems: Item[]
   }
 
   function groupKeyOf(it: Item): string {
+    if (it.dossierId) {
+      return it.dossierTitle?.trim()
+        ? `${t("docs.dossier")}: ${it.dossierTitle}`
+        : t("docs.dossier");
+    }
     return it.categoryGroup || legacyLabel(it.type);
   }
-  const sortedItems = [...items].sort(
-    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-  );
+
+  const filteredItems = items.filter((it) => {
+    if (filterMode === "unsigned") return !!it.sharedBy && it.signatureStatus !== "SIGNED";
+    if (filterMode === "signed") return it.signatureStatus === "SIGNED";
+    if (filterMode === "shared") return !!it.sharedBy;
+    return true;
+  });
+
+  const sortedItems = [...filteredItems].sort((a, b) => {
+    if (sortMode === "az") {
+      return a.title.localeCompare(b.title, lang === "pt" ? "pt-BR" : lang === "es" ? "es" : "en", {
+        sensitivity: "base",
+      });
+    }
+    const diff = new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    return sortMode === "oldest" ? -diff : diff;
+  });
   const groupedByGroup: Record<string, Item[]> = {};
   const groupOrder: string[] = [];
   for (const it of sortedItems) {
@@ -390,9 +417,15 @@ export default function DocumentsClient({ initialItems }: { initialItems: Item[]
     groupedByGroup[k].push(it);
   }
   for (const k of groupOrder) {
-    groupedByGroup[k].sort(
-      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-    );
+    groupedByGroup[k].sort((a, b) => {
+      if (sortMode === "az") {
+        return a.title.localeCompare(b.title, lang === "pt" ? "pt-BR" : lang === "es" ? "es" : "en", {
+          sensitivity: "base",
+        });
+      }
+      const diff = new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      return sortMode === "oldest" ? -diff : diff;
+    });
   }
 
   return (
@@ -429,11 +462,41 @@ export default function DocumentsClient({ initialItems }: { initialItems: Item[]
         </div>
       )}
 
+      {items.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2">
+          <label className="text-xs text-slate-500 font-medium">{t("docs.sort")}</label>
+          <select
+            value={sortMode}
+            onChange={(e) => setSortMode(e.target.value as DocSort)}
+            className="text-xs border border-slate-200 rounded-lg px-2 py-1.5 bg-white"
+          >
+            <option value="newest">{t("docs.sortNewest")}</option>
+            <option value="oldest">{t("docs.sortOldest")}</option>
+            <option value="az">{t("docs.sortAZ")}</option>
+          </select>
+          <label className="text-xs text-slate-500 font-medium ml-2">{t("docs.filter")}</label>
+          <select
+            value={filterMode}
+            onChange={(e) => setFilterMode(e.target.value as DocFilter)}
+            className="text-xs border border-slate-200 rounded-lg px-2 py-1.5 bg-white"
+          >
+            <option value="all">{t("docs.filterAll")}</option>
+            <option value="shared">{t("docs.filterShared")}</option>
+            <option value="unsigned">{t("docs.filterUnsigned")}</option>
+            <option value="signed">{t("docs.filterSigned")}</option>
+          </select>
+        </div>
+      )}
+
       {items.length === 0 ? (
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm text-center py-16">
           <FileText className="mx-auto text-slate-300 mb-3" size={40} />
           <p className="text-slate-400 text-sm">{t("docs.empty.title")}</p>
           <p className="text-slate-400 text-xs mt-1">{t("docs.empty.subtitle")}</p>
+        </div>
+      ) : sortedItems.length === 0 ? (
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm text-center py-12">
+          <p className="text-slate-400 text-sm">{t("timeline.emptyFilter")}</p>
         </div>
       ) : (
         <div className="space-y-6">
@@ -471,6 +534,16 @@ export default function DocumentsClient({ initialItems }: { initialItems: Item[]
                             {it.sharedBy && (
                               <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
                                 <UserCheck size={11} /> {t("docs.sharedBy")} {it.sharedBy}
+                              </span>
+                            )}
+                            {it.sharedBy && it.signatureStatus !== "SIGNED" && (
+                              <span className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-800 bg-amber-50 px-2 py-0.5 rounded-full">
+                                {t("docs.unsigned")}
+                              </span>
+                            )}
+                            {it.sharedBy && it.signatureStatus === "SIGNED" && (
+                              <span className="inline-flex items-center gap-1 text-[11px] font-medium text-brand-700 bg-brand-50 px-2 py-0.5 rounded-full">
+                                {t("docs.signed")}
                               </span>
                             )}
                           </div>

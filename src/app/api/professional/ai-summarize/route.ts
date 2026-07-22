@@ -18,9 +18,13 @@ function safeDecrypt(v: string | null | undefined): string {
 const schema = z.object({
   documentId: z.string().optional(),
   resourceId: z.string().optional(),
+  /** Analyze an uploaded exam/file before the document is saved (report editor). */
+  fileKey: z.string().min(1).optional(),
+  text: z.string().max(20000).optional(),
+  title: z.string().max(200).optional(),
   lang: z.enum(["pt", "en", "es"]).optional(),
-}).refine((d) => d.documentId || d.resourceId, {
-  message: "documentId or resourceId required",
+}).refine((d) => d.documentId || d.resourceId || d.fileKey || (d.text && d.text.trim()), {
+  message: "documentId, resourceId, fileKey, or text required",
 });
 
 async function canAccessDocument(professionalId: string, documentId: string) {
@@ -76,7 +80,7 @@ export async function POST(req: NextRequest) {
 
     if (parsed.data.documentId) {
       const doc = await canAccessDocument(ctx.professional.id, parsed.data.documentId);
-      if (!doc) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      if (!doc || doc.deletedAt) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
       title = safeDecrypt(doc.title);
       const contentRaw = doc.content ? safeDecrypt(doc.content) : null;
@@ -114,6 +118,12 @@ export async function POST(req: NextRequest) {
       url = resource.url;
       category = "Biblioteca";
       if (resource.fileUrl) fileKey = safeDecrypt(resource.fileUrl);
+    } else {
+      // Direct text / file analysis from the report editor (CTO E2/E3)
+      title = parsed.data.title?.trim() || "Anexo / texto";
+      content = parsed.data.text?.trim() || null;
+      fileKey = parsed.data.fileKey || null;
+      category = "Análise";
     }
 
     if (!title && !content && !fileKey && !url) {

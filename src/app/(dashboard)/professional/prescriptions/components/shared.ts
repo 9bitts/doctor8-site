@@ -157,7 +157,10 @@ export interface ClinicalDocument {
   signatureStatus?: string | null; digitalSignature?: string | null; signed?: boolean;
   whatsappNotifyStatus?: string | null;
   patientNotifiedAt?: boolean;
+  categoryId?: string | null;
   categoryName?: string | null;
+  categorySlug?: string | null;
+  dossierId?: string | null;
   document?: { patient?: { firstName: string; lastName: string } | null };
 }
 

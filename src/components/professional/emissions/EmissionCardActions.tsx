@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useI18n } from "@/lib/i18n/I18nProvider";
 import {
-  Copy, PenLine, Download, Loader2, CheckCircle2, Clock, Share2, Printer, MessageCircle,
+  Copy, PenLine, Pencil, Trash2, Download, Loader2, CheckCircle2, Clock, Share2, Printer, MessageCircle,
 } from "lucide-react";
 import Doctor8DeliverButton from "./Doctor8DeliverButton";
 import { openWhatsAppShareLink } from "./whatsapp-share-link";
@@ -74,6 +74,8 @@ export function EmissionCardActions({
   title,
   content,
   t,
+  onEdit,
+  onDelete,
   onReuse,
   onSign,
   onShare,
@@ -97,6 +99,8 @@ export function EmissionCardActions({
   content?: string | null;
   t: (k: string) => string;
   layout?: "row" | "column";
+  onEdit?: () => void;
+  onDelete?: () => void | Promise<void>;
   onReuse?: () => void;
   onSign?: () => void;
   onShare?: () => void;
@@ -108,13 +112,26 @@ export function EmissionCardActions({
   hideSign?: boolean;
 }) {
   const { lang } = useI18n();
+  const [deleting, setDeleting] = useState(false);
   const signed = signatureStatus === "SIGNED";
   const pending = signatureStatus === "PENDING";
+  const canMutate = !signed && !pending && kind !== "prescription";
   const pdfUrl = kind === "prescription"
     ? `${apiBase}/prescriptions/${emissionId}/pdf?lang=${lang}`
     : `${apiBase}/documents/${emissionId}/pdf?lang=${lang}`;
   const shareUrl = emissionShareUrl(kind);
   const delivered = !!patientNotifiedAt;
+
+  async function handleDelete() {
+    if (!onDelete || deleting) return;
+    if (!window.confirm(t("docs.deleteConfirm"))) return;
+    setDeleting(true);
+    try {
+      await onDelete();
+    } finally {
+      setDeleting(false);
+    }
+  }
 
   async function defaultPrint() {
     try {
@@ -149,9 +166,27 @@ export function EmissionCardActions({
         <Printer size={14} /> {t("rec.print")}
       </button>
 
+      {canMutate && onEdit && (
+        <button type="button" onClick={onEdit} className={EMISSION_BTN_NEUTRAL}>
+          <Pencil size={14} /> {t("rec.edit")}
+        </button>
+      )}
+
       {onReuse && (
         <button type="button" onClick={onReuse} className={EMISSION_BTN_NEUTRAL}>
           <Copy size={14} /> {t("rx.reuse")}
+        </button>
+      )}
+
+      {canMutate && onDelete && (
+        <button
+          type="button"
+          onClick={() => void handleDelete()}
+          disabled={deleting}
+          className={`${EMISSION_BTN_NEUTRAL} text-rose-600 border-rose-200`}
+        >
+          {deleting ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+          {t("docs.delete")}
         </button>
       )}
 

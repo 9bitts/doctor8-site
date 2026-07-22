@@ -87,7 +87,7 @@ export async function loadChartMedicalDocuments(
   order: "asc" | "desc" = "desc",
 ) {
   return db.medicalDocument.findMany({
-    where: { professionalId, patientRecordId: chartId },
+    where: { professionalId, patientRecordId: chartId, deletedAt: null },
     orderBy: { createdAt: order },
     include: {
       category: { select: { name: true, groupName: true } },

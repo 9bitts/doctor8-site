@@ -32,7 +32,7 @@ export default async function PatientDocuments() {
 
   // 1) Patient's own documents (no professional attached)
   const ownDocs = await db.medicalDocument.findMany({
-    where: { patientId: patient.id, professionalId: null },
+    where: { patientId: patient.id, professionalId: null, deletedAt: null },
     orderBy: { createdAt: "desc" },
     take: 200,
     include: { category: { select: { name: true, groupName: true } } },
@@ -67,6 +67,7 @@ export default async function PatientDocuments() {
         include: {
           professional: { select: { firstName: true, lastName: true, specialty: true } },
           category: { select: { name: true, groupName: true } },
+          dossier: { select: { id: true, title: true } },
         },
       },
     },
@@ -87,10 +88,13 @@ export default async function PatientDocuments() {
     createdAt: d.createdAt.toISOString(),
     sharedBy: null as string | null,
     sharedWithDoctors: sharedDoctorsByDoc.get(d.id) || [],
+    signatureStatus: d.signatureStatus as string | null,
+    dossierId: d.dossierId as string | null,
+    dossierTitle: null as string | null,
   }));
 
   const sharedItems = shares
-    .filter((s) => s.document)
+    .filter((s) => s.document && !s.document.deletedAt)
     .map((s) => ({
       id: s.document!.id,
       type: s.document!.type as string,
@@ -104,6 +108,9 @@ export default async function PatientDocuments() {
         ? `Dr. ${s.document!.professional.firstName} ${s.document!.professional.lastName}`
         : "your doctor",
       sharedWithDoctors: [] as { professionalId: string; name: string }[],
+      signatureStatus: s.document!.signatureStatus as string | null,
+      dossierId: s.document!.dossierId as string | null,
+      dossierTitle: s.document!.dossier?.title ?? null,
     }));
 
   // Merge, newest first; de-dup by id (a doc could appear once per source)

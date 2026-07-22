@@ -57,15 +57,30 @@ export async function GET(
     where: { id: params.id },
     include: {
       medicalDocuments: {
+        where: { deletedAt: null },
         orderBy: { createdAt: "desc" },
         take: 50,
         include: { category: { select: { name: true } } },
+      },
+      linkedUser: {
+        select: {
+          patientProfile: { select: { allergies: true } },
+        },
+      },
+      diagnoses: {
+        where: { status: "ACTIVE" },
+        orderBy: { notedAt: "desc" },
+        take: 8,
+        select: { cidCode: true, cidLabel: true },
       },
     },
   });
   if (!record) {
     return NextResponse.json({ error: "Chart not found" }, { status: 404 });
   }
+
+  const allergiesRaw = record.linkedUser?.patientProfile?.allergies;
+  const allergies = allergiesRaw ? safeDecrypt(allergiesRaw) : null;
 
   return NextResponse.json({
     id: record.id,
@@ -76,6 +91,11 @@ export async function GET(
     country: record.country || null,
     linkedUserId: record.linkedUserId || null,
     hasAccount: !!record.linkedUserId,
+    allergies,
+    diagnoses: record.diagnoses.map((d) => ({
+      code: d.cidCode,
+      description: d.cidLabel,
+    })),
     documents: record.medicalDocuments.map((d) => {
       const content = d.content ? safeDecrypt(d.content) : null;
       const hasFile = documentHasStoredFile(d);
@@ -88,6 +108,7 @@ export async function GET(
         hasFile,
         attachmentCount: countRecordAttachments(hasFile, content),
         sourceDocumentId: d.sourceDocumentId ?? null,
+        signatureStatus: d.signatureStatus,
         createdAt: d.createdAt.toISOString(),
       };
     }),

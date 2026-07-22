@@ -1267,6 +1267,10 @@ export function usePrescriptionPage() {
       // refresh banners for any other in-progress drafts.
       refreshPendingDrafts();
     }
+    const returnTo =
+      typeof window !== "undefined"
+        ? new URLSearchParams(window.location.search).get("returnTo")
+        : null;
     setDraftRestoredHint(false);
     setSavedEmission(null);
     setPostSaveStep("choose");
@@ -1277,6 +1281,10 @@ export function usePrescriptionPage() {
     resetForm();
     setReuseClinical(null);
     setReusePatient(null);
+    if (returnTo && returnTo.startsWith("/")) {
+      window.location.href = returnTo;
+      return;
+    }
     fetchAll();
   }
 
@@ -1337,7 +1345,7 @@ export function usePrescriptionPage() {
         const res = await fetch(api(`/documents/${emission.id}`));
         const data = await res.json();
         if (res.ok && data.document) {
-          await openReuseClinical(data.document as ClinicalDocument);
+          await openReuseClinical(data.document as ClinicalDocument, { editing: true });
         } else {
           setReuseClinical({
             id: emission.id,
@@ -1443,13 +1451,18 @@ export function usePrescriptionPage() {
     return null;
   }
 
-  async function openReuseClinical(d: ClinicalDocument) {
+  async function openReuseClinical(d: ClinicalDocument, opts?: { editing?: boolean }) {
     if (isExamDocType(d.type)) {
       discardExamDraft();
     } else {
       discardDocumentDraft();
     }
     setReuseClinical(d);
+    if (opts?.editing) {
+      setEditingClinicalDocId(d.id);
+    } else {
+      setEditingClinicalDocId(null);
+    }
     const chart = await resolvePatientChart(d.patientRecordId, d.document?.patient);
     setReusePatient(chart);
     setView(isExamDocType(d.type) ? "exam" : "document");
@@ -1532,7 +1545,8 @@ export function usePrescriptionPage() {
   useEffect(() => {
     const reuseRxId = searchParams.get("reuse");
     const reuseDocId = searchParams.get("reuseDoc");
-    if (!reuseRxId && !reuseDocId) return;
+    const editDocId = searchParams.get("editDoc");
+    if (!reuseRxId && !reuseDocId && !editDocId) return;
 
     let cancelled = false;
 
@@ -1540,6 +1554,7 @@ export function usePrescriptionPage() {
       const params = new URLSearchParams(window.location.search);
       params.delete("reuse");
       params.delete("reuseDoc");
+      params.delete("editDoc");
       const qs = params.toString();
       window.history.replaceState(
         {},
@@ -1560,12 +1575,15 @@ export function usePrescriptionPage() {
           return;
         }
 
-        if (reuseDocId) {
-          const res = await fetch(api(`/documents/${reuseDocId}`));
+        const clinicalId = editDocId || reuseDocId;
+        if (clinicalId) {
+          const res = await fetch(api(`/documents/${clinicalId}`));
           const data = await res.json();
           if (cancelled) return;
           if (res.ok && data.document) {
-            await openReuseClinical(data.document as ClinicalDocument);
+            await openReuseClinical(data.document as ClinicalDocument, {
+              editing: !!editDocId,
+            });
           }
         }
       } catch {
