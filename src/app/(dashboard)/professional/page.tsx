@@ -31,9 +31,7 @@ import { medicationListHasIntegrativeItems } from "@/lib/integrative-medicine/in
 import { isWithinAppointmentJoinWindow } from "@/lib/appointment-join-window";
 import { providerDayBounds } from "@/lib/provider-day-bounds";
 import { buildProviderFinanceiroReport } from "@/lib/provider-financeiro";
-import ProfessionalTourWrapper from "./ProfessionalTourWrapper";
 import IncompleteLicenseBanner from "@/components/professional/IncompleteLicenseBanner";
-import ProfessionalChecklistWrapper from "./ProfessionalChecklistWrapper";
 import { formatMoneyCents } from "@/lib/safe-format-currency";
 import { initialsOf } from "@/lib/format-name";
 import {
@@ -265,9 +263,6 @@ export default async function ProfessionalDashboard() {
         subscribed={hasActiveSubscription}
         defaultRegion={userRow?.region || session.user.region}
       />
-
-      <ProfessionalChecklistWrapper />
-      <ProfessionalTourWrapper lang={lang} />
 
       {/* Header */}
       <div>

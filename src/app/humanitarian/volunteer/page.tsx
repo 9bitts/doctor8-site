@@ -13,7 +13,6 @@ import { humanitarianApiErrorMessage } from "@/lib/humanitarian/api-error-messag
 import HumanitarianShell from "@/components/humanitarian/HumanitarianShell";
 import HumanitarianIntakeSummary from "@/components/humanitarian/HumanitarianIntakeSummary";
 import HumanitarianOfflineBanner from "@/components/humanitarian/HumanitarianOfflineBanner";
-import VolunteerAttendGuideModal from "@/components/VolunteerAttendGuideModal";
 import {
   cacheVolunteerDashboard,
   loadCachedVolunteerDashboard,
@@ -336,7 +335,6 @@ export default function HumanitarianVolunteerPage() {
 
   return (
     <HumanitarianShell lang={lang} onLangChange={setLang}>
-      <VolunteerAttendGuideModal />
       <div className="space-y-6">
         <HumanitarianOfflineBanner lang={lang} />
         <div>

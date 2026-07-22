@@ -27,8 +27,6 @@ import {
 } from "@/lib/user-profile-complete";
 import { fetchUserProfileSnapshot } from "@/lib/user-profile-db";
 import { canSkipHumanitarianEmailVerification } from "@/lib/humanitarian/feature-flags";
-import { isVolunteerGuideProviderRole } from "@/lib/volunteer-attend-guide";
-import { getProviderRegistrationStatus } from "@/lib/provider-registration-complete";
 import {
   readServerHumAuthCookies,
   resolveHumanitarianAuthCallback,
@@ -481,20 +479,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.professionalSpecialty = profile?.specialty ?? null;
       }
 
-      if (trigger === "update" && (session as { clearVolunteerGuide?: boolean })?.clearVolunteerGuide) {
-        token.showVolunteerGuide = false;
-      } else if ((user || account) && isVolunteerGuideProviderRole(String(token.role ?? "")) && token.id) {
-        try {
-          const registration = await getProviderRegistrationStatus(
-            token.id as string,
-            String(token.role ?? ""),
-          );
-          token.showVolunteerGuide = registration ? !registration.complete : false;
-        } catch {
-          token.showVolunteerGuide = false;
-        }
-      }
-
       // Extend session during active teleconsult (video room keepalive)
       if (trigger === "update" && (session as { consultActive?: boolean })?.consultActive) {
         const consultMaxAge = parseInt(
@@ -567,7 +551,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.user.region = token.region as string;
         session.user.professionalSpecialty =
           (token.professionalSpecialty as string | null | undefined) ?? null;
-        session.user.showVolunteerGuide = token.showVolunteerGuide === true;
         (session.user as { profileComplete?: boolean }).profileComplete =
           token.profileComplete !== false;
         session.user.humanitarianPatient = token.humanitarianPatient === true;

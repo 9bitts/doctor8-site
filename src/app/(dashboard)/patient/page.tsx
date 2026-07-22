@@ -16,7 +16,6 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import PatientChecklistWrapper from "./PatientChecklistWrapper";
-import PatientTourWrapper from "./PatientTourWrapper";
 import { isPatientHistoryFilled } from "@/lib/patient-history-status";
 import { activeOnlineJitSessionWhere } from "@/lib/jit-session-lifecycle";
 import { isWithinAppointmentJoinWindow } from "@/lib/appointment-join-window";
@@ -734,7 +733,6 @@ export default async function PatientDashboard() {
       <ScheduledVolunteerBanner lang={lang} />
 
       <PatientChecklistWrapper />
-      <PatientTourWrapper lang={lang} />
 
       {/* 13 — Appointments + meds + clinical recent */}
       <div className="grid lg:grid-cols-2 gap-6">

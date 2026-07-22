@@ -20,20 +20,13 @@ type RegistrationStatus = {
   missing?: RegistrationChecklistKey[];
 };
 
-type ConnectPromptState = {
-  enabled: boolean;
-  active: boolean;
-};
-
 export default function ProviderDashboardAlerts({ role }: { role: string }) {
   const pathname = usePathname();
   const [status, setStatus] = useState<RegistrationStatus | null>(null);
-  const [connectPrompt, setConnectPrompt] = useState<ConnectPromptState | null>(null);
 
   useEffect(() => {
     if (!isProviderDashboardAlertRole(role)) {
       setStatus(null);
-      setConnectPrompt(null);
       return;
     }
 
@@ -56,36 +49,6 @@ export default function ProviderDashboardAlerts({ role }: { role: string }) {
     };
   }, [role, pathname]);
 
-  useEffect(() => {
-    if (role !== "PROFESSIONAL" || status?.complete) {
-      setConnectPrompt(null);
-      return;
-    }
-
-    let cancelled = false;
-
-    async function loadConnect() {
-      try {
-        const res = await fetch("/api/professional/onboarding-status");
-        if (!res.ok) return;
-        const data = await res.json();
-        if (!cancelled) {
-          setConnectPrompt({
-            enabled: Boolean(data.stripeConnectEnabled),
-            active: Boolean(data.hasStripeConnect),
-          });
-        }
-      } catch {
-        /* ignore */
-      }
-    }
-
-    void loadConnect();
-    return () => {
-      cancelled = true;
-    };
-  }, [role, status?.complete]);
-
   if (!status?.applicable || isProviderSettingsPath(pathname, role)) return null;
 
   const settingsHref = resolveProviderSettingsHref(role, pathname);
@@ -94,9 +57,7 @@ export default function ProviderDashboardAlerts({ role }: { role: string }) {
     return (
       <ProviderIncompleteRegistrationCard
         settingsHref={settingsHref}
-        checklist={status.checklist}
         missing={status.missing}
-        showStripeConnect={Boolean(connectPrompt?.enabled && !connectPrompt?.active)}
       />
     );
   }

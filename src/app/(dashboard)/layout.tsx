@@ -21,7 +21,6 @@ import BrVeSolidarityBadge from "@/components/BrVeSolidarityBadge";
 import PwaInstallPrompt from "@/components/humanitarian/PwaInstallPrompt";
 import JitSessionHeartbeat from "@/components/professional/JitSessionHeartbeat";
 import ProviderDashboardAlerts from "@/components/ProviderDashboardAlerts";
-import VolunteerAttendGuideModal from "@/components/VolunteerAttendGuideModal";
 import {
   ADMIN_NAV,
   ADMIN_NAV_GROUPS,
@@ -459,7 +458,6 @@ function DashboardInner({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-slate-50 flex overflow-x-hidden">
       <JitSessionHeartbeat enabled={isProfessional || isPsychologist || isNutritionist || isNurse || isPharmacist} />
-      <VolunteerAttendGuideModal />
       {sidebarOpen && (
         <div className="fixed inset-0 bg-black/50 z-30 lg:hidden" onClick={() => setSidebarOpen(false)} />
       )}

@@ -24,8 +24,6 @@ import {
 import { BrandLogo } from "@/components/brand/BrandLogo";
 import { isHumanitarianContext } from "@/lib/humanitarian/feature-flags";
 import { readClientHumOriginFlag } from "@/lib/humanitarian/origin-cookie";
-import { markVolunteerAttendGuideForLogin } from "@/lib/volunteer-attend-guide";
-
 export type { LoginAccent };
 export { getLoginAccentStyles };
 
@@ -194,8 +192,7 @@ export async function waitForProfileCompleteSession(
 }
 
 /** Full navigation so middleware sees the fresh session cookie. */
-export function navigateAfterAuth(destination: string, role?: string | null) {
-  markVolunteerAttendGuideForLogin(role);
+export function navigateAfterAuth(destination: string, _role?: string | null) {
   window.location.assign(destination);
 }
 

@@ -7,7 +7,6 @@ declare module "next-auth" {
       role: string;
       region: string;
       professionalSpecialty?: string | null;
-      showVolunteerGuide?: boolean;
       profileComplete?: boolean;
       humanitarianPatient?: boolean;
     } & DefaultSession["user"];
@@ -27,7 +26,6 @@ declare module "next-auth/jwt" {
     professionalSpecialty?: string | null;
     tokenVersion?: number;
     tvCheckedAt?: number;
-    showVolunteerGuide?: boolean;
     profileComplete?: boolean;
     humanitarianPatient?: boolean;
   }
