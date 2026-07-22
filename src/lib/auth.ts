@@ -16,6 +16,11 @@ import { z } from "zod";
 import { saveRegistrationPhone } from "@/lib/save-registration-phone";
 import { resolveDeletedAccountOnLogin } from "@/lib/account-deletion";
 import { createSignupProfile } from "@/lib/signup-profile-create";
+import {
+  attachLinkedDocumentsToPatientProfile,
+  linkChartsToPatientUser,
+} from "@/lib/patient-chart-link";
+import { linkPartnerIntakesToPatient } from "@/lib/partner/acura-intake";
 import { createOAuthSignupConsents } from "@/lib/consent/register-consents";
 import type { ParsedSignupIntent } from "@/lib/oauth-signup-intent";
 import {
@@ -239,6 +244,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         await audit.login(user.id);
 
+        if (user.role === "PATIENT" && user.email) {
+          try {
+            await linkChartsToPatientUser(user.id, user.email);
+          } catch (linkError) {
+            console.error("[CREDENTIALS CHART LINK ERROR]", linkError);
+          }
+        }
+
         return {
           id: user.id,
           email: user.email,
@@ -314,6 +327,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                 profession,
                 firstName,
                 lastName,
+                email: googleEmail,
                 avatarUrl: user.image || null,
                 country: signupRegion,
                 acuraVolunteerInterest: acuraVolunteerInterest ?? null,
@@ -333,12 +347,41 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
               return newUser;
             });
-          } else if (!dbUser.emailVerified) {
-            // Existing user who hadn't verified — Google now confirms their email
-            await db.user.update({
-              where: { id: dbUser.id },
-              data: { emailVerified: new Date() },
-            });
+
+            if (signupRole === "PATIENT") {
+              try {
+                await attachLinkedDocumentsToPatientProfile(dbUser.id);
+              } catch (linkError) {
+                console.error("[GOOGLE SIGNIN ATTACH DOCS ERROR]", linkError);
+              }
+              try {
+                await linkPartnerIntakesToPatient(dbUser.id, googleEmail);
+              } catch (linkError) {
+                console.error("[GOOGLE SIGNIN PARTNER INTAKE LINK ERROR]", linkError);
+              }
+            }
+          } else {
+            if (!dbUser.emailVerified) {
+              // Existing user who hadn't verified — Google now confirms their email
+              await db.user.update({
+                where: { id: dbUser.id },
+                data: { emailVerified: new Date() },
+              });
+            }
+
+            // Heal orphan charts (e.g. Google signup before chart-link existed).
+            if (dbUser.role === "PATIENT") {
+              try {
+                await linkChartsToPatientUser(dbUser.id, googleEmail);
+              } catch (linkError) {
+                console.error("[GOOGLE SIGNIN CHART LINK ERROR]", linkError);
+              }
+              try {
+                await linkPartnerIntakesToPatient(dbUser.id, googleEmail);
+              } catch (linkError) {
+                console.error("[GOOGLE SIGNIN PARTNER INTAKE LINK ERROR]", linkError);
+              }
+            }
           }
 
           // Link Google account if not already linked

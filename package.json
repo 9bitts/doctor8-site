@@ -44,6 +44,8 @@
     "test:post-booking-patient-record": "tsx scripts/verify-post-booking-patient-record.ts",
     "backfill:patient-records-from-appointments": "tsx scripts/backfill-patient-records-from-appointments.ts",
     "backfill:patient-records-from-appointments:dry": "tsx scripts/backfill-patient-records-from-appointments.ts --dry-run",
+    "backfill:orphan-chart-links": "tsx scripts/backfill-orphan-chart-links.ts --apply",
+    "backfill:orphan-chart-links:dry": "tsx scripts/backfill-orphan-chart-links.ts --dry-run",
     "verify:api-roles": "node scripts/verify-api-role-guards.mjs",
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",

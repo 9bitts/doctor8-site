@@ -5,6 +5,8 @@ import { z } from "zod";
 import { UserRole } from "@prisma/client";
 import { userHasAnyProfile } from "@/lib/user-profile-complete";
 import { createSignupProfile } from "@/lib/signup-profile-create";
+import { attachLinkedDocumentsToPatientProfile } from "@/lib/patient-chart-link";
+import { linkPartnerIntakesToPatient } from "@/lib/partner/acura-intake";
 import { saveRegistrationPhone } from "@/lib/save-registration-phone";
 import { parseRegistrationPhone } from "@/lib/international-phone";
 import { resolveRoleHome } from "@/lib/role-home";
@@ -116,6 +118,19 @@ export async function POST(req: NextRequest) {
       await saveRegistrationPhone(tx, user.id, role as UserRole, phoneE164);
     }
   });
+
+  if (role === "PATIENT") {
+    try {
+      await attachLinkedDocumentsToPatientProfile(user.id);
+    } catch (linkError) {
+      console.error("[COMPLETE SIGNUP ATTACH DOCS ERROR]", linkError);
+    }
+    try {
+      await linkPartnerIntakesToPatient(user.id, user.email.toLowerCase());
+    } catch (linkError) {
+      console.error("[COMPLETE SIGNUP PARTNER INTAKE LINK ERROR]", linkError);
+    }
+  }
 
   let specialty: string | null = null;
   if (role === "PROFESSIONAL") {

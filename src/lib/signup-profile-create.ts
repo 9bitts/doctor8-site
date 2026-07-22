@@ -1,6 +1,7 @@
 import type { AcuraVolunteerStatus, Prisma, PatientAcquisitionChannel } from "@prisma/client";
 import { encrypt } from "@/lib/encryption";
 import { buildPatientProfileSearchText } from "@/lib/patient-profile-search";
+import { linkChartsToPatientOnSignup } from "@/lib/patient-chart-link";
 import type { SignupRole } from "@/lib/oauth-signup-intent";
 import { isProfessionSignupSlug, PROFESSION_SIGNUP } from "@/lib/profession-signup";
 import {
@@ -128,5 +129,8 @@ export async function createSignupProfile(
           : {}),
       },
     });
+    if (email) {
+      await linkChartsToPatientOnSignup(tx, userId, email);
+    }
   }
 }
