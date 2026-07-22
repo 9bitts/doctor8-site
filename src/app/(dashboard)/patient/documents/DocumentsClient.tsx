@@ -11,10 +11,12 @@ import { getCategoryGroupLabel, getCategoryLabel } from "@/lib/category-i18n";
 import { getProfessionLabel } from "@/lib/professions";
 import {
   FileText, Plus, X, Download, Loader2, UserCheck, Tag, Share2, CheckCircle2,
-  Stethoscope, AlertCircle, XCircle, Trash2,
+  Stethoscope, AlertCircle, XCircle, Trash2, Search, UserPlus,
 } from "lucide-react";
 import { openUrlAfterAsync, openAuthenticatedPdf } from "@/lib/open-url-safely";
 import { uploadFileToApi } from "@/lib/upload-client";
+
+const PRO_SEARCH_MIN_CHARS = 2;
 
 interface SharedDoctor {
   professionalId: string;
@@ -46,6 +48,16 @@ interface CategoryGroup { group: string; items: CategoryItem[]; }
 
 interface Doctor {
   professionalId: string; userId: string; name: string; specialty: string;
+}
+
+interface ProSearchHit {
+  professionalId: string;
+  professionalUserId: string;
+  name: string;
+  specialty: string | null;
+  licenseNumber: string | null;
+  linkStatus: "PENDING" | "ACCEPTED" | "REJECTED" | "REVOKED" | "NONE";
+  linkId: string | null;
 }
 
 function findCategoryIdByLegacyType(groups: CategoryGroup[], legacyType: string): string {
@@ -86,6 +98,10 @@ export default function DocumentsClient({ initialItems }: { initialItems: Item[]
   const [shareDocId, setShareDocId] = useState<string | null>(null);
   const [sharingTo, setSharingTo] = useState<string | null>(null);
   const [unsharingKey, setUnsharingKey] = useState<string | null>(null);
+  const [proQuery, setProQuery] = useState("");
+  const [proSearching, setProSearching] = useState(false);
+  const [proHits, setProHits] = useState<ProSearchHit[]>([]);
+  const [shareHeldNotice, setShareHeldNotice] = useState<string | null>(null);
 
   const [categoryId, setCategoryId] = useState("");
   const [title, setTitle] = useState("");
@@ -123,6 +139,34 @@ export default function DocumentsClient({ initialItems }: { initialItems: Item[]
     el?.scrollIntoView({ behavior: "smooth", block: "center" });
     el?.classList.add("ring-2", "ring-brand-400", "bg-brand-50/40");
   }, [items]);
+
+  useEffect(() => {
+    if (!shareDocId) return;
+    const q = proQuery.trim();
+    if (q.length < PRO_SEARCH_MIN_CHARS) {
+      setProHits([]);
+      return;
+    }
+    const handle = setTimeout(async () => {
+      setProSearching(true);
+      try {
+        const res = await fetch(
+          `/api/patient/professionals/search?q=${encodeURIComponent(q)}`,
+        );
+        if (res.ok) {
+          const data = await res.json();
+          setProHits(data.professionals || []);
+        } else {
+          setProHits([]);
+        }
+      } catch {
+        setProHits([]);
+      } finally {
+        setProSearching(false);
+      }
+    }, 300);
+    return () => clearTimeout(handle);
+  }, [proQuery, shareDocId]);
 
   useEffect(() => {
     const sp = new URLSearchParams(window.location.search);
@@ -258,6 +302,9 @@ export default function DocumentsClient({ initialItems }: { initialItems: Item[]
 
       // Open share picker when there was no auto-share target, or auto-share failed.
       if (!pendingShareId || !autoShareSucceeded) {
+        setProQuery("");
+        setProHits([]);
+        setShareHeldNotice(null);
         await loadDoctors(true);
         setShareDocId(newId);
       }
@@ -285,7 +332,18 @@ export default function DocumentsClient({ initialItems }: { initialItems: Item[]
     }
   }
 
+  function closeShareModal() {
+    setShareDocId(null);
+    setProQuery("");
+    setProHits([]);
+    setShareHeldNotice(null);
+    setSharingTo(null);
+  }
+
   async function openShare(docId: string) {
+    setProQuery("");
+    setProHits([]);
+    setShareHeldNotice(null);
     await loadDoctors(true);
     setShareDocId(docId);
   }
@@ -308,9 +366,15 @@ export default function DocumentsClient({ initialItems }: { initialItems: Item[]
     }
   }
 
-  async function handleShareWithDoctor(docId: string, professionalId: string, doctorName: string) {
+  async function handleShareWithDoctor(
+    docId: string,
+    professionalId: string,
+    doctorName: string,
+    opts?: { keepOpenIfHeld?: boolean },
+  ) {
     setSharingTo(professionalId);
     setActionError(null);
+    setShareHeldNotice(null);
     try {
       const res = await fetch(`/api/patient/documents/${docId}/share-with-doctor`, {
         method: "POST",
@@ -325,7 +389,13 @@ export default function DocumentsClient({ initialItems }: { initialItems: Item[]
           const exists = it.sharedWithDoctors.some((dd) => dd.professionalId === professionalId);
           return exists ? it : { ...it, sharedWithDoctors: [...it.sharedWithDoctors, { professionalId, name: doctorName }] };
         }));
-        setShareDocId(null);
+        if (data.heldUntilLinkAccepted && opts?.keepOpenIfHeld) {
+          setShareHeldNotice(doctorName);
+          setProQuery("");
+          setProHits([]);
+        } else {
+          closeShareModal();
+        }
       } else {
         setActionError(t("common.actionError"));
       }
@@ -333,6 +403,44 @@ export default function DocumentsClient({ initialItems }: { initialItems: Item[]
       setActionError(t("common.actionError"));
     }
     setSharingTo(null);
+  }
+
+  async function handleShareOrConnect(docId: string, hit: ProSearchHit) {
+    const current = items.find((it) => it.id === docId);
+    if (current?.sharedWithDoctors.some((dd) => dd.professionalId === hit.professionalId)) {
+      return;
+    }
+
+    try {
+      const needsLink =
+        hit.linkStatus === "NONE" ||
+        hit.linkStatus === "REJECTED" ||
+        hit.linkStatus === "REVOKED";
+
+      if (needsLink) {
+        setSharingTo(hit.professionalId);
+        setActionError(null);
+        setShareHeldNotice(null);
+        const linkRes = await fetch("/api/patient/professional-links", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
+          body: JSON.stringify({ professionalUserId: hit.professionalUserId }),
+        });
+        if (!linkRes.ok) {
+          setActionError(t("common.actionError"));
+          setSharingTo(null);
+          return;
+        }
+      }
+
+      await handleShareWithDoctor(docId, hit.professionalId, hit.name, {
+        keepOpenIfHeld: true,
+      });
+    } catch {
+      setActionError(t("common.actionError"));
+      setSharingTo(null);
+    }
   }
 
   async function handleUnshare(docId: string, professionalId: string) {
@@ -724,73 +832,171 @@ export default function DocumentsClient({ initialItems }: { initialItems: Item[]
 
       {/* Share-with-doctor modal */}
       {shareDocId && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+        <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-50 p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[90dvh] overflow-y-auto">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 sticky top-0 bg-white z-10">
               <h2 className="font-bold text-slate-800">{t("docs.share.title")}</h2>
-              <button onClick={() => setShareDocId(null)} className="text-slate-400 hover:text-slate-600">
+              <button onClick={closeShareModal} className="text-slate-400 hover:text-slate-600">
                 <X size={20} />
               </button>
             </div>
-            <div className="p-5">
-              <p className="text-sm text-slate-500 mb-4">{t("docs.share.help")}</p>
+            <div className="p-5 space-y-5">
+              <p className="text-sm text-slate-500">{t("docs.share.help")}</p>
 
-              {doctorsLoading ? (
-                <div className="flex items-center gap-2 text-sm text-slate-400 py-4">
-                  <Loader2 size={16} className="animate-spin" /> {t("docs.share.loading")}
-                </div>
-              ) : doctorsLoadError ? (
-                <div className="flex items-start gap-2 text-sm text-rose-600 bg-rose-50 rounded-xl px-4 py-3">
-                  <AlertCircle size={16} className="shrink-0 mt-0.5" />
-                  <span>{t("docs.share.loadError")}</span>
-                </div>
-              ) : !doctors || doctors.length === 0 ? (
-                <div className="space-y-3">
-                  <div className="flex items-start gap-2 text-sm text-amber-600 bg-amber-50 rounded-xl px-4 py-3">
-                    <AlertCircle size={16} className="shrink-0 mt-0.5" />
-                    <span>{t("docs.share.none")}</span>
-                  </div>
-                  <Link
-                    href="/patient/appointments"
-                    onClick={() => setShareDocId(null)}
-                    className="w-full py-2.5 rounded-xl bg-brand-500 hover:bg-brand-600 text-white font-semibold text-sm text-center block transition"
-                  >
-                    {t("docs.share.bookFirst")}
-                  </Link>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {doctors.map((d) => {
-                    const current = items.find((it) => it.id === shareDocId);
-                    const alreadyShared = current?.sharedWithDoctors.some((dd) => dd.professionalId === d.professionalId);
-                    return (
-                      <button
-                        key={d.professionalId}
-                        onClick={() => !alreadyShared && handleShareWithDoctor(shareDocId, d.professionalId, d.name)}
-                        disabled={sharingTo !== null || alreadyShared}
-                        className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-slate-200 hover:border-emerald-300 hover:bg-emerald-50 transition text-left disabled:opacity-60"
-                      >
-                        <div className="w-9 h-9 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-600 shrink-0">
-                          <Stethoscope size={16} />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-slate-800 text-sm">{d.name}</p>
-                          <p className="text-xs text-slate-500">{getProfessionLabel(lang, d.specialty)}</p>
-                        </div>
-                        {alreadyShared ? (
-                          <span className="text-xs text-emerald-600 inline-flex items-center gap-1"><CheckCircle2 size={14} /> {t("docs.share.shared")}</span>
-                        ) : sharingTo === d.professionalId ? (
-                          <Loader2 size={16} className="animate-spin text-emerald-500" />
-                        ) : null}
-                      </button>
-                    );
-                  })}
+              {shareHeldNotice && (
+                <div className="flex items-start gap-2 text-sm text-emerald-800 bg-emerald-50 border border-emerald-100 rounded-xl px-4 py-3">
+                  <CheckCircle2 size={16} className="shrink-0 mt-0.5" />
+                  <span>
+                    {t("docs.share.heldSuccess").replace("{{name}}", shareHeldNotice)}
+                  </span>
                 </div>
               )}
 
+              {/* Appointment / known doctors */}
+              <div>
+                <p className="text-xs font-semibold text-slate-600 mb-2">{t("docs.share.yourDoctors")}</p>
+                {doctorsLoading ? (
+                  <div className="flex items-center gap-2 text-sm text-slate-400 py-3">
+                    <Loader2 size={16} className="animate-spin" /> {t("docs.share.loading")}
+                  </div>
+                ) : doctorsLoadError ? (
+                  <div className="flex items-start gap-2 text-sm text-rose-600 bg-rose-50 rounded-xl px-4 py-3">
+                    <AlertCircle size={16} className="shrink-0 mt-0.5" />
+                    <span>{t("docs.share.loadError")}</span>
+                  </div>
+                ) : !doctors || doctors.length === 0 ? (
+                  <div className="space-y-2">
+                    <div className="flex items-start gap-2 text-sm text-slate-600 bg-slate-50 rounded-xl px-4 py-3">
+                      <AlertCircle size={16} className="shrink-0 mt-0.5 text-slate-400" />
+                      <span>{t("docs.share.none")}</span>
+                    </div>
+                    <Link
+                      href="/patient/appointments"
+                      onClick={closeShareModal}
+                      className="text-sm font-medium text-brand-600 hover:text-brand-700 px-1"
+                    >
+                      {t("docs.share.bookFirst")}
+                    </Link>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {doctors.map((d) => {
+                      const current = items.find((it) => it.id === shareDocId);
+                      const alreadyShared = current?.sharedWithDoctors.some((dd) => dd.professionalId === d.professionalId);
+                      return (
+                        <button
+                          key={d.professionalId}
+                          onClick={() => !alreadyShared && handleShareWithDoctor(shareDocId, d.professionalId, d.name)}
+                          disabled={sharingTo !== null || alreadyShared}
+                          className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-slate-200 hover:border-emerald-300 hover:bg-emerald-50 transition text-left disabled:opacity-60"
+                        >
+                          <div className="w-9 h-9 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-600 shrink-0">
+                            <Stethoscope size={16} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-semibold text-slate-800 text-sm">{d.name}</p>
+                            <p className="text-xs text-slate-500">{getProfessionLabel(lang, d.specialty)}</p>
+                          </div>
+                          {alreadyShared ? (
+                            <span className="text-xs text-emerald-600 inline-flex items-center gap-1"><CheckCircle2 size={14} /> {t("docs.share.shared")}</span>
+                          ) : sharingTo === d.professionalId ? (
+                            <Loader2 size={16} className="animate-spin text-emerald-500" />
+                          ) : null}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Search any Doctor8 professional */}
+              <div className="border-t border-slate-100 pt-5">
+                <p className="text-xs font-semibold text-slate-600 mb-1 flex items-center gap-1.5">
+                  <Search size={14} className="text-brand-500" />
+                  {t("docs.share.searchTitle")}
+                </p>
+                <p className="text-xs text-slate-500 mb-3">{t("docs.share.searchHint")}</p>
+                <div className="relative">
+                  <Search
+                    size={16}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                  />
+                  <input
+                    type="search"
+                    value={proQuery}
+                    onChange={(e) => setProQuery(e.target.value)}
+                    placeholder={t("providers.search.placeholder")}
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 pl-10 pr-10 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-100 focus:border-emerald-400 min-h-[44px]"
+                  />
+                  {proSearching && (
+                    <Loader2
+                      size={16}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 animate-spin text-slate-400"
+                    />
+                  )}
+                </div>
+
+                {proQuery.trim().length >= PRO_SEARCH_MIN_CHARS && !proSearching && proHits.length === 0 && (
+                  <p className="text-xs text-slate-500 mt-3">{t("docs.share.searchEmpty")}</p>
+                )}
+
+                {proHits.length > 0 && (
+                  <ul className="mt-3 space-y-2">
+                    {proHits.map((hit) => {
+                      const current = items.find((it) => it.id === shareDocId);
+                      const alreadyShared = current?.sharedWithDoctors.some(
+                        (dd) => dd.professionalId === hit.professionalId,
+                      );
+                      const needsLink =
+                        hit.linkStatus === "NONE" ||
+                        hit.linkStatus === "REJECTED" ||
+                        hit.linkStatus === "REVOKED";
+                      const subtitle = [
+                        hit.specialty ? getProfessionLabel(lang, hit.specialty) : null,
+                        hit.licenseNumber,
+                      ].filter(Boolean).join(" · ");
+
+                      return (
+                        <button
+                          key={hit.professionalId}
+                          type="button"
+                          onClick={() => !alreadyShared && handleShareOrConnect(shareDocId, hit)}
+                          disabled={sharingTo !== null || alreadyShared}
+                          className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-slate-200 hover:border-emerald-300 hover:bg-emerald-50 transition text-left disabled:opacity-60"
+                        >
+                          <div className="w-9 h-9 rounded-xl bg-brand-50 flex items-center justify-center text-brand-600 shrink-0">
+                            {needsLink && !alreadyShared ? <UserPlus size={16} /> : <Stethoscope size={16} />}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-semibold text-slate-800 text-sm">{hit.name}</p>
+                            {subtitle && <p className="text-xs text-slate-500">{subtitle}</p>}
+                            {!alreadyShared && hit.linkStatus === "PENDING" && (
+                              <p className="text-xs text-amber-600 mt-0.5">{t("link.statusPending")}</p>
+                            )}
+                            {!alreadyShared && hit.linkStatus === "ACCEPTED" && (
+                              <p className="text-xs text-brand-600 mt-0.5">{t("link.statusAccepted")}</p>
+                            )}
+                            {!alreadyShared && needsLink && (
+                              <p className="text-xs text-slate-500 mt-0.5">{t("docs.share.connectAndShare")}</p>
+                            )}
+                          </div>
+                          {alreadyShared ? (
+                            <span className="text-xs text-emerald-600 inline-flex items-center gap-1">
+                              <CheckCircle2 size={14} /> {t("docs.share.shared")}
+                            </span>
+                          ) : sharingTo === hit.professionalId ? (
+                            <Loader2 size={16} className="animate-spin text-emerald-500" />
+                          ) : null}
+                        </button>
+                      );
+                    })}
+                  </ul>
+                )}
+              </div>
+
               <button
-                onClick={() => setShareDocId(null)}
-                className="w-full mt-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-medium text-sm hover:bg-slate-50"
+                onClick={closeShareModal}
+                className="w-full py-2.5 rounded-xl border border-slate-200 text-slate-600 font-medium text-sm hover:bg-slate-50"
               >
                 {t("docs.share.notNow")}
               </button>
