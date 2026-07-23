@@ -19,6 +19,33 @@ type DrugLeafletPanelProps = {
   className?: string;
 };
 
+const MAX_SECTION_CHARS = 12_000;
+
+function normalizeSections(
+  raw: DrugLeafletPayload["sections"] | unknown,
+): DrugLeafletPayload["sections"] {
+  if (!Array.isArray(raw)) return [];
+  const out: DrugLeafletPayload["sections"] = [];
+  for (const item of raw) {
+    if (!item || typeof item !== "object") continue;
+    const o = item as Record<string, unknown>;
+    const key = typeof o.key === "string" ? o.key : "";
+    const title = typeof o.title === "string" ? o.title.trim() : "";
+    let content = typeof o.content === "string" ? o.content.trim() : "";
+    if (!key || !content) continue;
+    if (content.length > MAX_SECTION_CHARS) {
+      content = `${content.slice(0, MAX_SECTION_CHARS)}\n\n…`;
+    }
+    out.push({
+      key: key as DrugLeafletPayload["sections"][number]["key"],
+      title: title || key,
+      content,
+      defaultOpen: o.defaultOpen === true || key === "posologia",
+    });
+  }
+  return out;
+}
+
 function LeafletAccordion({
   sections,
   t,
@@ -63,12 +90,12 @@ function LeafletAccordion({
 
   return (
     <div className="space-y-2">
-      {sections.map((section) => {
+      {sections.map((section, idx) => {
         const open = openKeys.has(section.key);
         const isPosology = section.key === "posologia";
         return (
           <div
-            key={section.key}
+            key={`${section.key}-${idx}`}
             className="border border-slate-100 rounded-xl overflow-hidden bg-white"
           >
             <button
@@ -147,18 +174,28 @@ export default function DrugLeafletPanel({
         if (cancelled) return;
 
         if (!res.ok) {
-          setError(t("rx.leaflet.notFound"));
+          setError(t(res.status === 404 ? "rx.leaflet.notFound" : "rx.leaflet.loadError"));
+          setLeaflet(null);
           return;
         }
 
         const data = (await res.json()) as { leaflet?: DrugLeafletPayload | null };
-        if (data.leaflet) {
-          setLeaflet(data.leaflet);
+        if (cancelled) return;
+
+        if (data.leaflet && typeof data.leaflet === "object") {
+          setLeaflet({
+            ...data.leaflet,
+            sections: normalizeSections(data.leaflet.sections),
+          });
         } else {
           setError(t("rx.leaflet.notFound"));
+          setLeaflet(null);
         }
       } catch {
-        if (!cancelled) setError(t("rx.leaflet.loadError"));
+        if (!cancelled) {
+          setError(t("rx.leaflet.loadError"));
+          setLeaflet(null);
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -189,20 +226,20 @@ export default function DrugLeafletPanel({
         ? t("rx.leaflet.sourceAnvisa")
         : t("rx.leaflet.sourceCatalog");
 
-  const sections = leaflet?.sections ?? [];
+  const sections = normalizeSections(leaflet?.sections);
 
   return (
-    <div className={`flex flex-col h-full min-h-0 bg-white ${className ?? ""}`}>
+    <div className={`flex flex-col h-full min-h-0 bg-white text-slate-900 ${className ?? ""}`}>
       <div className="flex items-start justify-between gap-2 p-3 border-b border-slate-100 bg-white shrink-0">
         <div className="min-w-0 flex-1">
           <p className="text-xs font-semibold text-brand-600 uppercase tracking-wide">
             {t("rx.leaflet.panelTitle")}
           </p>
-          <h4 className="font-bold text-slate-900 text-sm leading-snug">
+          <h4 className="font-bold text-slate-900 text-sm leading-snug break-words">
             {target.displayName}
           </h4>
           {leaflet?.subtitle && (
-            <p className="text-xs text-slate-500">{leaflet.subtitle}</p>
+            <p className="text-xs text-slate-500 break-words">{leaflet.subtitle}</p>
           )}
         </div>
         <button
@@ -224,16 +261,40 @@ export default function DrugLeafletPanel({
         )}
 
         {!loading && error && (
-          <p className="text-sm text-slate-500 text-center py-8 px-2">{error}</p>
+          <div className="space-y-3 py-6 px-2 text-center">
+            <p className="text-sm text-slate-500">{error}</p>
+            {leaflet?.externalUrl && (
+              <a
+                href={leaflet.externalUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-xs font-semibold text-brand-600 hover:text-brand-700"
+              >
+                <ExternalLink size={14} />
+                {t("rx.leaflet.openAnvisa")}
+              </a>
+            )}
+          </div>
         )}
 
-        {!loading && leaflet && sections.length === 0 && (
-          <p className="text-sm text-slate-500 text-center py-8 px-2">
-            {t("rx.leaflet.notFound")}
-          </p>
+        {!loading && !error && leaflet && sections.length === 0 && (
+          <div className="space-y-3 py-6 px-2 text-center">
+            <p className="text-sm text-slate-500">{t("rx.leaflet.notFound")}</p>
+            {leaflet.externalUrl && (
+              <a
+                href={leaflet.externalUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-xs font-semibold text-brand-600 hover:text-brand-700"
+              >
+                <ExternalLink size={14} />
+                {t("rx.leaflet.openAnvisa")}
+              </a>
+            )}
+          </div>
         )}
 
-        {!loading && leaflet && sections.length > 0 && (
+        {!loading && !error && leaflet && sections.length > 0 && (
           <>
             <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wide">
               {sourceLabel}

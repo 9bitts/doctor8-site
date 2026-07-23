@@ -17,9 +17,17 @@ type DrugRow = Pick<
 >;
 
 function parseStoredSections(raw: unknown): DrugLeafletSection[] {
-  if (!Array.isArray(raw)) return [];
+  let data = raw;
+  if (typeof data === "string") {
+    try {
+      data = JSON.parse(data) as unknown;
+    } catch {
+      return [];
+    }
+  }
+  if (!Array.isArray(data)) return [];
   const out: DrugLeafletSection[] = [];
-  for (const item of raw) {
+  for (const item of data) {
     if (!item || typeof item !== "object") continue;
     const o = item as Record<string, unknown>;
     const key = o.key as DrugLeafletSectionKey;
@@ -27,7 +35,10 @@ function parseStoredSections(raw: unknown): DrugLeafletSection[] {
     if (!key || !content) continue;
     out.push({
       key,
-      title: typeof o.title === "string" ? o.title : leafletSectionTitle(key),
+      title:
+        typeof o.title === "string" && o.title.trim()
+          ? o.title.trim()
+          : leafletSectionTitle(key) || String(key),
       content,
       defaultOpen: o.defaultOpen === true || key === "posologia",
     });

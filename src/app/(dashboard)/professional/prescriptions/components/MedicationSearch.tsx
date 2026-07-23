@@ -384,11 +384,7 @@ export function MedicationSearch({
           onClick={onCloseDrugSearchModal}
         >
           <div
-            className={`bg-white rounded-2xl shadow-xl w-full flex flex-col overflow-hidden ${
-              leafletTarget
-                ? "max-w-2xl h-[92dvh] max-h-[92dvh]"
-                : "max-w-lg max-h-[90vh]"
-            }`}
+            className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-start justify-between gap-3 p-4 border-b border-slate-100 shrink-0">
@@ -410,53 +406,63 @@ export function MedicationSearch({
               </button>
             </div>
 
-            <div className="relative flex-1 min-h-0 overflow-hidden">
-              <div className="h-full overflow-y-auto overscroll-contain p-4">
-                {drugSearching ? (
-                  <div className="flex flex-col items-center justify-center py-12 gap-3">
-                    <Loader2 size={24} className="animate-spin text-brand-400" />
-                    <p className="text-sm text-slate-500">{t("rx2.searchingDrugs")}</p>
-                  </div>
-                ) : mnSearchResults.length > 0 ? (
-                  <MedicinaNaturalSearchResults
-                    results={mnSearchResults}
-                    onSelect={onMnListItemSelect}
-                    onViewLeaflet={onViewMnLeaflet}
-                    className="max-h-none overflow-visible"
-                    t={t}
-                  />
-                ) : drugResults.length > 0 ? (
-                  <DrugSearchResults
-                    results={drugResults}
-                    onSelect={onAddDrug}
-                    onViewLeaflet={onViewDrugLeaflet}
-                    controlInfo={mnCatalogSearch ? () => null : controlInfo}
-                    className="max-h-none overflow-visible"
-                    viewLeafletLabel={t("rx.leaflet.viewButton")}
-                    addLabel={t("rx.leaflet.addButton")}
-                  />
-                ) : drugSearchDone ? (
-                  <p className="text-sm text-slate-500 text-center py-8 px-4 border border-slate-100 rounded-xl bg-slate-50">
-                    {isControlledForm
-                      ? t("rx.controlledNoResults")
-                      : t("rx2.noDrugsFound")}
-                  </p>
-                ) : null}
-              </div>
-
-              {leafletTarget && (
-                <div className="absolute inset-0 z-20 flex flex-col bg-white">
-                  <DrugLeafletPanel
-                    target={leafletTarget}
-                    apiBase={cfg.apiBase}
-                    t={t}
-                    onClose={onCloseLeafletPanel}
-                    onInsertPosology={onInsertLeafletPosology}
-                    className="h-full min-h-0 w-full"
-                  />
+            <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-4">
+              {drugSearching ? (
+                <div className="flex flex-col items-center justify-center py-12 gap-3">
+                  <Loader2 size={24} className="animate-spin text-brand-400" />
+                  <p className="text-sm text-slate-500">{t("rx2.searchingDrugs")}</p>
                 </div>
-              )}
+              ) : mnSearchResults.length > 0 ? (
+                <MedicinaNaturalSearchResults
+                  results={mnSearchResults}
+                  onSelect={onMnListItemSelect}
+                  onViewLeaflet={onViewMnLeaflet}
+                  className="max-h-none overflow-visible"
+                  t={t}
+                />
+              ) : drugResults.length > 0 ? (
+                <DrugSearchResults
+                  results={drugResults}
+                  onSelect={onAddDrug}
+                  onViewLeaflet={onViewDrugLeaflet}
+                  controlInfo={mnCatalogSearch ? () => null : controlInfo}
+                  className="max-h-none overflow-visible"
+                  viewLeafletLabel={t("rx.leaflet.viewButton")}
+                  addLabel={t("rx.leaflet.addButton")}
+                />
+              ) : drugSearchDone ? (
+                <p className="text-sm text-slate-500 text-center py-8 px-4 border border-slate-100 rounded-xl bg-slate-50">
+                  {isControlledForm
+                    ? t("rx.controlledNoResults")
+                    : t("rx2.noDrugsFound")}
+                </p>
+              ) : null}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Own overlay — avoids nested height/scroll bugs that left a blank white panel */}
+      {leafletTarget && (
+        <div
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-[70] p-2 sm:p-4"
+          onClick={onCloseLeafletPanel}
+          role="dialog"
+          aria-modal="true"
+          aria-label={t("rx.leaflet.panelTitle")}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-xl w-full max-w-lg h-[min(92dvh,920px)] max-h-[92dvh] flex flex-col overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <DrugLeafletPanel
+              target={leafletTarget}
+              apiBase={cfg.apiBase}
+              t={t}
+              onClose={onCloseLeafletPanel}
+              onInsertPosology={onInsertLeafletPosology}
+              className="h-full min-h-0 w-full"
+            />
           </div>
         </div>
       )}
