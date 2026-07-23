@@ -63,12 +63,12 @@ export default function DiabetesLanding() {
             </a>
             <Link
               href={C.hero.browseCta.href}
-              className="inline-flex items-center gap-2 rounded-xl px-5 py-3 text-sm font-medium text-slate-300 hover:text-white transition"
+              className="inline-flex items-center gap-2 rounded-xl px-5 py-3 text-sm font-medium text-slate-100 hover:text-white transition"
             >
               {C.hero.browseCta.label}
             </Link>
           </div>
-          <p className="mt-6 max-w-lg text-xs text-slate-400 leading-relaxed flex gap-2">
+          <p className="mt-6 max-w-lg text-xs text-slate-200 leading-relaxed flex gap-2">
             <Phone size={14} className="shrink-0 mt-0.5 text-teal-400" />
             {C.hero.emergencyNote}
           </p>
@@ -130,7 +130,7 @@ export default function DiabetesLanding() {
               <ol className="mt-8 space-y-5">
                 {C.howItWorks.steps.map((s) => (
                   <li key={s.step} className="flex gap-4">
-                    <span className="text-2xl font-bold text-teal-200 leading-none w-10 shrink-0">
+                    <span className="text-2xl font-bold text-teal-600 leading-none w-10 shrink-0">
                       {s.step}
                     </span>
                     <div>
