@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
+import type { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { requireEmployerApi } from "@/lib/api-auth";
 import { refreshEmployerNr1Compliance } from "@/lib/employer-nr1";
 import { buildErgonomicScreening } from "@/lib/nr1-ergonomic-screening";
+import { defaultFieldVisit, parseFieldVisit } from "@/lib/nr1-field-visit";
 import { db } from "@/lib/db";
 
 const ergoSchema = z
@@ -32,6 +34,24 @@ const createSchema = z.object({
   surveyCampaignId: z.union([z.string(), z.null()]).optional(),
 });
 
+const fieldVisitSchema = z
+  .object({
+    taskObserved: z.string().max(4000).optional(),
+    workerInterview: z.string().max(4000).optional(),
+    organizationNotes: z.string().max(4000).optional(),
+    checklist: z
+      .array(
+        z.object({
+          id: z.string(),
+          label: z.string(),
+          done: z.boolean(),
+          note: z.string().max(1000).optional(),
+        }),
+      )
+      .optional(),
+  })
+  .optional();
+
 const patchSchema = z.object({
   id: z.string(),
   title: z.string().min(2).max(200).optional(),
@@ -44,6 +64,19 @@ const patchSchema = z.object({
   status: z.enum(["DRAFT", "IN_PROGRESS", "COMPLETED", "APPROVED"]).optional(),
   approvedByName: z.string().max(200).optional(),
   surveyCampaignId: z.union([z.string(), z.null()]).optional(),
+  /** Start or update mobile field visit */
+  fieldVisit: fieldVisitSchema,
+  startFieldVisit: z.boolean().optional(),
+  aetFindings: z.string().max(8000).optional(),
+  aetRecommendations: z.string().max(8000).optional(),
+  /** Sign and complete AET-lite field report */
+  completeFieldAet: z
+    .object({
+      evaluatorName: z.string().min(2).max(200),
+      aetFindings: z.string().min(20).max(8000),
+      aetRecommendations: z.string().min(20).max(8000),
+    })
+    .optional(),
 });
 
 export async function GET() {
@@ -92,7 +125,7 @@ export async function POST(req: NextRequest) {
       employerCompanyId: ctx.employerCompanyId,
       title: parsed.data.title,
       version: (last?.version ?? 0) + 1,
-      methodology: parsed.data.methodology ?? "AEP qualitativa/semiquantitativa (NR-17) + fatores psicossociais",
+      methodology: parsed.data.methodology ?? "AEP/visita em campo (NR-17) + fatores psicossociais",
       methodologyRationale: parsed.data.methodologyRationale,
       workerParticipation: parsed.data.workerParticipation,
       notes: parsed.data.notes,
@@ -157,21 +190,106 @@ export async function PATCH(req: NextRequest) {
       })
     : null;
 
+  let fieldVisitJson: Prisma.InputJsonValue | undefined;
+  let aetStatus: string | undefined;
+  let evaluatorName: string | undefined;
+  let evaluatorSignedAt: Date | undefined;
+  let aetFindings: string | undefined = parsed.data.aetFindings;
+  let aetRecommendations: string | undefined = parsed.data.aetRecommendations;
+  let aetCompletedAt: Date | undefined;
+  let recommendAet: boolean | undefined;
+
+  if (parsed.data.startFieldVisit) {
+    if (existing.aetStatus === "COMPLETED") {
+      return NextResponse.json(
+        { error: "Relatório de visita já assinado." },
+        { status: 409 },
+      );
+    }
+    fieldVisitJson = defaultFieldVisit(parseFieldVisit(existing.fieldVisitJson)) as unknown as Prisma.InputJsonValue;
+    aetStatus = "IN_FIELD";
+  }
+
+  if (parsed.data.fieldVisit) {
+    if (existing.aetStatus === "COMPLETED" && !parsed.data.completeFieldAet) {
+      return NextResponse.json(
+        { error: "Relatório de visita já assinado — não é possível alterar o checklist." },
+        { status: 409 },
+      );
+    }
+    const current = parseFieldVisit(existing.fieldVisitJson);
+    fieldVisitJson = defaultFieldVisit({
+      ...current,
+      ...parsed.data.fieldVisit,
+      checklist: parsed.data.fieldVisit.checklist ?? current.checklist,
+    }) as unknown as Prisma.InputJsonValue;
+    if (existing.aetStatus === "NONE") aetStatus = "IN_FIELD";
+  }
+
+  if (parsed.data.completeFieldAet) {
+    if (existing.aetStatus === "COMPLETED") {
+      return NextResponse.json(
+        { error: "Relatório de visita já assinado." },
+        { status: 409 },
+      );
+    }
+    const visit = parseFieldVisit(fieldVisitJson ?? existing.fieldVisitJson);
+    const doneCount = visit.checklist.filter((c) => c.done).length;
+    if (doneCount < 5) {
+      return NextResponse.json(
+        { error: "Conclua ao menos 5 itens do checklist de visita em campo." },
+        { status: 400 },
+      );
+    }
+    if (!visit.taskObserved?.trim() || !visit.workerInterview?.trim()) {
+      return NextResponse.json(
+        { error: "Descreva a tarefa observada e a escuta do trabalhador." },
+        { status: 400 },
+      );
+    }
+    evaluatorName = parsed.data.completeFieldAet.evaluatorName.trim();
+    evaluatorSignedAt = new Date();
+    aetFindings = parsed.data.completeFieldAet.aetFindings.trim();
+    aetRecommendations = parsed.data.completeFieldAet.aetRecommendations.trim();
+    aetStatus = "COMPLETED";
+    aetCompletedAt = new Date();
+    recommendAet = false;
+    fieldVisitJson = visit as unknown as Prisma.InputJsonValue;
+  }
+
+  const interviewForFill = parseFieldVisit(fieldVisitJson ?? existing.fieldVisitJson).workerInterview?.trim();
+  const workerParticipationFill =
+    parsed.data.completeFieldAet && !existing.workerParticipation?.trim() && interviewForFill
+      ? `Visita em campo — escuta do trabalhador: ${interviewForFill.slice(0, 800)}`
+      : undefined;
+
+  // If screening and field completion land in the same request, prefer completion flag.
+  const screeningRecommendAet = ergo?.recommendAet;
+
   const record = await db.employerAepRecord.update({
     where: { id: existing.id },
     data: {
       title: parsed.data.title,
       methodology: parsed.data.methodology,
       methodologyRationale: parsed.data.methodologyRationale,
-      workerParticipation: parsed.data.workerParticipation,
+      workerParticipation: parsed.data.workerParticipation ?? workerParticipationFill,
       notes: parsed.data.notes,
       workstationDescription: parsed.data.workstationDescription,
       ...(ergo
         ? {
             ergonomicScreeningJson: ergo,
-            recommendAet: ergo.recommendAet,
+            ...(recommendAet === undefined && screeningRecommendAet !== undefined
+              ? { recommendAet: screeningRecommendAet }
+              : {}),
           }
         : {}),
+      ...(recommendAet !== undefined ? { recommendAet } : {}),
+      ...(fieldVisitJson !== undefined ? { fieldVisitJson } : {}),
+      ...(aetStatus !== undefined ? { aetStatus } : {}),
+      ...(evaluatorName !== undefined ? { evaluatorName, evaluatorSignedAt } : {}),
+      ...(aetFindings !== undefined ? { aetFindings } : {}),
+      ...(aetRecommendations !== undefined ? { aetRecommendations } : {}),
+      ...(aetCompletedAt !== undefined ? { aetCompletedAt } : {}),
       status: parsed.data.status,
       approvedByName: parsed.data.approvedByName,
       surveyCampaignId: parsed.data.surveyCampaignId,

@@ -5298,6 +5298,18 @@ model EmployerAepRecord {
   ergonomicScreeningJson Json?
   recommendAet          Boolean           @default(false)
 
+  /// Field visit / AET-lite (mobile): checklist, task notes, worker interview
+  fieldVisitJson        Json?
+  /// [{ key, caption?, uploadedAt }]
+  photoKeys             Json?
+  evaluatorName         String?
+  evaluatorSignedAt     DateTime?
+  /// NONE | IN_FIELD | COMPLETED
+  aetStatus             String            @default("NONE")
+  aetFindings           String?           @db.Text
+  aetRecommendations    String?           @db.Text
+  aetCompletedAt        DateTime?
+
   completedAt           DateTime?
   approvedByName        String?
   surveyCampaignId      String?

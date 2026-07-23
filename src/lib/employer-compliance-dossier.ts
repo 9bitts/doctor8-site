@@ -61,6 +61,7 @@ export async function buildComplianceDossier(employerCompanyId: string) {
 
   const aepSummaries = company.aepRecords.map((a) => {
     const ergo = parseErgonomicScreening(a.ergonomicScreeningJson);
+    const photoCount = Array.isArray(a.photoKeys) ? a.photoKeys.length : 0;
     return {
       id: a.id,
       title: a.title,
@@ -72,6 +73,15 @@ export async function buildComplianceDossier(employerCompanyId: string) {
       ergonomicSummary: ergo?.summary ?? null,
       approvedByName: a.approvedByName,
       completedAt: a.completedAt?.toISOString() ?? null,
+      fieldVisit: {
+        aetStatus: a.aetStatus,
+        photoCount,
+        evaluatorName: a.evaluatorName,
+        evaluatorSignedAt: a.evaluatorSignedAt?.toISOString() ?? null,
+        aetFindings: a.aetFindings,
+        aetRecommendations: a.aetRecommendations,
+        aetCompletedAt: a.aetCompletedAt?.toISOString() ?? null,
+      },
     };
   });
 

@@ -63,7 +63,7 @@ export default async function EmpresasPainelPage() {
 
   const quickLinks = [
     { href: "/empresas/nr1", label: "Inventário de riscos", icon: Shield },
-    { href: "/empresas/aep", label: "AEP (NR-17)", icon: ClipboardCheck },
+    { href: "/empresas/aep", label: "Ergonomia · AEP/AET", icon: ClipboardCheck },
     { href: "/empresas/plano-acao", label: "Plano de ação", icon: AlertTriangle },
     { href: "/empresas/pesquisas", label: "Pesquisas anônimas", icon: Users },
     { href: "/empresas/eap", label: "EAP psicológico", icon: Brain },
@@ -178,20 +178,81 @@ export default async function EmpresasPainelPage() {
         </div>
       )}
 
-      {(aepLatest?.status !== "COMPLETED" && aepLatest?.status !== "APPROVED") && (
-        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 flex gap-3">
-          <AlertTriangle className="shrink-0" size={18} />
+      <section className="rounded-2xl border border-slate-200 bg-white p-5 space-y-3">
+        <div className="flex items-start justify-between gap-3">
           <div>
-            <p className="font-medium">AEP pendente ou incompleta</p>
-            <p className="mt-1 text-amber-800">
-              Complete a Avaliação Ergonômica Preliminar com riscos psicossociais para conformidade NR-17 + NR-1.
+            <h2 className="font-semibold text-slate-900 flex items-center gap-2">
+              <ClipboardCheck size={18} className="text-sky-600" />
+              Ergonomia (NR-17)
+            </h2>
+            <p className="text-xs text-slate-500 mt-1">
+              AEP + visita no posto pelo celular · aprofundamento quando a triagem indicar
             </p>
-            <Link href="/empresas/aep" className="inline-flex items-center gap-1 text-amber-900 font-medium mt-2 underline">
-              Ir para AEP <ArrowRight size={14} />
-            </Link>
+          </div>
+          <Link
+            href="/empresas/aep"
+            className="shrink-0 text-sm text-sky-600 font-medium hover:underline inline-flex items-center gap-1"
+          >
+            Abrir AEP <ArrowRight size={14} />
+          </Link>
+        </div>
+        <div className="grid sm:grid-cols-3 gap-3 text-sm">
+          <div className="rounded-xl border border-slate-100 bg-slate-50 p-3">
+            <p className="text-xs text-slate-500">Status da AEP</p>
+            <p className="font-semibold text-slate-900 mt-1">
+              {!aepLatest
+                ? "Não iniciada"
+                : aepLatest.status === "APPROVED"
+                  ? "Aprovada"
+                  : aepLatest.status === "COMPLETED"
+                    ? "Concluída"
+                    : aepLatest.status === "IN_PROGRESS"
+                      ? "Em andamento"
+                      : "Rascunho"}
+            </p>
+          </div>
+          <div className="rounded-xl border border-slate-100 bg-slate-50 p-3">
+            <p className="text-xs text-slate-500">Triagem / visita</p>
+            <p className="font-semibold text-slate-900 mt-1">
+              {aepLatest?.aetStatus === "COMPLETED"
+                ? "Visita assinada"
+                : aepLatest?.aetStatus === "IN_FIELD"
+                  ? "Visita em andamento"
+                  : aepLatest?.ergonomicScreeningJson
+                    ? "Triagem registrada"
+                    : "Pendente"}
+            </p>
+          </div>
+          <div className="rounded-xl border border-slate-100 bg-slate-50 p-3">
+            <p className="text-xs text-slate-500">Visita no posto</p>
+            <p className={`font-semibold mt-1 ${
+              aepLatest?.aetStatus === "COMPLETED"
+                ? "text-emerald-700"
+                : aepLatest?.recommendAet
+                  ? "text-amber-700"
+                  : "text-slate-900"
+            }`}>
+              {aepLatest?.aetStatus === "COMPLETED"
+                ? "Relatório assinado"
+                : aepLatest?.recommendAet
+                  ? "Recomendada — abrir visita"
+                  : aepLatest
+                    ? "Opcional / sob demanda"
+                    : "—"}
+            </p>
           </div>
         </div>
-      )}
+        {(!aepLatest || (aepLatest.status !== "COMPLETED" && aepLatest.status !== "APPROVED")) && (
+          <p className="text-xs text-amber-800 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
+            Complete a AEP com posto, participação dos trabalhadores e riscos vinculados para conformidade NR-17 + NR-1.
+          </p>
+        )}
+        {aepLatest && aepLatest.aetStatus !== "COMPLETED" && (aepLatest.recommendAet || aepLatest.aetStatus === "IN_FIELD") && (
+          <p className="text-xs text-amber-900 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+            Faça a visita em campo pelo celular (checklist + fotos + relatório assinado) em Ergonomia (AEP/AET).
+          </p>
+        )}
+      </section>
 
       {analytics.nr1.openWhistleblowerReports > 0 && (
         <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-900 flex items-center gap-2">
