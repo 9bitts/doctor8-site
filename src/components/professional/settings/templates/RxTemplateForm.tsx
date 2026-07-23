@@ -203,7 +203,8 @@ export function RxTemplateForm({
       frequency: "",
       duration: "",
       instructions: "",
-      presentation: drug.presentation,
+      // Catalog presentation is the full list of strengths — omit from Rx.
+      presentation: "",
       pharmaceuticalForm: drug.pharmaceuticalForm?.trim() || "",
       controlled: drug.controlled,
       prescriptionType: drug.prescriptionType,

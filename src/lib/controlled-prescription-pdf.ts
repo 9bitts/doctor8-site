@@ -222,9 +222,8 @@ async function drawControlledPage(
   y -= 36;
 
   data.medications.forEach((med, i) => {
-    const line = med.presentation
-      ? `${i + 1}. ${med.name} — ${med.presentation}`
-      : `${i + 1}. ${med.name}`;
+    // Name only — do not append catalog presentation lists (all strengths/forms).
+    const line = `${i + 1}. ${med.name}`;
     text(page, line, margin, y, 11, fontBold);
     y -= 14;
     const parts = [

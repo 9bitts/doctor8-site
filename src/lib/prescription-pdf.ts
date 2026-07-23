@@ -233,7 +233,6 @@ export async function buildPrescriptionPdf(
     const isFreeText =
       !med.dosage?.trim() &&
       !med.frequency?.trim() &&
-      !med.presentation?.trim() &&
       !med.pharmaceuticalForm?.trim() &&
       !med.duration?.trim() &&
       !med.instructions?.trim();
@@ -246,9 +245,8 @@ export async function buildPrescriptionPdf(
       }
       y -= 8;
     } else {
-    const title = med.presentation
-      ? `${i + 1}. ${med.name} — ${med.presentation}`
-      : `${i + 1}. ${med.name}`;
+    // Name only — catalog presentation lists every strength/form; pharmacies reject that.
+    const title = `${i + 1}. ${med.name}`;
     text(page, title, margin, y, 13, fontBold, BLUE);
     y -= 18;
     if (med.regulatoryBadge) {

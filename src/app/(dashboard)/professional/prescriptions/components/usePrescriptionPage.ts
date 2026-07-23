@@ -1730,7 +1730,8 @@ export function usePrescriptionPage() {
           frequency: "",
           duration: "",
           instructions: "",
-          presentation: leafletDrug.presentation,
+          // Catalog presentation is the full list of strengths — omit from Rx.
+          presentation: "",
           pharmaceuticalForm: leafletDrug.pharmaceuticalForm?.trim() || "",
           controlled: leafletDrug.controlled,
           prescriptionType: leafletDrug.prescriptionType,
@@ -1783,7 +1784,8 @@ export function usePrescriptionPage() {
       frequency: "",
       duration: "",
       instructions: "",
-      presentation: drug.presentation,
+      // Catalog presentation is the full list of strengths — omit from Rx.
+      presentation: "",
       pharmaceuticalForm: drug.pharmaceuticalForm?.trim() || "",
       controlled: drug.controlled,
       prescriptionType: drug.prescriptionType,
