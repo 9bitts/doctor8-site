@@ -11,7 +11,7 @@ export default function ReviewPromptModal({
   onClose,
 }: {
   providerId: string;
-  providerType: "health" | "psychoanalyst";
+  providerType: "health" | "psychoanalyst" | "integrative";
   providerName?: string;
   onClose: () => void;
 }) {
@@ -33,7 +33,9 @@ export default function ReviewPromptModal({
       const body =
         providerType === "psychoanalyst"
           ? { psychoanalystId: providerId, providerType, rating, comment: comment.trim() || undefined }
-          : { professionalId: providerId, providerType, rating, comment: comment.trim() || undefined };
+          : providerType === "integrative"
+            ? { integrativeTherapistId: providerId, providerType, rating, comment: comment.trim() || undefined }
+            : { professionalId: providerId, providerType, rating, comment: comment.trim() || undefined };
 
       const res = await fetch("/api/patient/reviews", {
         method: "POST",

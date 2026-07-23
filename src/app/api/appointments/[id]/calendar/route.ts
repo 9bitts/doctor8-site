@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { buildAppointmentIcs } from "@/lib/calendar";
 import { safeDecrypt } from "@/lib/psychoanalyst-api";
 import { PSYCHOANALYSIS_SPECIALTY } from "@/lib/professions";
+import { INTEGRATIVE_THERAPY_SPECIALTY } from "@/lib/integrative-therapy-specialty";
 import { getUserLang } from "@/lib/i18n/server-lang";
 import { translate } from "@/lib/i18n/translations";
 import { interpolate } from "@/lib/notification-i18n";
@@ -21,6 +22,9 @@ export async function GET(
       patient: { select: { userId: true } },
       professional: { select: { firstName: true, lastName: true, specialty: true, clinicAddress: true, clinicCity: true } },
       psychoanalyst: { select: { firstName: true, lastName: true } },
+      integrativeTherapist: {
+        select: { firstName: true, lastName: true, clinicAddress: true, clinicCity: true },
+      },
     },
   });
 
@@ -35,6 +39,9 @@ export async function GET(
   } else if (session.user.role === "PSYCHOANALYST" && appointment.psychoanalystId) {
     const psy = await db.psychoanalystProfile.findUnique({ where: { userId: session.user.id } });
     isProvider = psy?.id === appointment.psychoanalystId;
+  } else if (session.user.role === "INTEGRATIVE_THERAPIST" && appointment.integrativeTherapistId) {
+    const it = await db.integrativeTherapistProfile.findUnique({ where: { userId: session.user.id } });
+    isProvider = it?.id === appointment.integrativeTherapistId;
   }
 
   if (!isPatient && !isProvider) {
@@ -49,16 +56,22 @@ export async function GET(
     ? `${appointment.professional.firstName} ${appointment.professional.lastName}`
     : appointment.psychoanalyst
       ? `${safeDecrypt(appointment.psychoanalyst.firstName)} ${safeDecrypt(appointment.psychoanalyst.lastName)}`
-      : "Doctor8";
+      : appointment.integrativeTherapist
+        ? `${appointment.integrativeTherapist.firstName} ${appointment.integrativeTherapist.lastName}`
+        : "Doctor8";
 
-  const specialty = appointment.professional?.specialty ?? PSYCHOANALYSIS_SPECIALTY;
+  const specialty = appointment.professional?.specialty
+    ?? (appointment.integrativeTherapist ? INTEGRATIVE_THERAPY_SPECIALTY : PSYCHOANALYSIS_SPECIALTY);
   const start = new Date(appointment.scheduledAt);
   const end = new Date(start.getTime() + (appointment.durationMins || 30) * 60_000);
 
   const isTele = appointment.type === "TELECONSULT";
   const location = isTele
     ? t("cal.teleconsultLocation")
-    : [appointment.professional?.clinicAddress, appointment.professional?.clinicCity].filter(Boolean).join(", ") ||
+    : [
+        appointment.professional?.clinicAddress || appointment.integrativeTherapist?.clinicAddress,
+        appointment.professional?.clinicCity || appointment.integrativeTherapist?.clinicCity,
+      ].filter(Boolean).join(", ") ||
       t("cal.inPersonLocation");
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://doctor8.app";

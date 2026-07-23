@@ -1,8 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { db } from "@/lib/db";
 import { requirePsychoanalyst } from "@/lib/psychoanalyst-api";
 import { validateAvailabilityBlocks } from "@/lib/availability-validation";
 import { isAcuraVolunteerProvider } from "@/lib/acura-volunteer";
+
+const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
+
+const slotSchema = z.object({
+  dayOfWeek: z.number().int().min(0).max(6),
+  startTime: z.string().regex(TIME_RE),
+  endTime: z.string().regex(TIME_RE),
+  slotDuration: z.number().int().positive().max(240),
+  slotGap: z.number().int().min(0).max(240).optional(),
+  volunteerOnly: z.boolean().optional(),
+});
+
+const putSchema = z.object({
+  slots: z.array(slotSchema),
+});
 
 export async function GET() {
   const ctx = await requirePsychoanalyst();
@@ -33,16 +49,19 @@ export async function PUT(req: NextRequest) {
   if ("error" in ctx && ctx.error) return ctx.error;
   const { psychoanalyst } = ctx as Exclude<typeof ctx, { error: NextResponse }>;
 
-  const { slots } = await req.json();
+  const body = await req.json();
+  const parsed = putSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+  }
 
-  const normalized = (slots as {
-    dayOfWeek: number;
-    startTime: string;
-    endTime: string;
-    slotDuration: number;
-    slotGap?: number;
-    volunteerOnly?: boolean;
-  }[]).map((s) => ({
+  for (const s of parsed.data.slots) {
+    if (s.startTime >= s.endTime) {
+      return NextResponse.json({ error: "invalid_time_range" }, { status: 400 });
+    }
+  }
+
+  const normalized = parsed.data.slots.map((s) => ({
     dayOfWeek: s.dayOfWeek,
     startTime: s.startTime,
     endTime: s.endTime,
@@ -62,14 +81,7 @@ export async function PUT(req: NextRequest) {
   await db.$transaction([
     db.psychoanalystAvailabilitySlot.deleteMany({ where: { psychoanalystId: psychoanalyst.id } }),
     db.psychoanalystAvailabilitySlot.createMany({
-      data: (slots as {
-        dayOfWeek: number;
-        startTime: string;
-        endTime: string;
-        slotDuration: number;
-        slotGap?: number;
-        volunteerOnly?: boolean;
-      }[]).map((s) => ({
+      data: parsed.data.slots.map((s) => ({
         psychoanalystId: psychoanalyst.id,
         dayOfWeek: s.dayOfWeek,
         startTime: s.startTime,

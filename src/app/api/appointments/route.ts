@@ -1,4 +1,4 @@
-// List and create appointments (health professionals + psychoanalysts).
+// List and create appointments (health + psychoanalyst + integrative).
 
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
@@ -9,7 +9,17 @@ import {
   AppointmentSlotTakenError,
   fulfillConsultationPayment,
 } from "@/lib/fulfill-consultation";
-import { PSYCHOANALYSIS_SPECIALTY } from "@/lib/providers";
+import {
+  INTEGRATIVE_THERAPY_SPECIALTY,
+} from "@/lib/integrative-therapy-specialty";
+import {
+  PSYCHOANALYSIS_SPECIALTY,
+  PROVIDER_TYPE_ENUM,
+  bookingProviderIds,
+  providerIdMetadataKey,
+  resolveBookingProviderId,
+  type ProviderType,
+} from "@/lib/providers";
 import { safeDecrypt } from "@/lib/psychoanalyst-api";
 import { stripPsychoanalystAppointmentFields, isPsychoanalystAppointmentRequest } from "@/lib/appointment-provider-access";
 import { z } from "zod";
@@ -31,6 +41,7 @@ const appointmentListSelect = {
   bookingSource: true,
   professionalId: true,
   psychoanalystId: true,
+  integrativeTherapistId: true,
   providerType: true,
   patientConfirmedAt: true,
   priceAmount: true,
@@ -91,6 +102,9 @@ export async function GET(req: NextRequest) {
         psychoanalyst: {
           select: { firstName: true, lastName: true, avatarUrl: true },
         },
+        integrativeTherapist: {
+          select: { firstName: true, lastName: true, avatarUrl: true },
+        },
       },
       orderBy: { scheduledAt: upcoming ? "asc" : "desc" },
       take: 50,
@@ -131,6 +145,26 @@ export async function GET(req: NextRequest) {
       orderBy: { scheduledAt: upcoming ? "asc" : "desc" },
       take: 50,
     });
+  } else if (session.user.role === "INTEGRATIVE_THERAPIST") {
+    const integrative = await db.integrativeTherapistProfile.findUnique({
+      where: { userId: session.user.id },
+    });
+    if (!integrative) return NextResponse.json({ appointments: [] });
+
+    appointments = await db.appointment.findMany({
+      where: {
+        integrativeTherapistId: integrative.id,
+        ...(statusFilter ? { status: statusFilter } : {}),
+        ...(upcoming ? { scheduledAt: { gte: new Date() } } : {}),
+        ...(dateRange ? { scheduledAt: dateRange } : {}),
+      },
+      select: {
+        ...appointmentListSelect,
+        patient: { select: { firstName: true, lastName: true, avatarUrl: true } },
+      },
+      orderBy: { scheduledAt: upcoming ? "asc" : "desc" },
+      take: 50,
+    });
   } else {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
@@ -139,6 +173,20 @@ export async function GET(req: NextRequest) {
     const hasNotes = Boolean(a.notes);
     const { notes: _notes, ...rest } = a;
     const base = { ...rest, hasNotes };
+
+    if ("integrativeTherapist" in base && base.integrativeTherapist && !base.professional && !base.psychoanalyst) {
+      return {
+        ...base,
+        providerType: "integrative" as const,
+        professional: {
+          firstName: base.integrativeTherapist.firstName,
+          lastName: base.integrativeTherapist.lastName,
+          specialty: INTEGRATIVE_THERAPY_SPECIALTY,
+          avatarUrl: base.integrativeTherapist.avatarUrl,
+        },
+        integrativeTherapistId: base.integrativeTherapistId,
+      };
+    }
 
     if ("psychoanalyst" in base && base.psychoanalyst && !base.professional) {
       const row = {
@@ -174,7 +222,8 @@ export async function GET(req: NextRequest) {
 const createSchema = z.object({
   professionalId: z.string().optional(),
   psychoanalystId: z.string().optional(),
-  providerType: z.enum(["health", "psychoanalyst"]).default("health"),
+  integrativeTherapistId: z.string().optional(),
+  providerType: z.enum(PROVIDER_TYPE_ENUM).default("health"),
   scheduledAt: z.string().datetime(),
   type: z.enum(["TELECONSULT", "IN_PERSON"]),
   stripePaymentIntentId: z.string(),
@@ -211,10 +260,12 @@ export async function POST(req: NextRequest) {
     serviceName,
   } = parsed.data;
 
-  const providerId =
-    providerType === "psychoanalyst"
-      ? parsed.data.psychoanalystId || parsed.data.professionalId
-      : parsed.data.professionalId || parsed.data.psychoanalystId;
+  const providerId = resolveBookingProviderId({
+    providerType: providerType as ProviderType,
+    professionalId: parsed.data.professionalId,
+    psychoanalystId: parsed.data.psychoanalystId,
+    integrativeTherapistId: parsed.data.integrativeTherapistId,
+  });
 
   if (!providerId) {
     return NextResponse.json({ error: { general: ["Provider not specified."] } }, { status: 400 });
@@ -235,6 +286,14 @@ export async function POST(req: NextRequest) {
     providerName = `${safeDecrypt(psychoanalyst.firstName)} ${safeDecrypt(psychoanalyst.lastName)}`;
     providerSpecialty = PSYCHOANALYSIS_SPECIALTY;
     durationMins = psychoanalyst.sessionDurationMins;
+  } else if (providerType === "integrative") {
+    const integrative = await db.integrativeTherapistProfile.findUnique({
+      where: { id: providerId, verified: true },
+    });
+    if (!integrative) return NextResponse.json({ error: "Professional not found" }, { status: 404 });
+    providerName = `${integrative.firstName} ${integrative.lastName}`;
+    providerSpecialty = INTEGRATIVE_THERAPY_SPECIALTY;
+    durationMins = integrative.sessionDurationMins;
   } else {
     const professional = await db.professionalProfile.findUnique({
       where: { id: providerId, verified: true },
@@ -256,8 +315,8 @@ export async function POST(req: NextRequest) {
   }
 
   const meta = intent.metadata || {};
-  const metaProviderId =
-    providerType === "psychoanalyst" ? meta.psychoanalystId : meta.professionalId;
+  const metaKey = providerIdMetadataKey(providerType as ProviderType);
+  const metaProviderId = meta[metaKey];
   if (
     meta.userId !== session.user.id ||
     metaProviderId !== providerId ||
@@ -280,8 +339,7 @@ export async function POST(req: NextRequest) {
       metadata: {
         userId: session.user.id,
         providerType,
-        professionalId: providerType === "health" ? providerId : undefined,
-        psychoanalystId: providerType === "psychoanalyst" ? providerId : undefined,
+        ...bookingProviderIds(providerType as ProviderType, providerId),
         scheduledAt,
         type,
         visitReason,

@@ -19,7 +19,7 @@ import { EAP_BOOKING_SOURCE } from "@/lib/employer-eap-booking";
 import { resolveWorkforceSessionQuota } from "@/lib/employer-workforce";
 import { scheduleConsultationProfessionalPayout } from "@/lib/consultation-professional-payout";
 
-type BookingProviderType = ProviderType | "integrative";
+type BookingProviderType = ProviderType;
 
 export type ConsultationPaymentMeta = {
   userId: string;
@@ -200,7 +200,7 @@ export async function fulfillEapConsultation(params: {
 
 export async function fulfillVolunteerConsultation(params: {
   userId: string;
-  providerType: "health" | "psychoanalyst";
+  providerType: ProviderType;
   providerId: string;
   scheduledAt: string;
   type: "TELECONSULT" | "IN_PERSON";
@@ -221,6 +221,7 @@ export async function fulfillVolunteerConsultation(params: {
       providerType: params.providerType,
       professionalId: params.providerType === "health" ? params.providerId : undefined,
       psychoanalystId: params.providerType === "psychoanalyst" ? params.providerId : undefined,
+      integrativeTherapistId: params.providerType === "integrative" ? params.providerId : undefined,
       scheduledAt: params.scheduledAt,
       type: params.type,
       visitReason: params.visitReason,

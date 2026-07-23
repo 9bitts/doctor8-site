@@ -1,10 +1,11 @@
-// Unified health professional + psychoanalyst listing for patient booking/search.
+// Unified health / psychoanalyst / integrative listing for patient booking/search.
 
 import { db } from "@/lib/db";
 import { getProfessionInfo, formatLicense } from "@/lib/profession-label";
 import { hasListableLicense } from "@/lib/license-validation";
 
 import { PSYCHOANALYSIS_SPECIALTY } from "@/lib/professions";
+import { INTEGRATIVE_THERAPY_SPECIALTY } from "@/lib/integrative-therapy-specialty";
 import { safeDecrypt } from "@/lib/psychoanalyst-api";
 import { compareVolunteerFirst } from "@/lib/acura-volunteer";
 import {
@@ -12,10 +13,63 @@ import {
   cityToSeoSlug,
   specialtyToSeoSlug,
 } from "@/lib/public-slugs";
-
 export { PSYCHOANALYSIS_SPECIALTY };
 
-export type ProviderType = "health" | "psychoanalyst";
+export type ProviderType = "health" | "psychoanalyst" | "integrative";
+
+export const PROVIDER_TYPE_ENUM = ["health", "psychoanalyst", "integrative"] as const;
+
+export function resolveBookingProviderId(input: {
+  providerType: ProviderType;
+  professionalId?: string | null;
+  psychoanalystId?: string | null;
+  integrativeTherapistId?: string | null;
+}): string | undefined {
+  if (input.providerType === "psychoanalyst") {
+    return input.psychoanalystId || input.professionalId || undefined;
+  }
+  if (input.providerType === "integrative") {
+    return input.integrativeTherapistId || input.professionalId || undefined;
+  }
+  return input.professionalId || input.psychoanalystId || undefined;
+}
+
+export function bookingProviderIds(
+  providerType: ProviderType,
+  providerId: string,
+): {
+  professionalId?: string;
+  psychoanalystId?: string;
+  integrativeTherapistId?: string;
+} {
+  if (providerType === "psychoanalyst") return { psychoanalystId: providerId };
+  if (providerType === "integrative") return { integrativeTherapistId: providerId };
+  return { professionalId: providerId };
+}
+
+export function providerIdMetadataKey(
+  providerType: ProviderType,
+): "professionalId" | "psychoanalystId" | "integrativeTherapistId" {
+  if (providerType === "psychoanalyst") return "psychoanalystId";
+  if (providerType === "integrative") return "integrativeTherapistId";
+  return "professionalId";
+}
+
+export function toPracticeProviderType(
+  providerType: ProviderType,
+): "health" | "psychoanalyst" | "integrative_therapist" {
+  if (providerType === "integrative") return "integrative_therapist";
+  return providerType;
+}
+
+export function appointmentProviderFilter(
+  providerType: ProviderType,
+  providerId: string,
+): { professionalId: string } | { psychoanalystId: string } | { integrativeTherapistId: string } {
+  if (providerType === "psychoanalyst") return { psychoanalystId: providerId };
+  if (providerType === "integrative") return { integrativeTherapistId: providerId };
+  return { professionalId: providerId };
+}
 
 type VirtualCardPublicFields = {
   slug: string;
@@ -85,7 +139,8 @@ type ListOpts = {
 
 function matchesSpecialtyFilter(filter: string, specialty: string, providerType: ProviderType): boolean {
   if (filter === PSYCHOANALYSIS_SPECIALTY) return providerType === "psychoanalyst";
-  if (providerType === "psychoanalyst") return false;
+  if (filter === INTEGRATIVE_THERAPY_SPECIALTY) return providerType === "integrative";
+  if (providerType === "psychoanalyst" || providerType === "integrative") return false;
   if (filter === "Psychology") return getProfessionInfo(specialty).typeKey === "psychologist";
   if (filter === "Nutrition") return getProfessionInfo(specialty).typeKey === "nutritionist";
   return specialty.toLowerCase().includes(filter.toLowerCase());
@@ -94,9 +149,10 @@ function matchesSpecialtyFilter(filter: string, specialty: string, providerType:
 export async function listUnifiedProviders(opts: ListOpts = {}): Promise<UnifiedProvider[]> {
   const { specialty, consultType, verifiedOnly = true, take = 100 } = opts;
   const psychoOnly = specialty === PSYCHOANALYSIS_SPECIALTY;
-  const healthOnly = specialty && specialty !== PSYCHOANALYSIS_SPECIALTY;
+  const integrativeOnly = specialty === INTEGRATIVE_THERAPY_SPECIALTY;
+  const healthOnly = Boolean(specialty && !psychoOnly && !integrativeOnly);
 
-  const healthPros = psychoOnly
+  const healthPros = psychoOnly || integrativeOnly
     ? []
     : await db.professionalProfile.findMany({
         where: {
@@ -136,7 +192,7 @@ export async function listUnifiedProviders(opts: ListOpts = {}): Promise<Unified
         take,
       });
 
-  const analysts = healthOnly
+  const analysts = healthOnly || integrativeOnly
     ? []
     : await db.psychoanalystProfile.findMany({
         where: {
@@ -164,6 +220,42 @@ export async function listUnifiedProviders(opts: ListOpts = {}): Promise<Unified
           trainingInstitution: true,
           yearsOfPractice: true,
           associations: true,
+          verified: true,
+          sessionDurationMins: true,
+          virtualCard: { select: VIRTUAL_CARD_PUBLIC_SELECT },
+          acuraVolunteer: true,
+        },
+        orderBy: { firstName: "asc" },
+        take,
+      });
+
+  const integrativePros = psychoOnly || healthOnly
+    ? []
+    : await db.integrativeTherapistProfile.findMany({
+        where: {
+          ...(verifiedOnly ? { verified: true } : {}),
+          ...(consultType === "TELECONSULT" ? { acceptsTeleconsult: true } : {}),
+          ...(consultType === "IN_PERSON" ? { acceptsInPerson: true } : {}),
+        },
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          bio: true,
+          avatarUrl: true,
+          consultPrice: true,
+          currency: true,
+          acceptsTeleconsult: true,
+          acceptsInPerson: true,
+          clinicCity: true,
+          clinicState: true,
+          clinicCountry: true,
+          clinicAddress: true,
+          clinicZip: true,
+          clinicLatitude: true,
+          clinicLongitude: true,
+          trainingInstitution: true,
+          yearsOfPractice: true,
           verified: true,
           sessionDurationMins: true,
           virtualCard: { select: VIRTUAL_CARD_PUBLIC_SELECT },
@@ -244,7 +336,42 @@ export async function listUnifiedProviders(opts: ListOpts = {}): Promise<Unified
     acuraVolunteer: p.acuraVolunteer,
   }));
 
-  return [...healthMapped, ...analystMapped]
+  const integrativeMapped: UnifiedProvider[] = integrativePros.map((p) => ({
+    id: p.id,
+    providerType: "integrative" as const,
+    firstName: p.firstName,
+    lastName: p.lastName,
+    specialty: INTEGRATIVE_THERAPY_SPECIALTY,
+    bio: p.bio,
+    avatarUrl: p.avatarUrl,
+    consultPrice: p.consultPrice,
+    currency: p.currency,
+    acceptsTeleconsult: p.acceptsTeleconsult,
+    acceptsInPerson: p.acceptsInPerson,
+    clinicCity: p.clinicCity,
+    clinicState: p.clinicState,
+    clinicCountry: p.clinicCountry,
+    clinicAddress: p.clinicAddress,
+    clinicZip: p.clinicZip,
+    clinicLatitude: p.clinicLatitude,
+    clinicLongitude: p.clinicLongitude,
+    license: null,
+    trainingInstitution: p.trainingInstitution,
+    yearsOfPractice: p.yearsOfPractice,
+    associations: [],
+    verified: p.verified,
+    sessionDurationMins: p.sessionDurationMins,
+    virtualCardSlug: p.virtualCard?.slug ?? null,
+    publicPath: resolvePublicPath(
+      p.verified,
+      p.virtualCard,
+      INTEGRATIVE_THERAPY_SPECIALTY,
+      p.clinicCity,
+    ),
+    acuraVolunteer: p.acuraVolunteer,
+  }));
+
+  return [...healthMapped, ...analystMapped, ...integrativeMapped]
     .sort(compareVolunteerFirst)
     .slice(0, take);
 }
@@ -311,6 +438,71 @@ export async function getUnifiedProvider(
       sessionDurationMins: 30,
       virtualCardSlug: p.virtualCard?.slug ?? null,
       publicPath: resolvePublicPath(p.verified, p.virtualCard, p.specialty, p.clinicCity),
+      acuraVolunteer: p.acuraVolunteer,
+    };
+  }
+
+  if (providerType === "integrative") {
+    const p = await db.integrativeTherapistProfile.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        bio: true,
+        avatarUrl: true,
+        consultPrice: true,
+        currency: true,
+        acceptsTeleconsult: true,
+        acceptsInPerson: true,
+        clinicCity: true,
+        clinicState: true,
+        clinicCountry: true,
+        clinicAddress: true,
+        clinicZip: true,
+        clinicLatitude: true,
+        clinicLongitude: true,
+        trainingInstitution: true,
+        yearsOfPractice: true,
+        verified: true,
+        sessionDurationMins: true,
+        virtualCard: { select: VIRTUAL_CARD_PUBLIC_SELECT },
+        acuraVolunteer: true,
+      },
+    });
+    if (!p) return null;
+    return {
+      id: p.id,
+      providerType: "integrative",
+      firstName: p.firstName,
+      lastName: p.lastName,
+      specialty: INTEGRATIVE_THERAPY_SPECIALTY,
+      bio: p.bio,
+      avatarUrl: p.avatarUrl,
+      consultPrice: p.consultPrice,
+      currency: p.currency,
+      acceptsTeleconsult: p.acceptsTeleconsult,
+      acceptsInPerson: p.acceptsInPerson,
+      clinicCity: p.clinicCity,
+      clinicState: p.clinicState,
+      clinicCountry: p.clinicCountry,
+      clinicAddress: p.clinicAddress,
+      clinicZip: p.clinicZip,
+      clinicLatitude: p.clinicLatitude,
+      clinicLongitude: p.clinicLongitude,
+      license: null,
+      trainingInstitution: p.trainingInstitution,
+      yearsOfPractice: p.yearsOfPractice,
+      associations: [],
+      verified: p.verified,
+      sessionDurationMins: p.sessionDurationMins,
+      virtualCardSlug: p.virtualCard?.slug ?? null,
+      publicPath: resolvePublicPath(
+        p.verified,
+        p.virtualCard,
+        INTEGRATIVE_THERAPY_SPECIALTY,
+        p.clinicCity,
+      ),
       acuraVolunteer: p.acuraVolunteer,
     };
   }

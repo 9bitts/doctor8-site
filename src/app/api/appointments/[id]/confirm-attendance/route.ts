@@ -22,6 +22,7 @@ async function confirmForPatient(appointmentId: string, userId: string) {
       patientConfirmedAt: true,
       professionalId: true,
       psychoanalystId: true,
+      integrativeTherapistId: true,
       patient: { select: { firstName: true, lastName: true } },
     },
   });
@@ -45,6 +46,7 @@ async function confirmForPatient(appointmentId: string, userId: string) {
     scheduledAt: appointment.scheduledAt,
     professionalId: appointment.professionalId,
     psychoanalystId: appointment.psychoanalystId,
+    integrativeTherapistId: appointment.integrativeTherapistId,
     patientFirstName: appointment.patient.firstName,
     patientLastName: appointment.patient.lastName,
   }).catch((e) => console.error("[CONFIRM-ATTENDANCE] Pro notify failed:", e));

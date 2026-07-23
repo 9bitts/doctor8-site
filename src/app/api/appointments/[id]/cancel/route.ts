@@ -260,6 +260,7 @@ export async function POST(
   notifySlotAlerts({
     professionalId: appointment.professionalId,
     psychoanalystId: appointment.psychoanalystId,
+    integrativeTherapistId: appointment.integrativeTherapistId,
     freedAt: appointment.scheduledAt,
   }).catch((err) => console.error("[CANCEL] Slot alert notify failed:", err));
 

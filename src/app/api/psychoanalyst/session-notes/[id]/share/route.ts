@@ -43,18 +43,7 @@ export async function POST(
 
   const { doc, record, psychoanalyst } = ctx;
 
-  let linkedUserId = record.linkedUserId;
-  if (!linkedUserId && record.email) {
-    const user = await db.user.findUnique({ where: { email: record.email.toLowerCase() } });
-    if (user) {
-      linkedUserId = user.id;
-      await db.analysandRecord.update({
-        where: { id: record.id },
-        data: { linkedUserId: user.id },
-      });
-    }
-  }
-
+  const linkedUserId = record.linkedUserId;
   if (!linkedUserId) {
     return NextResponse.json({
       shared: false,
@@ -68,6 +57,21 @@ export async function POST(
   });
   if (!patientProfile) {
     return NextResponse.json({ shared: false, needsInvite: true, hasEmail: !!record.email });
+  }
+
+  const relatedAppointment = await db.appointment.findFirst({
+    where: {
+      psychoanalystId: psychoanalyst.id,
+      patientId: patientProfile.id,
+      status: { in: ["CONFIRMED", "PENDING", "COMPLETED"] },
+    },
+    select: { id: true },
+  });
+  if (!relatedAppointment) {
+    return NextResponse.json(
+      { error: "Cannot share notes without an appointment relationship with this patient." },
+      { status: 403 },
+    );
   }
 
   const existing = await db.sharedRecord.findFirst({

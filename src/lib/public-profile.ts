@@ -10,7 +10,7 @@ import { picBySlug, picLabel } from "@/lib/pics/practices";
 import { INTEGRATIVE_SEO_SLUG } from "@/lib/public-slugs";
 import { sanitizePublicBio, sanitizePublicHeadline } from "@/lib/profile-display";
 
-export type PublicProfileProviderType = ProviderType | "integrative";
+export type PublicProfileProviderType = ProviderType;
 
 export {
   APP_BASE_URL,
@@ -169,6 +169,18 @@ async function loadReviewStats(
       avg: agg._avg.rating
         ? Math.round(agg._avg.rating * 10) / 10
         : null,
+      count: agg._count.rating,
+    };
+  }
+
+  if (providerType === "integrative") {
+    const agg = await db.integrativeTherapistReview.aggregate({
+      where: { integrativeTherapistId: providerId },
+      _avg: { rating: true },
+      _count: { rating: true },
+    });
+    return {
+      avg: agg._avg.rating ? Math.round(agg._avg.rating * 10) / 10 : null,
       count: agg._count.rating,
     };
   }
@@ -484,10 +496,7 @@ export async function getLivePublicProfileBySlug(
   const resolved = resolveCardProvider(card);
   if (!resolved) return null;
 
-  const reviews =
-    resolved.providerType === "integrative"
-      ? { avg: null, count: 0 }
-      : await loadReviewStats(resolved.providerType, resolved.providerId);
+  const reviews = await loadReviewStats(resolved.providerType, resolved.providerId);
   const base = mapCardToPublicProfile(card, reviews);
   if (!base) return null;
 
@@ -507,10 +516,7 @@ export async function getPublicProfileBySlug(
   const resolved = resolveCardProvider(card);
   if (!resolved) return null;
 
-  const reviews =
-    resolved.providerType === "integrative"
-      ? { avg: null, count: 0 }
-      : await loadReviewStats(resolved.providerType, resolved.providerId);
+  const reviews = await loadReviewStats(resolved.providerType, resolved.providerId);
   const base = mapCardToPublicProfile(card, reviews);
   if (!base) return null;
 

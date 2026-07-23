@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import type { ProviderType } from "@/lib/providers";
+import { PROVIDER_TYPE_ENUM, type ProviderType } from "@/lib/providers";
 
 export async function GET(
   req: NextRequest,
@@ -10,10 +10,31 @@ export async function GET(
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const providerType = (req.nextUrl.searchParams.get("providerType") || "health") as ProviderType;
+  const raw = req.nextUrl.searchParams.get("providerType") || "health";
+  if (!(PROVIDER_TYPE_ENUM as readonly string[]).includes(raw)) {
+    return NextResponse.json({ error: "Invalid providerType" }, { status: 400 });
+  }
+  const providerType = raw as ProviderType;
 
   if (providerType === "psychoanalyst") {
     const profile = await db.psychoanalystProfile.findUnique({
+      where: { id: params.id, verified: true },
+      include: {
+        healthPlans: { include: { healthPlan: true }, orderBy: { healthPlan: { sortOrder: "asc" } } },
+      },
+    });
+    if (!profile) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+    return NextResponse.json({
+      plans: profile.healthPlans.map((hp) => ({
+        slug: hp.healthPlan.slug,
+        name: hp.healthPlan.name,
+      })),
+    });
+  }
+
+  if (providerType === "integrative") {
+    const profile = await db.integrativeTherapistProfile.findUnique({
       where: { id: params.id, verified: true },
       include: {
         healthPlans: { include: { healthPlan: true }, orderBy: { healthPlan: { sortOrder: "asc" } } },

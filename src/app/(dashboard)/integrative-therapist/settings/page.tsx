@@ -48,6 +48,7 @@ export default function IntegrativeTherapistSettingsPage() {
   const readyRef = useRef(false);
   const regionReadyRef = useRef(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const saveGenRef = useRef(0);
   const [loading, setLoading] = useState(true);
   const [autoSaving, setAutoSaving] = useState(false);
   const [autoSaved, setAutoSaved] = useState(false);
@@ -197,6 +198,7 @@ export default function IntegrativeTherapistSettingsPage() {
   const persistProfile = useCallback(async () => {
     if (!firstName || !lastName || !trainingInstitution) return;
     if (selectedPractices.length === 0) return;
+    const gen = ++saveGenRef.current;
     setAutoSaving(true);
     setError("");
     try {
@@ -221,6 +223,7 @@ export default function IntegrativeTherapistSettingsPage() {
           clinicZip,
         }),
       });
+      if (gen !== saveGenRef.current) return;
       if (!res.ok) {
         const d = await res.json().catch(() => ({}));
         setError(d.error || t("it.settings.errSave"));
@@ -231,7 +234,7 @@ export default function IntegrativeTherapistSettingsPage() {
       router.refresh();
       await refreshRegistration();
     } finally {
-      setAutoSaving(false);
+      if (gen === saveGenRef.current) setAutoSaving(false);
     }
   }, [
     firstName, lastName, phone, trainingInstitution, certifications, yearsOfPractice,

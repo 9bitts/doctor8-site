@@ -98,7 +98,7 @@ export default function HealthPlansSettings({
     setSaving(true);
     setSaved(false);
     try {
-      await fetch(apiPath, {
+      const res = await fetch(apiPath, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -111,6 +111,7 @@ export default function HealthPlansSettings({
             })),
         }),
       });
+      if (!res.ok) return;
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch { /* ignore */ }

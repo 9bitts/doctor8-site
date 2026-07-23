@@ -10,9 +10,10 @@ const ALERT_COOLDOWN_MS = 24 * 60 * 60 * 1000;
 export async function notifySlotAlerts(opts: {
   professionalId?: string | null;
   psychoanalystId?: string | null;
+  integrativeTherapistId?: string | null;
   freedAt: Date;
 }): Promise<void> {
-  const { professionalId, psychoanalystId, freedAt } = opts;
+  const { professionalId, psychoanalystId, integrativeTherapistId, freedAt } = opts;
 
   if (freedAt.getTime() <= Date.now()) return;
 
@@ -24,15 +25,24 @@ export async function notifySlotAlerts(opts: {
       ? await db.slotAvailabilityAlert.findMany({
           where: { psychoanalystId, active: true },
         })
-      : [];
+      : integrativeTherapistId
+        ? await db.slotAvailabilityAlert.findMany({
+            where: { integrativeTherapistId, active: true },
+          })
+        : [];
 
   if (alerts.length === 0) return;
 
   const card = await db.virtualCard.findFirst({
-    where: professionalId ? { professionalId } : { psychoanalystId: psychoanalystId! },
+    where: professionalId
+      ? { professionalId }
+      : psychoanalystId
+        ? { psychoanalystId }
+        : { integrativeTherapistId: integrativeTherapistId! },
     include: {
       professional: { select: { firstName: true, lastName: true } },
       psychoanalyst: { select: { firstName: true, lastName: true } },
+      integrativeTherapist: { select: { firstName: true, lastName: true } },
     },
   });
   if (!card) return;
@@ -41,7 +51,9 @@ export async function notifySlotAlerts(opts: {
     ? `${card.professional.firstName} ${card.professional.lastName}`.trim()
     : card.psychoanalyst
       ? `${safeDecrypt(card.psychoanalyst.firstName)} ${safeDecrypt(card.psychoanalyst.lastName)}`.trim()
-      : "Profissional";
+      : card.integrativeTherapist
+        ? `${card.integrativeTherapist.firstName} ${card.integrativeTherapist.lastName}`.trim()
+        : "Profissional";
 
   const profileUrl = buildPublicProfileUrl({
     specialtySlug: card.specialtySlug,

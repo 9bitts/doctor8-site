@@ -32,7 +32,7 @@ interface AnalysandDetail {
   notes: string | null;
 }
 
-type ShareStatus = "loading" | "shared" | "invite" | "error";
+type ShareStatus = "loading" | "shared" | "invite" | "inviting" | "invited" | "error";
 
 const SESSION_FREQ_LABELS: Record<string, string> = {
   semanal: "pa.analysands.freq.semanal",
@@ -67,11 +67,10 @@ export default function AnalysandDetailClient({
 
   async function loadAnalysand() {
     const res = await fetch(`/api/psychoanalyst/analysands/${analysandId}`);
-    if (res.status === 404) {
+    if (!res.ok) {
       setAnalysandError(true);
       return null;
     }
-    if (!res.ok) return null;
     const data = await res.json();
     setAnalysand(data);
     return data;
@@ -80,8 +79,16 @@ export default function AnalysandDetailClient({
   async function loadNotes() {
     setLoading(true);
     try {
-      await loadAnalysand();
+      const loaded = await loadAnalysand();
+      if (!loaded) {
+        setNotes([]);
+        return;
+      }
       const res = await fetch(`/api/psychoanalyst/session-notes?analysandId=${analysandId}`);
+      if (!res.ok) {
+        setNotes([]);
+        return;
+      }
       const d = await res.json();
       setNotes(d.notes || []);
     } finally {
@@ -129,6 +136,20 @@ export default function AnalysandDetailClient({
       if (data.shared) setShareStatus((s) => ({ ...s, [noteId]: "shared" }));
       else if (data.needsInvite) setShareStatus((s) => ({ ...s, [noteId]: "invite" }));
       else setShareStatus((s) => ({ ...s, [noteId]: "error" }));
+    } catch {
+      setShareStatus((s) => ({ ...s, [noteId]: "error" }));
+    }
+  }
+
+  async function invitePatient(noteId: string) {
+    setShareStatus((s) => ({ ...s, [noteId]: "inviting" }));
+    try {
+      const res = await fetch(`/api/psychoanalyst/session-notes/${noteId}/share`, { method: "PUT" });
+      if (!res.ok) {
+        setShareStatus((s) => ({ ...s, [noteId]: "error" }));
+        return;
+      }
+      setShareStatus((s) => ({ ...s, [noteId]: "invited" }));
     } catch {
       setShareStatus((s) => ({ ...s, [noteId]: "error" }));
     }
@@ -205,6 +226,7 @@ export default function AnalysandDetailClient({
         <p className="text-slate-500 text-sm mt-1">{t("pa.sessions.subtitle")}</p>
       </div>
 
+      {analysand && (
       <form onSubmit={saveNote} className="bg-white rounded-2xl border border-slate-200 p-5 space-y-3 shadow-sm">
         <label className="text-sm font-medium text-slate-700">{t("pa.sessions.newNote")}</label>
         <textarea
@@ -225,10 +247,13 @@ export default function AnalysandDetailClient({
           {saving ? <Loader2 size={14} className="animate-spin inline" /> : t("common.save")}
         </button>
       </form>
+      )}
 
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
         {loading ? (
           <div className="flex justify-center py-12"><Loader2 className="animate-spin text-slate-400" /></div>
+        ) : !analysand ? (
+          <p className="text-center text-slate-400 text-sm py-12">{t("pa.analysands.notFound")}</p>
         ) : notes.length === 0 ? (
           <p className="text-center text-slate-400 text-sm py-12">{t("pa.sessions.empty")}</p>
         ) : (
@@ -289,7 +314,26 @@ export default function AnalysandDetailClient({
                 <p className="text-xs text-emerald-600 mt-2">{t("pa.sessions.sharedOk")}</p>
               )}
               {shareStatus[n.id] === "invite" && (
-                <p className="text-xs text-amber-600 mt-2">{t("pa.sessions.needsInvite")}</p>
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <p className="text-xs text-amber-600">{t("pa.sessions.needsInvite")}</p>
+                  {analysand?.email && (
+                    <button
+                      type="button"
+                      onClick={() => invitePatient(n.id)}
+                      className="text-xs font-semibold text-violet-700 hover:text-violet-900 underline"
+                    >
+                      {t("pa.sessions.sendInvite")}
+                    </button>
+                  )}
+                </div>
+              )}
+              {shareStatus[n.id] === "inviting" && (
+                <p className="text-xs text-slate-500 mt-2 flex items-center gap-1">
+                  <Loader2 size={12} className="animate-spin" /> {t("pa.sessions.sendingInvite")}
+                </p>
+              )}
+              {shareStatus[n.id] === "invited" && (
+                <p className="text-xs text-emerald-600 mt-2">{t("pa.sessions.inviteSent")}</p>
               )}
               {shareStatus[n.id] === "error" && (
                 <p className="text-xs text-red-600 mt-2">{t("pa.sessions.shareError")}</p>

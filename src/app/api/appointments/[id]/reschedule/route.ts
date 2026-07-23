@@ -168,6 +168,7 @@ export async function POST(
   notifySlotAlerts({
     professionalId: appointment.professionalId,
     psychoanalystId: appointment.psychoanalystId,
+    integrativeTherapistId: appointment.integrativeTherapistId,
     freedAt: previousScheduledAt,
   }).catch((err) => console.error("[RESCHEDULE] Slot alert notify failed:", err));
 
@@ -182,13 +183,18 @@ export async function POST(
       select: { firstName: true, lastName: true },
     });
     if (patientUser && patientProfile) {
+      const doctorName = appointment.professional
+        ? `${appointment.professional.firstName} ${appointment.professional.lastName}`
+        : appointment.psychoanalyst
+          ? `${safeDecrypt(appointment.psychoanalyst.firstName)} ${safeDecrypt(appointment.psychoanalyst.lastName)}`
+          : appointment.integrativeTherapist
+            ? `${appointment.integrativeTherapist.firstName} ${appointment.integrativeTherapist.lastName}`
+            : "Profissional";
       const { sendAppointmentConfirmation } = await import("@/lib/email");
       await sendAppointmentConfirmation({
         patientEmail:  patientUser.email,
         patientName:   decryptPatientName(patientProfile.firstName, patientProfile.lastName),
-        doctorName:    appointment.professional
-          ? `${appointment.professional.firstName} ${appointment.professional.lastName}`
-          : `${safeDecrypt(appointment.psychoanalyst!.firstName)} ${safeDecrypt(appointment.psychoanalyst!.lastName)}`,
+        doctorName,
         specialty:     "",
         scheduledAt:   new Date(newScheduledAt),
         type:          appointment.type,

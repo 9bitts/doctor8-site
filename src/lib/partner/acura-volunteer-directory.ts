@@ -63,7 +63,7 @@ function initialsFromName(name: string): string {
     .toUpperCase();
 }
 
-function profissaoLabel(specialty: string, providerType: ProviderType | "integrative"): string {
+function profissaoLabel(specialty: string, providerType: ProviderType): string {
   if (providerType === "psychoanalyst") return "Psicanálise";
   if (providerType === "integrative") return "Terapia Integrativa";
   const info = getProfessionInfo(specialty);

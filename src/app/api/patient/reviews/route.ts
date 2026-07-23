@@ -4,12 +4,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requirePatient, isApiError } from "@/lib/api-auth";
 import { db } from "@/lib/db";
+import {
+  appointmentProviderFilter,
+  PROVIDER_TYPE_ENUM,
+  resolveBookingProviderId,
+  type ProviderType,
+} from "@/lib/providers";
 import { z } from "zod";
 
 const schema = z.object({
   professionalId: z.string().optional(),
   psychoanalystId: z.string().optional(),
-  providerType: z.enum(["health", "psychoanalyst"]).optional(),
+  integrativeTherapistId: z.string().optional(),
+  providerType: z.enum(PROVIDER_TYPE_ENUM).optional(),
   rating: z.number().int().min(1).max(5),
   comment: z.string().max(1000).optional(),
 });
@@ -19,7 +26,7 @@ export async function GET() {
   if (isApiError(ctx)) return ctx.error;
   const { userId } = ctx;
 
-  const [professionalReviews, psychoanalystReviews] = await Promise.all([
+  const [professionalReviews, psychoanalystReviews, integrativeReviews] = await Promise.all([
     db.professionalReview.findMany({
       where: { patientUserId: userId },
       select: { professionalId: true },
@@ -28,11 +35,16 @@ export async function GET() {
       where: { patientUserId: userId },
       select: { psychoanalystId: true },
     }),
+    db.integrativeTherapistReview.findMany({
+      where: { patientUserId: userId },
+      select: { integrativeTherapistId: true },
+    }),
   ]);
 
   return NextResponse.json({
     professionalIds: professionalReviews.map((r) => r.professionalId),
     psychoanalystIds: psychoanalystReviews.map((r) => r.psychoanalystId),
+    integrativeTherapistIds: integrativeReviews.map((r) => r.integrativeTherapistId),
   });
 }
 
@@ -46,13 +58,19 @@ export async function POST(req: NextRequest) {
   if (!parsed.success)
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
 
-  const providerType =
+  const providerType: ProviderType =
     parsed.data.providerType ??
-    (parsed.data.psychoanalystId ? "psychoanalyst" : "health");
-  const providerId =
-    providerType === "psychoanalyst"
-      ? parsed.data.psychoanalystId || parsed.data.professionalId
-      : parsed.data.professionalId || parsed.data.psychoanalystId;
+    (parsed.data.integrativeTherapistId
+      ? "integrative"
+      : parsed.data.psychoanalystId
+        ? "psychoanalyst"
+        : "health");
+  const providerId = resolveBookingProviderId({
+    providerType,
+    professionalId: parsed.data.professionalId,
+    psychoanalystId: parsed.data.psychoanalystId,
+    integrativeTherapistId: parsed.data.integrativeTherapistId,
+  });
 
   if (!providerId) {
     return NextResponse.json({ error: "Provider not specified" }, { status: 400 });
@@ -62,9 +80,7 @@ export async function POST(req: NextRequest) {
     where: {
       patientId: patientProfileId,
       status: "COMPLETED",
-      ...(providerType === "psychoanalyst"
-        ? { psychoanalystId: providerId }
-        : { professionalId: providerId }),
+      ...appointmentProviderFilter(providerType, providerId),
     },
   });
   if (!hadAppointment)
@@ -81,6 +97,28 @@ export async function POST(req: NextRequest) {
       create: {
         patientUserId: userId,
         psychoanalystId: providerId,
+        rating: parsed.data.rating,
+        comment: parsed.data.comment,
+      },
+      update: {
+        rating: parsed.data.rating,
+        comment: parsed.data.comment,
+      },
+    });
+    return NextResponse.json({ ok: true, reviewId: review.id });
+  }
+
+  if (providerType === "integrative") {
+    const review = await db.integrativeTherapistReview.upsert({
+      where: {
+        patientUserId_integrativeTherapistId: {
+          patientUserId: userId,
+          integrativeTherapistId: providerId,
+        },
+      },
+      create: {
+        patientUserId: userId,
+        integrativeTherapistId: providerId,
         rating: parsed.data.rating,
         comment: parsed.data.comment,
       },

@@ -14,6 +14,77 @@ const createSchema = z.object({
   linkedUserId: z.string().optional(),
 });
 
+async function resolveLinkablePatientUserId(opts: {
+  psychoanalystId: string;
+  linkedUserId?: string;
+  email?: string;
+}): Promise<
+  | { linkedUserId: string | null }
+  | { error: string; status: number }
+> {
+  async function isLinkablePatient(userId: string): Promise<boolean> {
+    const patient = await db.patientProfile.findUnique({
+      where: { userId },
+      select: { id: true },
+    });
+    if (!patient) return false;
+
+    const appointment = await db.appointment.findFirst({
+      where: {
+        psychoanalystId: opts.psychoanalystId,
+        patientId: patient.id,
+        status: { in: ["CONFIRMED", "PENDING", "COMPLETED"] },
+      },
+      select: { id: true },
+    });
+    return Boolean(appointment);
+  }
+
+  if (opts.linkedUserId) {
+    const ok = await isLinkablePatient(opts.linkedUserId);
+    if (!ok) {
+      return {
+        error:
+          "Can only link a patient account that already has an appointment with this psychoanalyst.",
+        status: 400,
+      };
+    }
+    const dup = await db.analysandRecord.findFirst({
+      where: {
+        psychoanalystId: opts.psychoanalystId,
+        linkedUserId: opts.linkedUserId,
+      },
+      select: { id: true },
+    });
+    if (dup) {
+      return { error: "An analysand chart already exists for this patient.", status: 409 };
+    }
+    return { linkedUserId: opts.linkedUserId };
+  }
+
+  if (opts.email) {
+    const existing = await db.user.findUnique({
+      where: { email: opts.email.toLowerCase() },
+      select: { id: true },
+    });
+    if (existing && (await isLinkablePatient(existing.id))) {
+      const dup = await db.analysandRecord.findFirst({
+        where: {
+          psychoanalystId: opts.psychoanalystId,
+          linkedUserId: existing.id,
+        },
+        select: { id: true },
+      });
+      if (dup) {
+        return { error: "An analysand chart already exists for this patient.", status: 409 };
+      }
+      return { linkedUserId: existing.id };
+    }
+  }
+
+  return { linkedUserId: null };
+}
+
 export async function GET() {
   const ctx = await requirePsychoanalyst();
   if ("error" in ctx && ctx.error) return ctx.error;
@@ -51,17 +122,15 @@ export async function POST(req: NextRequest) {
   }
 
   const d = parsed.data;
-  let linkedUserId: string | null = null;
-  if (d.linkedUserId) {
-    const linkedUser = await db.user.findUnique({ where: { id: d.linkedUserId } });
-    if (!linkedUser) {
-      return NextResponse.json({ error: "User not found" }, { status: 400 });
-    }
-    linkedUserId = linkedUser.id;
-  } else if (d.email) {
-    const existing = await db.user.findUnique({ where: { email: d.email.toLowerCase() } });
-    if (existing) linkedUserId = existing.id;
+  const linkResult = await resolveLinkablePatientUserId({
+    psychoanalystId: psychoanalyst.id,
+    linkedUserId: d.linkedUserId,
+    email: d.email || undefined,
+  });
+  if ("error" in linkResult) {
+    return NextResponse.json({ error: linkResult.error }, { status: linkResult.status });
   }
+  const linkedUserId = linkResult.linkedUserId;
 
   const record = await db.analysandRecord.create({
     data: {

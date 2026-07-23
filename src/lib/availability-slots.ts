@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 import { generateTimeSlots } from "@/lib/scheduling";
 import type { ProviderType } from "@/lib/providers";
 
-export type SlotProviderType = ProviderType | "integrative";
+export type SlotProviderType = ProviderType;
 import {
   applyHealthPlanSlotFilter,
   getHealthPlanSchedulingRule,

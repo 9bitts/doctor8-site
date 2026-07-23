@@ -27,6 +27,17 @@ export async function getHealthPlanSchedulingRule(
     return { allowedWeekdays: row.allowedWeekdays, minLeadDays: row.minLeadDays };
   }
 
+  if (providerType === "integrative") {
+    const row = await db.integrativeTherapistHealthPlan.findFirst({
+      where: {
+        integrativeTherapistId: providerId,
+        healthPlan: { slug: healthPlanSlug },
+      },
+    });
+    if (!row) return null;
+    return { allowedWeekdays: row.allowedWeekdays, minLeadDays: row.minLeadDays };
+  }
+
   const row = await db.professionalHealthPlan.findFirst({
     where: {
       professionalId: providerId,

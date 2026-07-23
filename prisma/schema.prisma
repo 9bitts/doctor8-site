@@ -1174,6 +1174,8 @@ model IntegrativeTherapistProfile {
   consultationValidations ConsultationValidation[]
   prescriptions          Prescription[]
   prescriptionTemplates  PrescriptionTemplate[]
+  reviews                IntegrativeTherapistReview[]
+  slotAlerts             SlotAvailabilityAlert[]         @relation("IntegrativeTherapistSlotAlerts")
 
   @@index([userId])
 }
@@ -1867,6 +1869,8 @@ model SlotAvailabilityAlert {
   professional    ProfessionalProfile?  @relation("ProfessionalSlotAlerts", fields: [professionalId], references: [id], onDelete: Cascade)
   psychoanalystId String?
   psychoanalyst   PsychoanalystProfile? @relation("PsychoanalystSlotAlerts", fields: [psychoanalystId], references: [id], onDelete: Cascade)
+  integrativeTherapistId String?
+  integrativeTherapist   IntegrativeTherapistProfile? @relation("IntegrativeTherapistSlotAlerts", fields: [integrativeTherapistId], references: [id], onDelete: Cascade)
 
   email           String
   slug            String
@@ -1877,6 +1881,7 @@ model SlotAvailabilityAlert {
 
   @@unique([email, professionalId])
   @@unique([email, psychoanalystId])
+  @@unique([email, integrativeTherapistId])
   @@index([slug])
 }
 
@@ -1972,6 +1977,20 @@ model PsychoanalystReview {
 
   @@unique([patientUserId, psychoanalystId])
   @@index([psychoanalystId])
+}
+
+model IntegrativeTherapistReview {
+  id                     String                      @id @default(cuid())
+  patientUserId          String
+  integrativeTherapistId String
+  integrativeTherapist   IntegrativeTherapistProfile @relation(fields: [integrativeTherapistId], references: [id], onDelete: Cascade)
+  rating                 Int
+  comment                String?                     @db.Text
+  createdAt              DateTime                    @default(now())
+  updatedAt              DateTime                    @updatedAt
+
+  @@unique([patientUserId, integrativeTherapistId])
+  @@index([integrativeTherapistId])
 }
 
 // ─────────────────────────────────────────

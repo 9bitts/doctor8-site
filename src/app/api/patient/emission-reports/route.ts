@@ -48,6 +48,37 @@ async function assertRecentPrescriptionForPair(params: {
   return { ok: true };
 }
 
+async function assertRecentDocumentForPair(params: {
+  patientProfileId: string;
+  professionalUserId: string;
+  resourceId: string;
+  resourceType: "EXAM_REQUEST" | "DOCUMENT";
+}): Promise<{ ok: true } | { ok: false; status: number; error: string }> {
+  const pro = await db.professionalProfile.findUnique({
+    where: { userId: params.professionalUserId },
+    select: { id: true },
+  });
+  if (!pro) {
+    return { ok: false, status: 404, error: "Professional not found" };
+  }
+
+  const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  const doc = await db.medicalDocument.findFirst({
+    where: {
+      id: params.resourceId,
+      professionalId: pro.id,
+      patientId: params.patientProfileId,
+      createdAt: { gte: since },
+      ...(params.resourceType === "EXAM_REQUEST" ? { type: "EXAM_REQUEST" as const } : {}),
+    },
+    select: { id: true },
+  });
+  if (!doc) {
+    return { ok: false, status: 404, error: "Resource not found" };
+  }
+  return { ok: true };
+}
+
 export async function POST(req: NextRequest) {
   const ctx = await requirePatient();
   if (isApiError(ctx)) return ctx.error;
@@ -70,12 +101,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: check.error }, { status: check.status });
     }
   } else {
-    const pro = await db.professionalProfile.findUnique({
-      where: { userId: professionalUserId },
-      select: { id: true },
+    const check = await assertRecentDocumentForPair({
+      patientProfileId: ctx.patientProfileId,
+      professionalUserId,
+      resourceId,
+      resourceType,
     });
-    if (!pro) {
-      return NextResponse.json({ error: "Professional not found" }, { status: 404 });
+    if (!check.ok) {
+      return NextResponse.json({ error: check.error }, { status: check.status });
     }
   }
 

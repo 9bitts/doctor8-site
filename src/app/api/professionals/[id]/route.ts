@@ -2,7 +2,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { getUnifiedProvider, type ProviderType } from "@/lib/providers";
+import { getUnifiedProvider, PROVIDER_TYPE_ENUM, type ProviderType } from "@/lib/providers";
 
 export async function GET(
   req: NextRequest,
@@ -11,8 +11,11 @@ export async function GET(
   const session = await auth();
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const providerType = (req.nextUrl.searchParams.get("providerType") ||
-    "health") as ProviderType;
+  const raw = req.nextUrl.searchParams.get("providerType") || "health";
+  if (!(PROVIDER_TYPE_ENUM as readonly string[]).includes(raw)) {
+    return NextResponse.json({ error: "Invalid providerType" }, { status: 400 });
+  }
+  const providerType = raw as ProviderType;
 
   const provider = await getUnifiedProvider(params.id, providerType);
   if (!provider) {

@@ -3,8 +3,6 @@ import { isAcuraVolunteerProvider } from "@/lib/acura-volunteer";
 import { generateTimeSlots } from "@/lib/scheduling";
 import type { ProviderType } from "@/lib/providers";
 import type { Prisma } from "@prisma/client";
-
-export type SlotProviderType = ProviderType | "integrative";
 import {
   calendarDateInTimeZone,
   dayOfWeekForDateStr,
@@ -16,6 +14,8 @@ import {
   VolunteerScheduledNotApprovedError,
   type VolunteerScheduledProviderKind,
 } from "@/lib/volunteer-scheduled-approval";
+
+export type SlotProviderType = ProviderType;
 
 export { VolunteerScheduledNotApprovedError };
 

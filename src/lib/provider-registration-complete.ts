@@ -190,8 +190,13 @@ export async function getProviderRegistrationStatus(
     });
     if (!profile) return null;
 
-    const hasDocuments = await hasVerificationDocuments(userId);
-    const services = await getProviderServices(profile.id, "psychoanalyst", true);
+    const [hasDocuments, services, availCount] = await Promise.all([
+      hasVerificationDocuments(userId),
+      getProviderServices(profile.id, "psychoanalyst", true),
+      db.psychoanalystAvailabilitySlot.count({
+        where: { psychoanalystId: profile.id, isActive: true },
+      }),
+    ]);
     const professionalData = Boolean(
       profile.firstName?.trim() &&
         profile.lastName?.trim() &&
@@ -203,7 +208,7 @@ export async function getProviderRegistrationStatus(
     const checklist: RegistrationChecklist = {
       professionalData,
       verificationDocuments: hasDocuments,
-      careSettings: hasActiveConsultServices(services),
+      careSettings: hasActiveConsultServices(services) && availCount > 0,
     };
 
     return {
@@ -227,8 +232,13 @@ export async function getProviderRegistrationStatus(
     });
     if (!profile) return null;
 
-    const hasDocuments = await hasVerificationDocuments(userId);
-    const services = await getProviderServices(profile.id, "integrative_therapist", true);
+    const [hasDocuments, services, availCount] = await Promise.all([
+      hasVerificationDocuments(userId),
+      getProviderServices(profile.id, "integrative_therapist", true),
+      db.integrativeTherapistAvailabilitySlot.count({
+        where: { integrativeTherapistId: profile.id, isActive: true },
+      }),
+    ]);
     const professionalData = Boolean(
       profile.firstName?.trim() &&
         profile.lastName?.trim() &&
@@ -238,7 +248,7 @@ export async function getProviderRegistrationStatus(
     const checklist: RegistrationChecklist = {
       professionalData,
       verificationDocuments: hasDocuments,
-      careSettings: hasActiveConsultServices(services),
+      careSettings: hasActiveConsultServices(services) && availCount > 0,
     };
 
     return {

@@ -28,6 +28,7 @@ export function kindFromAppointment(
   specialty?: string | null,
 ): ProfessionalKind {
   if (providerType === "PSYCHOANALYST") return "PSYCHOANALYSIS";
+  if (providerType === "INTEGRATIVE_THERAPIST") return "INTEGRATIVE";
   return kindFromHealthSpecialty(specialty);
 }
 

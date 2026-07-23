@@ -32,22 +32,19 @@ export async function GET(req: NextRequest) {
 
   const enriched = await Promise.all(
     providers.map(async (pro) => {
-      const appointmentCount =
-        pro.providerType === "health"
-          ? await db.appointment.count({
-              where: {
-                professionalId: pro.id,
-                status: { in: ["CONFIRMED", "PENDING"] },
-                scheduledAt: { gte: new Date() },
-              },
-            })
-          : await db.appointment.count({
-              where: {
-                psychoanalystId: pro.id,
-                status: { in: ["CONFIRMED", "PENDING"] },
-                scheduledAt: { gte: new Date() },
-              },
-            });
+      const providerWhere =
+        pro.providerType === "psychoanalyst"
+          ? { psychoanalystId: pro.id }
+          : pro.providerType === "integrative"
+            ? { integrativeTherapistId: pro.id }
+            : { professionalId: pro.id };
+      const appointmentCount = await db.appointment.count({
+        where: {
+          ...providerWhere,
+          status: { in: ["CONFIRMED", "PENDING"] },
+          scheduledAt: { gte: new Date() },
+        },
+      });
 
       const jitSessionId =
         pro.providerType === "health" ? onlineByProId.get(pro.id) ?? null : null;

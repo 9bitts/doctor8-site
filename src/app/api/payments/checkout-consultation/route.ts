@@ -4,7 +4,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { stripe, getOrCreateStripeCustomer } from "@/lib/stripe";
-import { getUnifiedProvider, type ProviderType } from "@/lib/providers";
+import {
+  appointmentProviderFilter,
+  getUnifiedProvider,
+  PROVIDER_TYPE_ENUM,
+  providerIdMetadataKey,
+  resolveBookingProviderId,
+  type ProviderType,
+} from "@/lib/providers";
 import { assertPaidSlotBooking, VolunteerSlotBookingError } from "@/lib/volunteer-slot-booking";
 import {
   getConsultationPaymentMethodTypes,
@@ -25,7 +32,8 @@ import { z } from "zod";
 const schema = z.object({
   professionalId: z.string().optional(),
   psychoanalystId: z.string().optional(),
-  providerType: z.enum(["health", "psychoanalyst"]).default("health"),
+  integrativeTherapistId: z.string().optional(),
+  providerType: z.enum(PROVIDER_TYPE_ENUM).default("health"),
   scheduledAt: z.string().datetime(),
   type: z.enum(["TELECONSULT", "IN_PERSON"]),
   paymentMethod: z.enum(["card", "pix", "boleto", "all"]).default("all"),
@@ -49,6 +57,13 @@ async function getProviderUserRegion(
 ): Promise<string | null> {
   if (providerType === "psychoanalyst") {
     const row = await db.psychoanalystProfile.findUnique({
+      where: { id: providerId },
+      select: { user: { select: { region: true } } },
+    });
+    return row?.user?.region ?? null;
+  }
+  if (providerType === "integrative") {
+    const row = await db.integrativeTherapistProfile.findUnique({
       where: { id: providerId },
       select: { user: { select: { region: true } } },
     });
@@ -80,10 +95,12 @@ export async function POST(req: NextRequest) {
   }
 
   const { scheduledAt, type, providerType, paymentMethod } = parsed.data;
-  const providerId =
-    providerType === "psychoanalyst"
-      ? parsed.data.psychoanalystId || parsed.data.professionalId
-      : parsed.data.professionalId || parsed.data.psychoanalystId;
+  const providerId = resolveBookingProviderId({
+    providerType: providerType as ProviderType,
+    professionalId: parsed.data.professionalId,
+    psychoanalystId: parsed.data.psychoanalystId,
+    integrativeTherapistId: parsed.data.integrativeTherapistId,
+  });
 
   if (!providerId) {
     return NextResponse.json({ error: "Provider id required" }, { status: 400 });
@@ -144,27 +161,19 @@ export async function POST(req: NextRequest) {
       where: {
         id: parsed.data.serviceId,
         isActive: true,
-        ...(providerType === "psychoanalyst"
-          ? { psychoanalystId: providerId }
-          : { professionalId: providerId }),
+        ...appointmentProviderFilter(providerType as ProviderType, providerId),
       },
       select: { priceCents: true, currency: true, isReturnService: true },
     });
 
     if (svc?.isReturnService) {
       const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-      const providerFilter =
-        providerType === "psychoanalyst"
-          ? { psychoanalystId: providerId }
-          : (providerType as string) === "integrative"
-            ? { integrativeTherapistId: providerId }
-            : { professionalId: providerId };
       const priorCompleted = await db.appointment.findFirst({
         where: {
           patient: { userId: session.user.id },
           status: "COMPLETED",
           scheduledAt: { gte: thirtyDaysAgo },
-          ...providerFilter,
+          ...appointmentProviderFilter(providerType as ProviderType, providerId),
         },
         select: { id: true },
       });
@@ -207,11 +216,8 @@ export async function POST(req: NextRequest) {
   );
 
   const providerName = `${provider.firstName} ${provider.lastName}`;
-  const metaKey = providerType === "psychoanalyst" ? "psychoanalystId" : "professionalId";
-  const durationMins =
-    providerType === "psychoanalyst" && "sessionDurationMins" in provider
-      ? String((provider as { sessionDurationMins: number }).sessionDurationMins)
-      : "30";
+  const metaKey = providerIdMetadataKey(providerType as ProviderType);
+  const durationMins = String(provider.sessionDurationMins || 30);
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://app.doctor8.org";
   const methodTypes = getConsultationPaymentMethodTypes(

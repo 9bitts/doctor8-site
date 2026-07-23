@@ -10,6 +10,11 @@ import {
   assertVolunteerSlotBooking,
   VolunteerSlotBookingError,
 } from "@/lib/volunteer-slot-booking";
+import {
+  PROVIDER_TYPE_ENUM,
+  resolveBookingProviderId,
+  type ProviderType,
+} from "@/lib/providers";
 import { z } from "zod";
 
 const VOLUNTEER_ERROR_MESSAGES: Record<string, string> = {
@@ -23,7 +28,8 @@ const VOLUNTEER_ERROR_MESSAGES: Record<string, string> = {
 const schema = z.object({
   professionalId: z.string().optional(),
   psychoanalystId: z.string().optional(),
-  providerType: z.enum(["health", "psychoanalyst"]).default("health"),
+  integrativeTherapistId: z.string().optional(),
+  providerType: z.enum(PROVIDER_TYPE_ENUM).default("health"),
   scheduledAt: z.string().datetime(),
   type: z.enum(["TELECONSULT", "IN_PERSON"]),
   acceptedCancellationPolicy: z.boolean(),
@@ -54,17 +60,19 @@ export async function POST(req: NextRequest) {
   }
 
   const { scheduledAt, type, providerType } = parsed.data;
-  const providerId =
-    providerType === "psychoanalyst"
-      ? parsed.data.psychoanalystId || parsed.data.professionalId
-      : parsed.data.professionalId || parsed.data.psychoanalystId;
+  const providerId = resolveBookingProviderId({
+    providerType: providerType as ProviderType,
+    professionalId: parsed.data.professionalId,
+    psychoanalystId: parsed.data.psychoanalystId,
+    integrativeTherapistId: parsed.data.integrativeTherapistId,
+  });
 
   if (!providerId) {
     return NextResponse.json({ error: { general: ["Provider not specified."] } }, { status: 400 });
   }
 
   try {
-    await assertVolunteerSlotBooking(providerId, providerType, scheduledAt);
+    await assertVolunteerSlotBooking(providerId, providerType as ProviderType, scheduledAt);
   } catch (e) {
     if (e instanceof VolunteerSlotBookingError) {
       const msg = VOLUNTEER_ERROR_MESSAGES[e.code] || "Invalid volunteer slot.";
@@ -76,7 +84,9 @@ export async function POST(req: NextRequest) {
   const verified =
     providerType === "psychoanalyst"
       ? await db.psychoanalystProfile.findUnique({ where: { id: providerId, verified: true } })
-      : await db.professionalProfile.findUnique({ where: { id: providerId, verified: true } });
+      : providerType === "integrative"
+        ? await db.integrativeTherapistProfile.findUnique({ where: { id: providerId, verified: true } })
+        : await db.professionalProfile.findUnique({ where: { id: providerId, verified: true } });
 
   if (!verified) {
     return NextResponse.json({ error: { general: ["Professional not found."] } }, { status: 404 });
@@ -85,7 +95,7 @@ export async function POST(req: NextRequest) {
   try {
     const result = await fulfillVolunteerConsultation({
       userId: session.user.id,
-      providerType,
+      providerType: providerType as ProviderType,
       providerId,
       scheduledAt,
       type,

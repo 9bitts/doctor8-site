@@ -21,6 +21,7 @@ import {
 } from "@/lib/appointment-slots";
 import { getProfessionLabel, specialtyMatchesSearch, PSYCHOANALYSIS_SPECIALTY } from "@/lib/professions";
 import { getProfessionInfo, formatPatientProviderDisplayName } from "@/lib/profession-label";
+import { bookingProviderIds, type ProviderType } from "@/lib/providers";
 import { useUserTimeZone } from "@/hooks/useUserTimeZone";
 import {
   formatShortDate,
@@ -52,7 +53,7 @@ type Step = "browse" | "slots" | "payment" | "confirmed";
 
 interface Professional {
   id: string;
-  providerType?: "health" | "psychoanalyst";
+  providerType?: ProviderType;
   firstName: string;
   lastName: string;
   specialty: string;
@@ -87,7 +88,8 @@ interface Appointment {
   bookingSource?: string | null;
   professionalId?: string;
   psychoanalystId?: string;
-  providerType?: "health" | "psychoanalyst";
+  integrativeTherapistId?: string;
+  providerType?: ProviderType;
   patientConfirmedAt?: string | null;
   cancelledAt?: string | null;
   cancelReason?: string | null;
@@ -125,7 +127,7 @@ export default function AppointmentsPage() {
   function matchesSpecialtyFilter(filter: string, pro: Professional): boolean {
     if (filter === "All") return true;
     if (filter === PSYCHOANALYSIS_SPECIALTY) return pro.providerType === "psychoanalyst" || pro.specialty === PSYCHOANALYSIS_SPECIALTY;
-    if (pro.providerType === "psychoanalyst") return false;
+    if (pro.providerType === "psychoanalyst" || pro.providerType === "integrative") return false;
     if (pro.specialty === filter) return true;
     const typeKey = getProfessionInfo(pro.specialty).typeKey;
     if (filter === "Psychology") return typeKey === "psychologist";
@@ -190,12 +192,33 @@ export default function AppointmentsPage() {
 
   const [reviewModal, setReviewModal] = useState<{
     providerId: string;
-    providerType: "health" | "psychoanalyst";
+    providerType: ProviderType;
     providerName?: string;
   } | null>(null);
   const [reviewedProIds, setReviewedProIds] = useState<Set<string>>(new Set());
   const [reviewedPaIds, setReviewedPaIds] = useState<Set<string>>(new Set());
+  const [reviewedItIds, setReviewedItIds] = useState<Set<string>>(new Set());
   const [userId, setUserId] = useState<string | null>(null);
+
+  function resolveAppointmentProvider(apt: Appointment): {
+    providerType: ProviderType;
+    providerId: string | undefined;
+  } {
+    const providerType: ProviderType =
+      apt.providerType ??
+      (apt.integrativeTherapistId
+        ? "integrative"
+        : apt.psychoanalystId
+          ? "psychoanalyst"
+          : "health");
+    const providerId =
+      providerType === "psychoanalyst"
+        ? apt.psychoanalystId || apt.professionalId
+        : providerType === "integrative"
+          ? apt.integrativeTherapistId || apt.professionalId
+          : apt.professionalId || apt.psychoanalystId || apt.integrativeTherapistId;
+    return { providerType, providerId };
+  }
 
   const [bookingSource, setBookingSource] = useState<
     "patient_panel" | "public_profile" | "public_search" | "public_embed" | "referral"
@@ -206,7 +229,8 @@ export default function AppointmentsPage() {
   const [healthPlanSlug, setHealthPlanSlug] = useState("particular");
   const [visitReason, setVisitReason] = useState("");
 
-  useEffect(() => { fetchProfessionals(); fetchAppointments(); fetchCancelledAppointments(); fetchPastAppointments(); fetchReviewStatus(); }, []);
+  useEffect(() => { fetchAppointments(); fetchCancelledAppointments(); fetchPastAppointments(); fetchReviewStatus(); }, []);
+  useEffect(() => { fetchProfessionals(); }, [type]);
   useEffect(() => {
     fetch("/api/auth/session")
       .then((r) => r.json())
@@ -363,7 +387,7 @@ export default function AppointmentsPage() {
     const params = new URLSearchParams(window.location.search);
     const reviewPro = params.get("reviewPro");
     if (!reviewPro) return;
-    const providerType = (params.get("providerType") || "health") as "health" | "psychoanalyst";
+    const providerType = (params.get("providerType") || "health") as ProviderType;
     const pro = professionals.find((p) => p.id === reviewPro && (p.providerType || "health") === providerType);
     setReviewModal({
       providerId: reviewPro,
@@ -441,27 +465,20 @@ export default function AppointmentsPage() {
       const d = await res.json();
       setReviewedProIds(new Set(d.professionalIds || []));
       setReviewedPaIds(new Set(d.psychoanalystIds || []));
+      setReviewedItIds(new Set(d.integrativeTherapistIds || []));
     } catch { /* silent */ }
   }
 
   function hasReviewForAppointment(apt: Appointment): boolean {
-    const providerType = apt.providerType ?? (apt.psychoanalystId ? "psychoanalyst" : "health");
-    const providerId =
-      providerType === "psychoanalyst"
-        ? apt.psychoanalystId || apt.professionalId
-        : apt.professionalId || apt.psychoanalystId;
+    const { providerType, providerId } = resolveAppointmentProvider(apt);
     if (!providerId) return true;
-    return providerType === "psychoanalyst"
-      ? reviewedPaIds.has(providerId)
-      : reviewedProIds.has(providerId);
+    if (providerType === "psychoanalyst") return reviewedPaIds.has(providerId);
+    if (providerType === "integrative") return reviewedItIds.has(providerId);
+    return reviewedProIds.has(providerId);
   }
 
   function openReviewForAppointment(apt: Appointment) {
-    const providerType = apt.providerType ?? (apt.psychoanalystId ? "psychoanalyst" : "health");
-    const providerId =
-      providerType === "psychoanalyst"
-        ? apt.psychoanalystId || apt.professionalId
-        : apt.professionalId || apt.psychoanalystId;
+    const { providerType, providerId } = resolveAppointmentProvider(apt);
     if (!providerId) return;
     setReviewModal({
       providerId,
@@ -477,8 +494,7 @@ export default function AppointmentsPage() {
   }
 
   async function rebookFromPast(apt: Appointment) {
-    const proId = apt.professionalId || apt.psychoanalystId;
-    const providerType = apt.providerType || (apt.psychoanalystId ? "psychoanalyst" : "health");
+    const { providerType, providerId: proId } = resolveAppointmentProvider(apt);
     if (!proId) return;
 
     let pro = professionals.find(
@@ -624,8 +640,7 @@ export default function AppointmentsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           providerType: selectedPro.providerType || "health",
-          professionalId: selectedPro.providerType === "health" ? selectedPro.id : undefined,
-          psychoanalystId: selectedPro.providerType === "psychoanalyst" ? selectedPro.id : undefined,
+          ...bookingProviderIds((selectedPro.providerType || "health") as ProviderType, selectedPro.id),
           scheduledAt: selectedSlot,
           type,
           paymentMethod: method,
@@ -670,8 +685,7 @@ export default function AppointmentsPage() {
         headers: { "Content-Type": "application/json" },
         body:    JSON.stringify({
           providerType: selectedPro.providerType || "health",
-          professionalId: selectedPro.providerType === "health" ? selectedPro.id : undefined,
-          psychoanalystId: selectedPro.providerType === "psychoanalyst" ? selectedPro.id : undefined,
+          ...bookingProviderIds((selectedPro.providerType || "health") as ProviderType, selectedPro.id),
           scheduledAt: selectedSlot,
           type,
           paymentMethod: "card",
@@ -708,8 +722,7 @@ export default function AppointmentsPage() {
           headers: { "Content-Type": "application/json" },
           body:    JSON.stringify({
             providerType:             selectedPro.providerType || "health",
-            professionalId:           selectedPro.providerType === "health" ? selectedPro.id : undefined,
-            psychoanalystId:          selectedPro.providerType === "psychoanalyst" ? selectedPro.id : undefined,
+            ...bookingProviderIds((selectedPro.providerType || "health") as ProviderType, selectedPro.id),
             scheduledAt:                selectedSlot,
             type,
             stripePaymentIntentId:      paymentIntent.id,
@@ -801,8 +814,7 @@ export default function AppointmentsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           providerType: selectedPro.providerType || "health",
-          professionalId: selectedPro.providerType === "health" ? selectedPro.id : undefined,
-          psychoanalystId: selectedPro.providerType === "psychoanalyst" ? selectedPro.id : undefined,
+          ...bookingProviderIds((selectedPro.providerType || "health") as ProviderType, selectedPro.id),
           scheduledAt: selectedSlot,
           type,
           acceptedCancellationPolicy: acceptedPolicy,
@@ -890,8 +902,7 @@ export default function AppointmentsPage() {
     setRescheduleSlots([]);
     setRescheduleDay(null);
     setRescheduleSlot("");
-    const proId = (apt as any).professionalId || (apt as any).psychoanalystId;
-    const providerType = (apt as any).providerType === "psychoanalyst" ? "psychoanalyst" : "health";
+    const { providerType, providerId: proId } = resolveAppointmentProvider(apt);
     if (!proId) { setRescheduleSlotsError(true); return; }
     setRescheduleSlotsLoading(true);
     try {
@@ -1155,7 +1166,7 @@ export default function AppointmentsPage() {
                       apt.professional?.firstName ?? "",
                       apt.professional?.lastName ?? "",
                       apt.professional?.specialty ?? "",
-                      apt.providerType ?? (apt.psychoanalystId ? "psychoanalyst" : "health"),
+                      resolveAppointmentProvider(apt).providerType,
                     )}
                   </p>
                   <p className="text-xs text-slate-500">

@@ -3,19 +3,22 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import ReviewPromptModal from "@/components/ReviewPromptModal";
+import type { ProviderType } from "@/lib/providers";
 
 type PastAppt = {
   id: string;
   scheduledAt: string;
   professionalId?: string;
   psychoanalystId?: string;
-  providerType?: "health" | "psychoanalyst";
+  integrativeTherapistId?: string;
+  providerType?: ProviderType;
   professional: { firstName: string; lastName: string };
 };
 
 type ReviewStatus = {
   professionalIds: string[];
   psychoanalystIds: string[];
+  integrativeTherapistIds?: string[];
 };
 
 const RECENT_MS = 48 * 60 * 60 * 1000;
@@ -25,7 +28,7 @@ export default function PatientPostConsultReview() {
   const userId = session?.user?.id;
   const [modal, setModal] = useState<{
     providerId: string;
-    providerType: "health" | "psychoanalyst";
+    providerType: ProviderType;
     providerName: string;
   } | null>(null);
 
@@ -46,23 +49,34 @@ export default function PatientPostConsultReview() {
         const reviewData: ReviewStatus = await reviewRes.json();
         const reviewedPro = new Set(reviewData.professionalIds || []);
         const reviewedPa = new Set(reviewData.psychoanalystIds || []);
+        const reviewedIt = new Set(reviewData.integrativeTherapistIds || []);
 
         const recent = ((apptData.appointments || []) as PastAppt[])
           .filter((a) => Date.now() - new Date(a.scheduledAt).getTime() <= RECENT_MS)
           .sort((a, b) => new Date(b.scheduledAt).getTime() - new Date(a.scheduledAt).getTime());
 
         for (const apt of recent) {
-          const providerType = apt.providerType ?? (apt.psychoanalystId ? "psychoanalyst" : "health");
+          const providerType: ProviderType =
+            apt.providerType ??
+            (apt.integrativeTherapistId
+              ? "integrative"
+              : apt.psychoanalystId
+                ? "psychoanalyst"
+                : "health");
           const providerId =
             providerType === "psychoanalyst"
               ? apt.psychoanalystId || apt.professionalId
-              : apt.professionalId || apt.psychoanalystId;
+              : providerType === "integrative"
+                ? apt.integrativeTherapistId || apt.professionalId
+                : apt.professionalId || apt.psychoanalystId || apt.integrativeTherapistId;
           if (!providerId) continue;
 
           const alreadyReviewed =
             providerType === "psychoanalyst"
               ? reviewedPa.has(providerId)
-              : reviewedPro.has(providerId);
+              : providerType === "integrative"
+                ? reviewedIt.has(providerId)
+                : reviewedPro.has(providerId);
           if (alreadyReviewed) continue;
 
           const guardKey = `doctor8.reviewPrompted.${userId}.${apt.id}`;

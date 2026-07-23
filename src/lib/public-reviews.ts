@@ -1,7 +1,6 @@
 // Public reviews for live provider profiles (anonymized patient names).
 
 import { db } from "@/lib/db";
-import { safeDecrypt } from "@/lib/psychoanalyst-api";
 import type { ProviderType } from "@/lib/providers";
 
 export type PublicReviewDto = {
@@ -18,6 +17,21 @@ function patientLabel(firstName: string, lastName: string): string {
   return initial ? `${f} ${initial}.` : f || "Paciente";
 }
 
+async function labelsForPatientUserIds(userIds: string[]): Promise<Map<string, string>> {
+  const patientUsers = await db.user.findMany({
+    where: { id: { in: userIds } },
+    include: { patientProfile: { select: { firstName: true, lastName: true } } },
+  });
+  return new Map(
+    patientUsers.map((u) => [
+      u.id,
+      u.patientProfile
+        ? patientLabel(u.patientProfile.firstName, u.patientProfile.lastName)
+        : "Paciente",
+    ]),
+  );
+}
+
 export async function getPublicReviewsForSlug(slug: string): Promise<{
   reviews: PublicReviewDto[];
   avg: number | null;
@@ -25,12 +39,21 @@ export async function getPublicReviewsForSlug(slug: string): Promise<{
 } | null> {
   const card = await db.virtualCard.findUnique({
     where: { slug, isPublic: true },
-    select: { professionalId: true, psychoanalystId: true },
+    select: {
+      professionalId: true,
+      psychoanalystId: true,
+      integrativeTherapistId: true,
+    },
   });
   if (!card) return null;
 
-  const providerType: ProviderType = card.professionalId ? "health" : "psychoanalyst";
-  const providerId = card.professionalId ?? card.psychoanalystId;
+  const providerType: ProviderType = card.professionalId
+    ? "health"
+    : card.psychoanalystId
+      ? "psychoanalyst"
+      : "integrative";
+  const providerId =
+    card.professionalId ?? card.psychoanalystId ?? card.integrativeTherapistId;
   if (!providerId) return null;
 
   return getPublicReviews(providerId, providerType);
@@ -47,22 +70,35 @@ export async function getPublicReviews(
       orderBy: { createdAt: "desc" },
       take: limit,
     });
-
-    const patientUsers = await db.user.findMany({
-      where: { id: { in: rows.map((r) => r.patientUserId) } },
-      include: { patientProfile: { select: { firstName: true, lastName: true } } },
-    });
-    const patientMap = new Map(
-      patientUsers.map((u) => [
-        u.id,
-        u.patientProfile
-          ? patientLabel(u.patientProfile.firstName, u.patientProfile.lastName)
-          : "Paciente",
-      ])
-    );
-
+    const patientMap = await labelsForPatientUserIds(rows.map((r) => r.patientUserId));
     const agg = await db.psychoanalystReview.aggregate({
       where: { psychoanalystId: providerId },
+      _avg: { rating: true },
+      _count: { rating: true },
+    });
+
+    return {
+      reviews: rows.map((r) => ({
+        id: r.id,
+        rating: r.rating,
+        comment: r.comment,
+        patientLabel: patientMap.get(r.patientUserId) ?? "Paciente",
+        createdAt: r.createdAt.toISOString(),
+      })),
+      avg: agg._avg.rating ? Math.round(agg._avg.rating * 10) / 10 : null,
+      count: agg._count.rating,
+    };
+  }
+
+  if (providerType === "integrative") {
+    const rows = await db.integrativeTherapistReview.findMany({
+      where: { integrativeTherapistId: providerId },
+      orderBy: { createdAt: "desc" },
+      take: limit,
+    });
+    const patientMap = await labelsForPatientUserIds(rows.map((r) => r.patientUserId));
+    const agg = await db.integrativeTherapistReview.aggregate({
+      where: { integrativeTherapistId: providerId },
       _avg: { rating: true },
       _count: { rating: true },
     });

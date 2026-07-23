@@ -77,6 +77,12 @@ export async function POST(req: NextRequest) {
           lastName: true,
         },
       },
+      integrativeTherapist: {
+        select: {
+          firstName: true,
+          lastName: true,
+        },
+      },
     },
   });
 
@@ -109,7 +115,10 @@ export async function POST(req: NextRequest) {
     });
     if (!patientUser) return NextResponse.json({ skipped: true, reason: "Patient user not found" });
 
-    const providerId = appointment.professionalId ?? appointment.psychoanalystId;
+    const providerId =
+      appointment.professionalId ??
+      appointment.psychoanalystId ??
+      appointment.integrativeTherapistId;
     if (!providerId) return NextResponse.json({ skipped: true, reason: "No provider" });
 
     const existingReview = appointment.professionalId
@@ -121,14 +130,23 @@ export async function POST(req: NextRequest) {
             },
           },
         })
-      : await db.psychoanalystReview.findUnique({
-          where: {
-            patientUserId_psychoanalystId: {
-              patientUserId: patientUser.id,
-              psychoanalystId: appointment.psychoanalystId!,
+      : appointment.psychoanalystId
+        ? await db.psychoanalystReview.findUnique({
+            where: {
+              patientUserId_psychoanalystId: {
+                patientUserId: patientUser.id,
+                psychoanalystId: appointment.psychoanalystId,
+              },
             },
-          },
-        });
+          })
+        : await db.integrativeTherapistReview.findUnique({
+            where: {
+              patientUserId_integrativeTherapistId: {
+                patientUserId: patientUser.id,
+                integrativeTherapistId: appointment.integrativeTherapistId!,
+              },
+            },
+          });
 
     if (existingReview) {
       await db.appointment.update({
@@ -155,9 +173,15 @@ export async function POST(req: NextRequest) {
       ? `${appointment.professional.firstName} ${appointment.professional.lastName}`
       : appointment.psychoanalyst
         ? `${safeDecrypt(appointment.psychoanalyst.firstName)} ${safeDecrypt(appointment.psychoanalyst.lastName)}`
-        : "Profissional";
+        : appointment.integrativeTherapist
+          ? `${appointment.integrativeTherapist.firstName} ${appointment.integrativeTherapist.lastName}`
+          : "Profissional";
 
-    const providerType = appointment.professionalId ? "health" : "psychoanalyst";
+    const providerType = appointment.professionalId
+      ? "health"
+      : appointment.psychoanalystId
+        ? "psychoanalyst"
+        : "integrative";
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://doctor8.app";
     const reviewUrl = `${appUrl}/patient/appointments?reviewPro=${providerId}&providerType=${providerType}`;
 
@@ -246,7 +270,9 @@ export async function POST(req: NextRequest) {
     ? `${appointment.professional.firstName} ${appointment.professional.lastName}`
     : appointment.psychoanalyst
       ? `${safeDecrypt(appointment.psychoanalyst.firstName)} ${safeDecrypt(appointment.psychoanalyst.lastName)}`
-      : "Provider";
+      : appointment.integrativeTherapist
+        ? `${appointment.integrativeTherapist.firstName} ${appointment.integrativeTherapist.lastName}`
+        : "Provider";
   const scheduledAt = new Date(appointment.scheduledAt);
   const hoursUntil = Math.round((scheduledAt.getTime() - Date.now()) / 3600000);
   const waLang = resolveWhatsAppLang(patientUser.language);

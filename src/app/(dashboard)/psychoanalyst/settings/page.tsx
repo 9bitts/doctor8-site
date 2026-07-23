@@ -26,6 +26,7 @@ export default function PsychoanalystSettingsPage() {
   const fileRef = useRef<HTMLInputElement>(null);
   const readyRef = useRef(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const saveGenRef = useRef(0);
   const [loading, setLoading] = useState(true);
   const [autoSaving, setAutoSaving] = useState(false);
   const [autoSaved, setAutoSaved] = useState(false);
@@ -133,6 +134,7 @@ export default function PsychoanalystSettingsPage() {
 
   const persistProfile = useCallback(async () => {
     if (!firstName || !lastName || !trainingInstitution) return;
+    const gen = ++saveGenRef.current;
     setAutoSaving(true);
     setError("");
     try {
@@ -157,6 +159,7 @@ export default function PsychoanalystSettingsPage() {
           clinicCountry,
         }),
       });
+      if (gen !== saveGenRef.current) return;
       if (!res.ok) {
         setError(t("pa.settings.errSave"));
         return;
@@ -165,7 +168,7 @@ export default function PsychoanalystSettingsPage() {
       setTimeout(() => setAutoSaved(false), 3000);
       await refreshRegistration();
     } finally {
-      setAutoSaving(false);
+      if (gen === saveGenRef.current) setAutoSaving(false);
     }
   }, [
     firstName, lastName, avatarUrl, trainingInstitution, yearsOfPractice,
