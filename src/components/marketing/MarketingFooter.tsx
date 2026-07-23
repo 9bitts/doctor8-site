@@ -3,6 +3,10 @@ import Link from "next/link";
 const AUDIENCE_LINKS = [
   { label: "Mapa do ecossistema", href: "/marketing" },
   { label: "Estratégias por público", href: "/marketing/estrategias" },
+  { label: "Pressão alta", href: "/hipertensao" },
+  { label: "Diabetes", href: "/diabetes" },
+  { label: "Ansiedade", href: "/ansiedade" },
+  { label: "Depressão", href: "/depressao" },
   { label: "Empresas", href: "/empresas" },
   { label: "Pacientes", href: "/pacientes" },
   { label: "Especialistas", href: "/especialistas" },

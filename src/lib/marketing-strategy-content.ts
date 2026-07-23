@@ -140,8 +140,8 @@ export const MARKETING_STRATEGIES: MarketingStrategyPage[] = [
       "Médicos e psicólogos disponíveis na especialidade/cidade — senão a aquisição queima.",
     ctas: {
       primary: { label: "Ver landing pacientes", href: "/pacientes" },
-      secondary: { label: "Agendar consulta", href: "/" },
-      product: { label: "Cadastrar paciente", href: "/register" },
+      secondary: { label: "Landing pressão alta", href: "/hipertensao" },
+      product: { label: "Landing depressão", href: "/depressao" },
     },
     whatsappMessage:
       "Olá, vi a estratégia Paciente em /marketing/estrategias/paciente e quero alinhar a apresentação para esse público.",

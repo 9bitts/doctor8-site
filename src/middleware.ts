@@ -136,6 +136,10 @@ function isPublicRoute(pathname: string): boolean {
   if (pathname === "/laboratorios") return true;
   if (pathname === "/laboratorios/buscar") return true;
   if (pathname === "/distribuidores") return true;
+  if (pathname === "/hipertensao") return true;
+  if (pathname === "/diabetes") return true;
+  if (pathname === "/ansiedade") return true;
+  if (pathname === "/depressao") return true;
   if (pathname === "/marketing" || pathname.startsWith("/marketing/")) return true;
   return PUBLIC_ROUTES.some((route) => {
     // "/" must be exact — every path starts with "/"
@@ -861,6 +865,6 @@ export default auth((req) => {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|sw.js|icons/|branding/|manifest.webmanifest|api/webhooks).*)",
+    "/((?!_next/static|_next/image|favicon.ico|sw.js|icons/|branding/|marketing/|manifest.webmanifest|api/webhooks).*)",
   ],
 };
