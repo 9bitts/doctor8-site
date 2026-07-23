@@ -7,8 +7,9 @@ import { Menu, X } from "lucide-react";
 import { BrandLogoLink } from "@/components/brand/BrandLogo";
 import type { AudienceId } from "@/lib/audience-landing-content";
 
-const NAV_ITEMS: { id: AudienceId | "mapa"; label: string; href: string }[] = [
+const NAV_ITEMS: { id: string; label: string; href: string }[] = [
   { id: "mapa", label: "Mapa", href: "/marketing" },
+  { id: "estrategias", label: "Estratégias", href: "/marketing/estrategias" },
   { id: "empresas", label: "Empresas", href: "/empresas" },
   { id: "pacientes", label: "Pacientes", href: "/pacientes" },
   { id: "especialistas", label: "Especialistas", href: "/especialistas" },
@@ -18,6 +19,9 @@ const NAV_ITEMS: { id: AudienceId | "mapa"; label: string; href: string }[] = [
 function isActive(pathname: string, href: string): boolean {
   if (href === "/empresas") {
     return pathname === "/empresas" || (pathname.startsWith("/empresas/") && !pathname.startsWith("/empresas/colaborador"));
+  }
+  if (href === "/marketing") {
+    return pathname === "/marketing";
   }
   return pathname === href || pathname.startsWith(`${href}/`);
 }
@@ -37,7 +41,6 @@ export default function MarketingNav({
 }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
-  const mapaActive = pathname === "/marketing";
 
   useEffect(() => {
     setOpen(false);
@@ -53,15 +56,17 @@ export default function MarketingNav({
             {NAV_ITEMS.map((item) => {
               const activeItem =
                 item.id === "mapa"
-                  ? mapaActive
-                  : active
-                    ? item.id === active
-                    : isActive(pathname, item.href);
+                  ? pathname === "/marketing"
+                  : item.id === "estrategias"
+                    ? pathname.startsWith("/marketing/estrategias")
+                    : active && item.id === active
+                      ? true
+                      : isActive(pathname, item.href);
               return (
                 <Link
                   key={item.id}
                   href={item.href}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  className={`px-3 lg:px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                     activeItem ? NAV_ACTIVE : NAV_IDLE
                   }`}
                 >
@@ -101,10 +106,12 @@ export default function MarketingNav({
             {NAV_ITEMS.map((item) => {
               const activeItem =
                 item.id === "mapa"
-                  ? mapaActive
-                  : active
-                    ? item.id === active
-                    : isActive(pathname, item.href);
+                  ? pathname === "/marketing"
+                  : item.id === "estrategias"
+                    ? pathname.startsWith("/marketing/estrategias")
+                    : active && item.id === active
+                      ? true
+                      : isActive(pathname, item.href);
               return (
                 <Link
                   key={item.id}

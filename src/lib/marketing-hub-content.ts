@@ -40,6 +40,9 @@ export type MarketingAudienceCard = {
   landingHref: string;
   loginHref: string;
   registerHref: string;
+  /** Playbook de distribuição / o que fazer para este público */
+  strategyHref: string;
+  strategyLabel?: string;
   whatsappMessage: string;
   bullets: string[];
 };
@@ -49,6 +52,7 @@ export type MarketingAccessRow = {
   landing: { label: string; href: string };
   login: { label: string; href: string };
   register: { label: string; href: string };
+  strategy?: { label: string; href: string };
 };
 
 export type MarketingProduct = {
@@ -95,6 +99,8 @@ export const MARKETING_AUDIENCES: MarketingAudienceCard[] = [
     landingHref: "/empresas",
     loginHref: EMPLOYER_LOGIN,
     registerHref: EMPLOYER_REGISTER,
+    strategyHref: "/marketing/estrategias/empresa",
+    strategyLabel: "Estratégia empresa",
     whatsappMessage:
       "Olá, vi o mapa em /marketing. Sou empresa (RH/SST) e quero entender como começar com a Doctor8.",
     bullets: [
@@ -112,6 +118,8 @@ export const MARKETING_AUDIENCES: MarketingAudienceCard[] = [
     landingHref: "/especialistas",
     loginHref: "/login",
     registerHref: PROFESSIONAL_REGISTER,
+    strategyHref: "/marketing/estrategias/medico",
+    strategyLabel: "Estratégia médico",
     whatsappMessage:
       "Olá, vi o mapa em /marketing. Sou profissional de saúde e quero conhecer a Doctor8.",
     bullets: [
@@ -129,6 +137,8 @@ export const MARKETING_AUDIENCES: MarketingAudienceCard[] = [
     landingHref: "/parceiros",
     loginHref: "/login?portal=organization",
     registerHref: ORGANIZATION_REGISTER,
+    strategyHref: "/marketing/estrategias/clinica",
+    strategyLabel: "Estratégia clínica",
     whatsappMessage:
       "Olá, vi o mapa em /marketing. Represento uma clínica/organização e quero uma conversa comercial.",
     bullets: [
@@ -146,6 +156,8 @@ export const MARKETING_AUDIENCES: MarketingAudienceCard[] = [
     landingHref: "/farmacias",
     loginHref: PHARMACY_STORE_LOGIN,
     registerHref: PHARMACY_STORE_REGISTER,
+    strategyHref: "/marketing/estrategias/farmacia",
+    strategyLabel: "Estratégia farmácia",
     whatsappMessage:
       "Olá, vi o mapa em /marketing. Sou farmácia e quero cadastrar minha drogaria na rede Doctor8.",
     bullets: [
@@ -163,6 +175,8 @@ export const MARKETING_AUDIENCES: MarketingAudienceCard[] = [
     landingHref: "/laboratorios",
     loginHref: LABORATORY_LOGIN,
     registerHref: LABORATORY_REGISTER,
+    strategyHref: "/marketing/estrategias/laboratorio",
+    strategyLabel: "Estratégia laboratório",
     whatsappMessage:
       "Olá, vi o mapa em /marketing. Sou laboratório e quero publicar exames na Doctor8.",
     bullets: ["Catálogo de exames", "Preços e endereço", "Onboarding gratuito"],
@@ -176,6 +190,8 @@ export const MARKETING_AUDIENCES: MarketingAudienceCard[] = [
     landingHref: "/distribuidores",
     loginHref: DISTRIBUTOR_LOGIN,
     registerHref: DISTRIBUTOR_REGISTER,
+    strategyHref: "/marketing/estrategias/verticais",
+    strategyLabel: "Estratégia verticais",
     whatsappMessage:
       "Olá, vi o mapa em /marketing. Sou distribuidor e quero entender o portal Doctor8.",
     bullets: [
@@ -193,6 +209,8 @@ export const MARKETING_AUDIENCES: MarketingAudienceCard[] = [
     landingHref: "/pacientes",
     loginHref: "/login",
     registerHref: "/register",
+    strategyHref: "/marketing/estrategias/paciente",
+    strategyLabel: "Estratégia paciente",
     whatsappMessage:
       "Olá, vi o mapa em /marketing. Sou paciente e preciso de ajuda para começar.",
     bullets: [
@@ -210,6 +228,8 @@ export const MARKETING_AUDIENCES: MarketingAudienceCard[] = [
     landingHref: "/humanitarian",
     loginHref: "/humanitarian/angel/login",
     registerHref: "/register/angel",
+    strategyHref: "/marketing/estrategias/humanitario",
+    strategyLabel: "Estratégia humanitário",
     whatsappMessage:
       "Olá, vi o mapa em /marketing. Quero saber sobre o programa humanitário / voluntariado Doctor8.",
     bullets: [
@@ -227,6 +247,8 @@ export const MARKETING_AUDIENCES: MarketingAudienceCard[] = [
     landingHref: "/parceiros",
     loginHref: "/login",
     registerHref: "/parceiros",
+    strategyHref: "/marketing/estrategias/cursos",
+    strategyLabel: "Estratégia cursos / parceiros",
     whatsappMessage:
       "Olá, vi o mapa em /marketing. Sou parceiro/investidor/agência e quero falar com a Doctor8.",
     bullets: ["Cursos e certificados", "Buying clubs", "Integrações e APIs"],
@@ -375,72 +397,84 @@ export const MARKETING_ACCESS_ROWS: MarketingAccessRow[] = [
     landing: { label: "Landing empresas", href: "/empresas" },
     login: { label: "Login empresa", href: EMPLOYER_LOGIN },
     register: { label: "Cadastro / demo", href: EMPLOYER_REGISTER },
+    strategy: { label: "Estratégia empresa", href: "/marketing/estrategias/empresa" },
   },
   {
     persona: "Médico do trabalho",
     landing: { label: "Landing empresas", href: "/empresas" },
     login: { label: "Login médico SST", href: "/empresas/medico/login" },
     register: { label: "Cadastro médico SST", href: "/empresas/medico/cadastro" },
+    strategy: { label: "Estratégia empresa", href: "/marketing/estrategias/empresa" },
   },
   {
     persona: "Psicólogo EAP",
     landing: { label: "Landing empresas", href: "/empresas" },
     login: { label: "Login EAP", href: "/empresas/psicologo/login" },
     register: { label: "Cadastro profissional", href: PSYCHOLOGIST_REGISTER },
+    strategy: { label: "Estratégia psicólogo", href: "/marketing/estrategias/psicologo" },
   },
   {
     persona: "Profissional de saúde",
     landing: { label: "Landing especialistas", href: "/especialistas" },
     login: { label: "Login unificado", href: "/login" },
     register: { label: "Cadastro profissional", href: PROFESSIONAL_REGISTER },
+    strategy: { label: "Estratégia médico", href: "/marketing/estrategias/medico" },
   },
   {
     persona: "Clínica / organização",
     landing: { label: "Landing parceiros", href: "/parceiros" },
     login: { label: "Login organização", href: "/login?portal=organization" },
     register: { label: "Cadastro CNPJ", href: ORGANIZATION_REGISTER },
+    strategy: { label: "Estratégia clínica", href: "/marketing/estrategias/clinica" },
   },
   {
     persona: "Farmácia",
     landing: { label: "Landing farmácias", href: "/farmacias" },
     login: { label: "Login farmácia", href: PHARMACY_STORE_LOGIN },
     register: { label: "Cadastro farmácia", href: PHARMACY_STORE_REGISTER },
+    strategy: { label: "Estratégia farmácia", href: "/marketing/estrategias/farmacia" },
   },
   {
     persona: "Laboratório",
     landing: { label: "Landing labs", href: "/laboratorios" },
     login: { label: "Login laboratório", href: LABORATORY_LOGIN },
     register: { label: "Cadastro lab", href: LABORATORY_REGISTER },
+    strategy: { label: "Estratégia laboratório", href: "/marketing/estrategias/laboratorio" },
   },
   {
     persona: "Distribuidor",
     landing: { label: "Landing distribuidores", href: "/distribuidores" },
     login: { label: "Login distribuidor", href: DISTRIBUTOR_LOGIN },
     register: { label: "Cadastro distribuidor", href: DISTRIBUTOR_REGISTER },
+    strategy: { label: "Estratégia verticais", href: "/marketing/estrategias/verticais" },
   },
   {
     persona: "Paciente",
     landing: { label: "Landing pacientes", href: "/pacientes" },
     login: { label: "Login paciente", href: "/login" },
     register: { label: "Cadastro paciente", href: "/register" },
+    strategy: { label: "Estratégia paciente", href: "/marketing/estrategias/paciente" },
   },
   {
     persona: "Humanitário / anjo",
     landing: { label: "Landing humanitário", href: "/humanitarian" },
     login: { label: "Login anjo", href: "/humanitarian/angel/login" },
     register: { label: "Cadastro anjo", href: "/register/angel" },
+    strategy: { label: "Estratégia humanitário", href: "/marketing/estrategias/humanitario" },
   },
   {
     persona: "Paciente humanitário",
     landing: { label: "Atendimento humanitário", href: "/atendimentohumanitario" },
     login: { label: "Entrar humanitário", href: "/atendimentohumanitario" },
     register: { label: "SOS Venezuela", href: "/sos-venezuela" },
+    strategy: { label: "Estratégia humanitário", href: "/marketing/estrategias/humanitario" },
   },
   {
     persona: "Cursos / educação",
     landing: { label: "Catálogo de cursos", href: "/cursos" },
     login: { label: "Login profissional", href: "/login" },
     register: { label: "Cadastro profissional", href: PROFESSIONAL_REGISTER },
+    strategy: { label: "Estratégia cursos", href: "/marketing/estrategias/cursos" },
   },
 ];
 
