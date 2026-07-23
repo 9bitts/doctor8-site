@@ -1,0 +1,2090 @@
+﻿[
+    {
+        "slug":  "hipertensao-arterial",
+        "nome":  "Hipertensão Arterial",
+        "nomePopular":  "Pressão alta",
+        "cid10":  "I10",
+        "especialidade":  "Cardiologia",
+        "categoria":  "Cardiovascular"
+    },
+    {
+        "slug":  "dislipidemia",
+        "nome":  "Dislipidemia",
+        "nomePopular":  "Colesterol alto",
+        "cid10":  "E78.5",
+        "especialidade":  "Cardiologia",
+        "categoria":  "Cardiovascular"
+    },
+    {
+        "slug":  "insuficiencia-cardiaca",
+        "nome":  "Insuficiência Cardíaca",
+        "nomePopular":  "Coração fraco",
+        "cid10":  "I50",
+        "especialidade":  "Cardiologia",
+        "categoria":  "Cardiovascular"
+    },
+    {
+        "slug":  "arritmia-cardiaca",
+        "nome":  "Arritmia Cardíaca",
+        "nomePopular":  "Coração acelerado/irregular",
+        "cid10":  "I49",
+        "especialidade":  "Cardiologia",
+        "categoria":  "Cardiovascular"
+    },
+    {
+        "slug":  "varizes",
+        "nome":  "Varizes",
+        "nomePopular":  "Varizes nas pernas",
+        "cid10":  "I83",
+        "especialidade":  "Cirurgia Vascular",
+        "categoria":  "Cardiovascular"
+    },
+    {
+        "slug":  "taquicardia",
+        "nome":  "Taquicardia",
+        "nomePopular":  "Coração disparado",
+        "cid10":  "R00.0",
+        "especialidade":  "Cardiologia",
+        "categoria":  "Cardiovascular"
+    },
+    {
+        "slug":  "sopro-cardiaco",
+        "nome":  "Sopro Cardíaco",
+        "nomePopular":  "Sopro no coração",
+        "cid10":  "R01.1",
+        "especialidade":  "Cardiologia",
+        "categoria":  "Cardiovascular"
+    },
+    {
+        "slug":  "aterosclerose",
+        "nome":  "Aterosclerose",
+        "nomePopular":  "Entupimento das artérias",
+        "cid10":  "I70",
+        "especialidade":  "Cardiologia",
+        "categoria":  "Cardiovascular"
+    },
+    {
+        "slug":  "diabetes-tipo-2",
+        "nome":  "Diabetes Tipo 2",
+        "nomePopular":  "Diabetes",
+        "cid10":  "E11",
+        "especialidade":  "Endocrinologia",
+        "categoria":  "Endócrino"
+    },
+    {
+        "slug":  "diabetes-tipo-1",
+        "nome":  "Diabetes Tipo 1",
+        "nomePopular":  "Diabetes juvenil",
+        "cid10":  "E10",
+        "especialidade":  "Endocrinologia",
+        "categoria":  "Endócrino"
+    },
+    {
+        "slug":  "pre-diabetes",
+        "nome":  "Pré-diabetes",
+        "nomePopular":  "Glicose alterada",
+        "cid10":  "R73.0",
+        "especialidade":  "Endocrinologia",
+        "categoria":  "Endócrino"
+    },
+    {
+        "slug":  "hipotireoidismo",
+        "nome":  "Hipotireoidismo",
+        "nomePopular":  "Tireoide baixa",
+        "cid10":  "E03",
+        "especialidade":  "Endocrinologia",
+        "categoria":  "Endócrino"
+    },
+    {
+        "slug":  "hipertireoidismo",
+        "nome":  "Hipertireoidismo",
+        "nomePopular":  "Tireoide alta",
+        "cid10":  "E05",
+        "especialidade":  "Endocrinologia",
+        "categoria":  "Endócrino"
+    },
+    {
+        "slug":  "obesidade",
+        "nome":  "Obesidade",
+        "nomePopular":  "Excesso de peso",
+        "cid10":  "E66",
+        "especialidade":  "Endocrinologia",
+        "categoria":  "Endócrino"
+    },
+    {
+        "slug":  "sindrome-metabolica",
+        "nome":  "Síndrome Metabólica",
+        "nomePopular":  "Síndrome metabólica",
+        "cid10":  "E88.9",
+        "especialidade":  "Endocrinologia",
+        "categoria":  "Endócrino"
+    },
+    {
+        "slug":  "gota",
+        "nome":  "Gota",
+        "nomePopular":  "Gota (ácido úrico)",
+        "cid10":  "M10",
+        "especialidade":  "Reumatologia",
+        "categoria":  "Endócrino"
+    },
+    {
+        "slug":  "transtorno-de-ansiedade-generalizada",
+        "nome":  "Transtorno de Ansiedade Generalizada",
+        "nomePopular":  "Ansiedade",
+        "cid10":  "F41.1",
+        "especialidade":  "Psiquiatria",
+        "categoria":  "Saúde Mental"
+    },
+    {
+        "slug":  "depressao",
+        "nome":  "Depressão",
+        "nomePopular":  "Depressão",
+        "cid10":  "F32",
+        "especialidade":  "Psiquiatria",
+        "categoria":  "Saúde Mental"
+    },
+    {
+        "slug":  "transtorno-do-panico",
+        "nome":  "Transtorno do Pânico",
+        "nomePopular":  "Síndrome do pânico",
+        "cid10":  "F41.0",
+        "especialidade":  "Psiquiatria",
+        "categoria":  "Saúde Mental"
+    },
+    {
+        "slug":  "insonia",
+        "nome":  "Insônia",
+        "nomePopular":  "Insônia",
+        "cid10":  "G47.0",
+        "especialidade":  "Psiquiatria",
+        "categoria":  "Saúde Mental"
+    },
+    {
+        "slug":  "tdah",
+        "nome":  "TDAH",
+        "nomePopular":  "Déficit de atenção",
+        "cid10":  "F90",
+        "especialidade":  "Psiquiatria",
+        "categoria":  "Saúde Mental"
+    },
+    {
+        "slug":  "sindrome-de-burnout",
+        "nome":  "Síndrome de Burnout",
+        "nomePopular":  "Esgotamento profissional",
+        "cid10":  "Z73.0",
+        "especialidade":  "Psiquiatria",
+        "categoria":  "Saúde Mental"
+    },
+    {
+        "slug":  "transtorno-bipolar",
+        "nome":  "Transtorno Bipolar",
+        "nomePopular":  "Transtorno bipolar",
+        "cid10":  "F31",
+        "especialidade":  "Psiquiatria",
+        "categoria":  "Saúde Mental"
+    },
+    {
+        "slug":  "transtorno-obsessivo-compulsivo",
+        "nome":  "Transtorno Obsessivo-Compulsivo",
+        "nomePopular":  "TOC",
+        "cid10":  "F42",
+        "especialidade":  "Psiquiatria",
+        "categoria":  "Saúde Mental"
+    },
+    {
+        "slug":  "fobia-social",
+        "nome":  "Fobia Social",
+        "nomePopular":  "Ansiedade social",
+        "cid10":  "F40.1",
+        "especialidade":  "Psiquiatria",
+        "categoria":  "Saúde Mental"
+    },
+    {
+        "slug":  "transtorno-de-estresse-pos-traumatico",
+        "nome":  "Transtorno de Estresse Pós-Traumático",
+        "nomePopular":  "TEPT",
+        "cid10":  "F43.1",
+        "especialidade":  "Psiquiatria",
+        "categoria":  "Saúde Mental"
+    },
+    {
+        "slug":  "dependencia-de-alcool",
+        "nome":  "Dependência de Álcool",
+        "nomePopular":  "Alcoolismo",
+        "cid10":  "F10.2",
+        "especialidade":  "Psiquiatria",
+        "categoria":  "Saúde Mental"
+    },
+    {
+        "slug":  "dependencia-de-nicotina",
+        "nome":  "Dependência de Nicotina",
+        "nomePopular":  "Tabagismo",
+        "cid10":  "F17.2",
+        "especialidade":  "Psiquiatria",
+        "categoria":  "Saúde Mental"
+    },
+    {
+        "slug":  "asma",
+        "nome":  "Asma",
+        "nomePopular":  "Asma",
+        "cid10":  "J45",
+        "especialidade":  "Pneumologia",
+        "categoria":  "Respiratório"
+    },
+    {
+        "slug":  "bronquite",
+        "nome":  "Bronquite",
+        "nomePopular":  "Bronquite",
+        "cid10":  "J40",
+        "especialidade":  "Pneumologia",
+        "categoria":  "Respiratório"
+    },
+    {
+        "slug":  "rinite-alergica",
+        "nome":  "Rinite Alérgica",
+        "nomePopular":  "Rinite",
+        "cid10":  "J30",
+        "especialidade":  "Alergologia",
+        "categoria":  "Respiratório"
+    },
+    {
+        "slug":  "sinusite",
+        "nome":  "Sinusite",
+        "nomePopular":  "Sinusite",
+        "cid10":  "J32",
+        "especialidade":  "Otorrinolaringologia",
+        "categoria":  "Respiratório"
+    },
+    {
+        "slug":  "doenca-pulmonar-obstrutiva-cronica",
+        "nome":  "Doença Pulmonar Obstrutiva Crônica",
+        "nomePopular":  "DPOC",
+        "cid10":  "J44",
+        "especialidade":  "Pneumologia",
+        "categoria":  "Respiratório"
+    },
+    {
+        "slug":  "apneia-do-sono",
+        "nome":  "Apneia do Sono",
+        "nomePopular":  "Apneia do sono",
+        "cid10":  "G47.3",
+        "especialidade":  "Pneumologia",
+        "categoria":  "Respiratório"
+    },
+    {
+        "slug":  "gripe",
+        "nome":  "Gripe",
+        "nomePopular":  "Gripe",
+        "cid10":  "J11",
+        "especialidade":  "Clínica Geral",
+        "categoria":  "Respiratório"
+    },
+    {
+        "slug":  "resfriado-comum",
+        "nome":  "Resfriado Comum",
+        "nomePopular":  "Resfriado",
+        "cid10":  "J00",
+        "especialidade":  "Clínica Geral",
+        "categoria":  "Respiratório"
+    },
+    {
+        "slug":  "pneumonia",
+        "nome":  "Pneumonia",
+        "nomePopular":  "Pneumonia",
+        "cid10":  "J18",
+        "especialidade":  "Pneumologia",
+        "categoria":  "Respiratório"
+    },
+    {
+        "slug":  "doenca-do-refluxo-gastroesofagico",
+        "nome":  "Doença do Refluxo Gastroesofágico",
+        "nomePopular":  "Refluxo/DRGE",
+        "cid10":  "K21",
+        "especialidade":  "Gastroenterologia",
+        "categoria":  "Gastrointestinal"
+    },
+    {
+        "slug":  "gastrite",
+        "nome":  "Gastrite",
+        "nomePopular":  "Gastrite",
+        "cid10":  "K29",
+        "especialidade":  "Gastroenterologia",
+        "categoria":  "Gastrointestinal"
+    },
+    {
+        "slug":  "sindrome-do-intestino-irritavel",
+        "nome":  "Síndrome do Intestino Irritável",
+        "nomePopular":  "Intestino irritável",
+        "cid10":  "K58",
+        "especialidade":  "Gastroenterologia",
+        "categoria":  "Gastrointestinal"
+    },
+    {
+        "slug":  "constipacao-intestinal",
+        "nome":  "Constipação Intestinal",
+        "nomePopular":  "Prisão de ventre",
+        "cid10":  "K59.0",
+        "especialidade":  "Gastroenterologia",
+        "categoria":  "Gastrointestinal"
+    },
+    {
+        "slug":  "hemorroidas",
+        "nome":  "Hemorroidas",
+        "nomePopular":  "Hemorroidas",
+        "cid10":  "K64",
+        "especialidade":  "Coloproctologia",
+        "categoria":  "Gastrointestinal"
+    },
+    {
+        "slug":  "intolerancia-a-lactose",
+        "nome":  "Intolerância à Lactose",
+        "nomePopular":  "Intolerância à lactose",
+        "cid10":  "E73",
+        "especialidade":  "Gastroenterologia",
+        "categoria":  "Gastrointestinal"
+    },
+    {
+        "slug":  "doenca-de-crohn",
+        "nome":  "Doença de Crohn",
+        "nomePopular":  "Doença de Crohn",
+        "cid10":  "K50",
+        "especialidade":  "Gastroenterologia",
+        "categoria":  "Gastrointestinal"
+    },
+    {
+        "slug":  "retocolite-ulcerativa",
+        "nome":  "Retocolite Ulcerativa",
+        "nomePopular":  "Colite ulcerativa",
+        "cid10":  "K51",
+        "especialidade":  "Gastroenterologia",
+        "categoria":  "Gastrointestinal"
+    },
+    {
+        "slug":  "diarreia-aguda",
+        "nome":  "Diarreia Aguda",
+        "nomePopular":  "Diarreia",
+        "cid10":  "A09",
+        "especialidade":  "Clínica Geral",
+        "categoria":  "Gastrointestinal"
+    },
+    {
+        "slug":  "ulcera-peptica",
+        "nome":  "Úlcera Péptica",
+        "nomePopular":  "Úlcera no estômago",
+        "cid10":  "K27",
+        "especialidade":  "Gastroenterologia",
+        "categoria":  "Gastrointestinal"
+    },
+    {
+        "slug":  "lombalgia",
+        "nome":  "Lombalgia",
+        "nomePopular":  "Dor lombar",
+        "cid10":  "M54.5",
+        "especialidade":  "Ortopedia",
+        "categoria":  "Musculoesquelético"
+    },
+    {
+        "slug":  "dor-nas-costas",
+        "nome":  "Dor nas Costas",
+        "nomePopular":  "Dor nas costas",
+        "cid10":  "M54",
+        "especialidade":  "Ortopedia",
+        "categoria":  "Musculoesquelético"
+    },
+    {
+        "slug":  "artrose",
+        "nome":  "Artrose",
+        "nomePopular":  "Desgaste nas articulações",
+        "cid10":  "M19",
+        "especialidade":  "Ortopedia",
+        "categoria":  "Musculoesquelético"
+    },
+    {
+        "slug":  "artrite-reumatoide",
+        "nome":  "Artrite Reumatoide",
+        "nomePopular":  "Artrite reumatoide",
+        "cid10":  "M06",
+        "especialidade":  "Reumatologia",
+        "categoria":  "Musculoesquelético"
+    },
+    {
+        "slug":  "fibromialgia",
+        "nome":  "Fibromialgia",
+        "nomePopular":  "Fibromialgia",
+        "cid10":  "M79.7",
+        "especialidade":  "Reumatologia",
+        "categoria":  "Musculoesquelético"
+    },
+    {
+        "slug":  "tendinite",
+        "nome":  "Tendinite",
+        "nomePopular":  "Tendinite",
+        "cid10":  "M77",
+        "especialidade":  "Ortopedia",
+        "categoria":  "Musculoesquelético"
+    },
+    {
+        "slug":  "hernia-de-disco",
+        "nome":  "Hérnia de Disco",
+        "nomePopular":  "Hérnia de disco",
+        "cid10":  "M51",
+        "especialidade":  "Ortopedia",
+        "categoria":  "Musculoesquelético"
+    },
+    {
+        "slug":  "osteoporose",
+        "nome":  "Osteoporose",
+        "nomePopular":  "Osteoporose",
+        "cid10":  "M81",
+        "especialidade":  "Reumatologia",
+        "categoria":  "Musculoesquelético"
+    },
+    {
+        "slug":  "bursite",
+        "nome":  "Bursite",
+        "nomePopular":  "Bursite",
+        "cid10":  "M71.9",
+        "especialidade":  "Ortopedia",
+        "categoria":  "Musculoesquelético"
+    },
+    {
+        "slug":  "lesao-do-manguito-rotador",
+        "nome":  "Lesão do Manguito Rotador",
+        "nomePopular":  "Dor no ombro",
+        "cid10":  "M75",
+        "especialidade":  "Ortopedia",
+        "categoria":  "Musculoesquelético"
+    },
+    {
+        "slug":  "acne",
+        "nome":  "Acne",
+        "nomePopular":  "Espinhas/acne",
+        "cid10":  "L70",
+        "especialidade":  "Dermatologia",
+        "categoria":  "Dermatológico"
+    },
+    {
+        "slug":  "dermatite-atopica",
+        "nome":  "Dermatite Atópica",
+        "nomePopular":  "Eczema",
+        "cid10":  "L20",
+        "especialidade":  "Dermatologia",
+        "categoria":  "Dermatológico"
+    },
+    {
+        "slug":  "psoriase",
+        "nome":  "Psoríase",
+        "nomePopular":  "Psoríase",
+        "cid10":  "L40",
+        "especialidade":  "Dermatologia",
+        "categoria":  "Dermatológico"
+    },
+    {
+        "slug":  "dermatofitose",
+        "nome":  "Dermatofitose",
+        "nomePopular":  "Micose de pele",
+        "cid10":  "B35",
+        "especialidade":  "Dermatologia",
+        "categoria":  "Dermatológico"
+    },
+    {
+        "slug":  "urticaria",
+        "nome":  "Urticária",
+        "nomePopular":  "Alergia na pele/urticária",
+        "cid10":  "L50",
+        "especialidade":  "Dermatologia",
+        "categoria":  "Dermatológico"
+    },
+    {
+        "slug":  "herpes-labial",
+        "nome":  "Herpes Labial",
+        "nomePopular":  "Herpes labial",
+        "cid10":  "B00.1",
+        "especialidade":  "Dermatologia",
+        "categoria":  "Dermatológico"
+    },
+    {
+        "slug":  "alopecia",
+        "nome":  "Alopecia",
+        "nomePopular":  "Queda de cabelo",
+        "cid10":  "L65",
+        "especialidade":  "Dermatologia",
+        "categoria":  "Dermatológico"
+    },
+    {
+        "slug":  "rosacea",
+        "nome":  "Rosácea",
+        "nomePopular":  "Rosácea",
+        "cid10":  "L71",
+        "especialidade":  "Dermatologia",
+        "categoria":  "Dermatológico"
+    },
+    {
+        "slug":  "sindrome-dos-ovarios-policisticos",
+        "nome":  "Síndrome dos Ovários Policísticos",
+        "nomePopular":  "SOP",
+        "cid10":  "E28.2",
+        "especialidade":  "Ginecologia",
+        "categoria":  "Saúde da Mulher"
+    },
+    {
+        "slug":  "tensao-pre-menstrual",
+        "nome":  "Tensão Pré-Menstrual",
+        "nomePopular":  "TPM",
+        "cid10":  "N94.3",
+        "especialidade":  "Ginecologia",
+        "categoria":  "Saúde da Mulher"
+    },
+    {
+        "slug":  "menopausa",
+        "nome":  "Menopausa",
+        "nomePopular":  "Menopausa",
+        "cid10":  "N95",
+        "especialidade":  "Ginecologia",
+        "categoria":  "Saúde da Mulher"
+    },
+    {
+        "slug":  "candidiase-vaginal",
+        "nome":  "Candidíase Vaginal",
+        "nomePopular":  "Candidíase",
+        "cid10":  "B37.3",
+        "especialidade":  "Ginecologia",
+        "categoria":  "Saúde da Mulher"
+    },
+    {
+        "slug":  "infeccao-urinaria",
+        "nome":  "Infecção Urinária",
+        "nomePopular":  "Infecção urinária",
+        "cid10":  "N39.0",
+        "especialidade":  "Ginecologia",
+        "categoria":  "Saúde da Mulher"
+    },
+    {
+        "slug":  "endometriose",
+        "nome":  "Endometriose",
+        "nomePopular":  "Endometriose",
+        "cid10":  "N80",
+        "especialidade":  "Ginecologia",
+        "categoria":  "Saúde da Mulher"
+    },
+    {
+        "slug":  "dismenorreia",
+        "nome":  "Dismenorreia",
+        "nomePopular":  "Cólica menstrual",
+        "cid10":  "N94.6",
+        "especialidade":  "Ginecologia",
+        "categoria":  "Saúde da Mulher"
+    },
+    {
+        "slug":  "miomas-uterinos",
+        "nome":  "Miomas Uterinos",
+        "nomePopular":  "Mioma no útero",
+        "cid10":  "D25",
+        "especialidade":  "Ginecologia",
+        "categoria":  "Saúde da Mulher"
+    },
+    {
+        "slug":  "infertilidade-feminina",
+        "nome":  "Infertilidade Feminina",
+        "nomePopular":  "Dificuldade para engravidar",
+        "cid10":  "N97",
+        "especialidade":  "Ginecologia",
+        "categoria":  "Saúde da Mulher"
+    },
+    {
+        "slug":  "corrimento-vaginal",
+        "nome":  "Corrimento Vaginal",
+        "nomePopular":  "Corrimento",
+        "cid10":  "N89.8",
+        "especialidade":  "Ginecologia",
+        "categoria":  "Saúde da Mulher"
+    },
+    {
+        "slug":  "disfuncao-eretil",
+        "nome":  "Disfunção Erétil",
+        "nomePopular":  "Disfunção erétil",
+        "cid10":  "N52",
+        "especialidade":  "Urologia",
+        "categoria":  "Saúde do Homem"
+    },
+    {
+        "slug":  "hiperplasia-prostatica-benigna",
+        "nome":  "Hiperplasia Prostática Benigna",
+        "nomePopular":  "Próstata aumentada",
+        "cid10":  "N40",
+        "especialidade":  "Urologia",
+        "categoria":  "Saúde do Homem"
+    },
+    {
+        "slug":  "hipogonadismo-masculino",
+        "nome":  "Hipogonadismo Masculino",
+        "nomePopular":  "Testosterona baixa",
+        "cid10":  "E29.1",
+        "especialidade":  "Urologia",
+        "categoria":  "Saúde do Homem"
+    },
+    {
+        "slug":  "ejaculacao-precoce",
+        "nome":  "Ejaculação Precoce",
+        "nomePopular":  "Ejaculação precoce",
+        "cid10":  "F52.4",
+        "especialidade":  "Urologia",
+        "categoria":  "Saúde do Homem"
+    },
+    {
+        "slug":  "infertilidade-masculina",
+        "nome":  "Infertilidade Masculina",
+        "nomePopular":  "Infertilidade masculina",
+        "cid10":  "N46",
+        "especialidade":  "Urologia",
+        "categoria":  "Saúde do Homem"
+    },
+    {
+        "slug":  "covid-19",
+        "nome":  "COVID-19",
+        "nomePopular":  "Covid",
+        "cid10":  "U07.1",
+        "especialidade":  "Infectologia",
+        "categoria":  "Infecções"
+    },
+    {
+        "slug":  "dengue",
+        "nome":  "Dengue",
+        "nomePopular":  "Dengue",
+        "cid10":  "A90",
+        "especialidade":  "Infectologia",
+        "categoria":  "Infecções"
+    },
+    {
+        "slug":  "faringite",
+        "nome":  "Faringite",
+        "nomePopular":  "Dor de garganta",
+        "cid10":  "J02",
+        "especialidade":  "Clínica Geral",
+        "categoria":  "Infecções"
+    },
+    {
+        "slug":  "amigdalite",
+        "nome":  "Amigdalite",
+        "nomePopular":  "Amigdalite",
+        "cid10":  "J03",
+        "especialidade":  "Otorrinolaringologia",
+        "categoria":  "Infecções"
+    },
+    {
+        "slug":  "conjuntivite",
+        "nome":  "Conjuntivite",
+        "nomePopular":  "Conjuntivite",
+        "cid10":  "H10",
+        "especialidade":  "Oftalmologia",
+        "categoria":  "Infecções"
+    },
+    {
+        "slug":  "otite",
+        "nome":  "Otite",
+        "nomePopular":  "Dor de ouvido",
+        "cid10":  "H66",
+        "especialidade":  "Otorrinolaringologia",
+        "categoria":  "Infecções"
+    },
+    {
+        "slug":  "herpes-zoster",
+        "nome":  "Herpes Zoster",
+        "nomePopular":  "Cobreiro",
+        "cid10":  "B02",
+        "especialidade":  "Dermatologia",
+        "categoria":  "Infecções"
+    },
+    {
+        "slug":  "enxaqueca",
+        "nome":  "Enxaqueca",
+        "nomePopular":  "Enxaqueca",
+        "cid10":  "G43",
+        "especialidade":  "Neurologia",
+        "categoria":  "Neurológico"
+    },
+    {
+        "slug":  "cefaleia-tensional",
+        "nome":  "Cefaleia Tensional",
+        "nomePopular":  "Dor de cabeça tensional",
+        "cid10":  "G44.2",
+        "especialidade":  "Neurologia",
+        "categoria":  "Neurológico"
+    },
+    {
+        "slug":  "labirintite",
+        "nome":  "Labirintite",
+        "nomePopular":  "Labirintite/vertigem",
+        "cid10":  "H81",
+        "especialidade":  "Otorrinolaringologia",
+        "categoria":  "Neurológico"
+    },
+    {
+        "slug":  "tontura",
+        "nome":  "Tontura",
+        "nomePopular":  "Tontura",
+        "cid10":  "R42",
+        "especialidade":  "Neurologia",
+        "categoria":  "Neurológico"
+    },
+    {
+        "slug":  "zumbido",
+        "nome":  "Zumbido",
+        "nomePopular":  "Zumbido no ouvido",
+        "cid10":  "H93.1",
+        "especialidade":  "Otorrinolaringologia",
+        "categoria":  "Neurológico"
+    },
+    {
+        "slug":  "sindrome-do-tunel-do-carpo",
+        "nome":  "Síndrome do Túnel do Carpo",
+        "nomePopular":  "Túnel do carpo",
+        "cid10":  "G56.0",
+        "especialidade":  "Ortopedia",
+        "categoria":  "Neurológico"
+    },
+    {
+        "slug":  "calculo-renal",
+        "nome":  "Cálculo Renal",
+        "nomePopular":  "Pedra nos rins",
+        "cid10":  "N20",
+        "especialidade":  "Urologia",
+        "categoria":  "Urinário"
+    },
+    {
+        "slug":  "incontinencia-urinaria",
+        "nome":  "Incontinência Urinária",
+        "nomePopular":  "Incontinência urinária",
+        "cid10":  "N39.3",
+        "especialidade":  "Urologia",
+        "categoria":  "Urinário"
+    },
+    {
+        "slug":  "cistite",
+        "nome":  "Cistite",
+        "nomePopular":  "Cistite",
+        "cid10":  "N30",
+        "especialidade":  "Urologia",
+        "categoria":  "Urinário"
+    },
+    {
+        "slug":  "bexiga-hiperativa",
+        "nome":  "Bexiga Hiperativa",
+        "nomePopular":  "Bexiga hiperativa",
+        "cid10":  "N32.81",
+        "especialidade":  "Urologia",
+        "categoria":  "Urinário"
+    },
+    {
+        "slug":  "anemia",
+        "nome":  "Anemia",
+        "nomePopular":  "Anemia",
+        "cid10":  "D64.9",
+        "especialidade":  "Clínica Geral",
+        "categoria":  "Nutrição"
+    },
+    {
+        "slug":  "anemia-ferropriva",
+        "nome":  "Anemia Ferropriva",
+        "nomePopular":  "Anemia por falta de ferro",
+        "cid10":  "D50",
+        "especialidade":  "Clínica Geral",
+        "categoria":  "Nutrição"
+    },
+    {
+        "slug":  "deficiencia-de-vitamina-d",
+        "nome":  "Deficiência de Vitamina D",
+        "nomePopular":  "Falta de vitamina D",
+        "cid10":  "E55",
+        "especialidade":  "Clínica Geral",
+        "categoria":  "Nutrição"
+    },
+    {
+        "slug":  "desnutricao",
+        "nome":  "Desnutrição",
+        "nomePopular":  "Desnutrição",
+        "cid10":  "E46",
+        "especialidade":  "Nutrologia",
+        "categoria":  "Nutrição"
+    },
+    {
+        "slug":  "lupus-eritematoso-sistemico",
+        "nome":  "Lúpus Eritematoso Sistêmico",
+        "nomePopular":  "Lúpus",
+        "cid10":  "M32",
+        "especialidade":  "Reumatologia",
+        "categoria":  "Autoimune"
+    },
+    {
+        "slug":  "tireoidite-de-hashimoto",
+        "nome":  "Tireoidite de Hashimoto",
+        "nomePopular":  "Hashimoto",
+        "cid10":  "E06.3",
+        "especialidade":  "Endocrinologia",
+        "categoria":  "Autoimune"
+    },
+    {
+        "slug":  "doenca-celiaca",
+        "nome":  "Doença Celíaca",
+        "nomePopular":  "Intolerância ao glúten",
+        "cid10":  "K90.0",
+        "especialidade":  "Gastroenterologia",
+        "categoria":  "Autoimune"
+    },
+    {
+        "slug":  "alergia-alimentar",
+        "nome":  "Alergia Alimentar",
+        "nomePopular":  "Alergia a alimentos",
+        "cid10":  "T78.1",
+        "especialidade":  "Alergologia",
+        "categoria":  "Alergia"
+    },
+    {
+        "slug":  "dermatite-de-contato",
+        "nome":  "Dermatite de Contato",
+        "nomePopular":  "Alergia de pele",
+        "cid10":  "L23",
+        "especialidade":  "Dermatologia",
+        "categoria":  "Alergia"
+    },
+    {
+        "slug":  "alergia-a-picada-de-inseto",
+        "nome":  "Alergia a Picada de Inseto",
+        "nomePopular":  "Alergia a picada",
+        "cid10":  "T63.4",
+        "especialidade":  "Alergologia",
+        "categoria":  "Alergia"
+    },
+    {
+        "slug":  "olho-seco",
+        "nome":  "Olho Seco",
+        "nomePopular":  "Síndrome do olho seco",
+        "cid10":  "H04.1",
+        "especialidade":  "Oftalmologia",
+        "categoria":  "Oftalmológico"
+    },
+    {
+        "slug":  "blefarite",
+        "nome":  "Blefarite",
+        "nomePopular":  "Inflamação na pálpebra",
+        "cid10":  "H01.0",
+        "especialidade":  "Oftalmologia",
+        "categoria":  "Oftalmológico"
+    },
+    {
+        "slug":  "hpv",
+        "nome":  "HPV",
+        "nomePopular":  "HPV",
+        "cid10":  "B97.7",
+        "especialidade":  "Infectologia",
+        "categoria":  "Saúde Sexual"
+    },
+    {
+        "slug":  "herpes-genital",
+        "nome":  "Herpes Genital",
+        "nomePopular":  "Herpes genital",
+        "cid10":  "A60",
+        "especialidade":  "Infectologia",
+        "categoria":  "Saúde Sexual"
+    },
+    {
+        "slug":  "clamidia",
+        "nome":  "Clamídia",
+        "nomePopular":  "Clamídia",
+        "cid10":  "A56",
+        "especialidade":  "Infectologia",
+        "categoria":  "Saúde Sexual"
+    },
+    {
+        "slug":  "gonorreia",
+        "nome":  "Gonorreia",
+        "nomePopular":  "Gonorreia",
+        "cid10":  "A54",
+        "especialidade":  "Infectologia",
+        "categoria":  "Saúde Sexual"
+    },
+    {
+        "slug":  "sifilis",
+        "nome":  "Sífilis",
+        "nomePopular":  "Sífilis",
+        "cid10":  "A53",
+        "especialidade":  "Infectologia",
+        "categoria":  "Saúde Sexual"
+    },
+    {
+        "slug":  "colica-do-bebe",
+        "nome":  "Cólica do Bebê",
+        "nomePopular":  "Cólica do bebê",
+        "cid10":  "R10.4",
+        "especialidade":  "Pediatria",
+        "categoria":  "Pediátrico"
+    },
+    {
+        "slug":  "dermatite-de-fralda",
+        "nome":  "Dermatite de Fralda",
+        "nomePopular":  "Assadura",
+        "cid10":  "L22",
+        "especialidade":  "Pediatria",
+        "categoria":  "Pediátrico"
+    },
+    {
+        "slug":  "verminose-intestinal",
+        "nome":  "Verminose Intestinal",
+        "nomePopular":  "Vermes",
+        "cid10":  "B82",
+        "especialidade":  "Pediatria",
+        "categoria":  "Pediátrico"
+    },
+    {
+        "slug":  "aftas-bucais",
+        "nome":  "Aftas Bucais",
+        "nomePopular":  "Afta",
+        "cid10":  "K12.0",
+        "especialidade":  "Odontologia",
+        "categoria":  "Odontológico"
+    },
+    {
+        "slug":  "gengivite",
+        "nome":  "Gengivite",
+        "nomePopular":  "Gengivite",
+        "cid10":  "K05.0",
+        "especialidade":  "Odontologia",
+        "categoria":  "Odontológico"
+    },
+    {
+        "slug":  "bruxismo",
+        "nome":  "Bruxismo",
+        "nomePopular":  "Ranger de dentes",
+        "cid10":  "G47.63",
+        "especialidade":  "Odontologia",
+        "categoria":  "Odontológico"
+    },
+    {
+        "slug":  "angina-pectoris",
+        "nome":  "Angina Pectoris",
+        "nomePopular":  "Angina no peito",
+        "cid10":  "I20",
+        "especialidade":  "Cardiologia",
+        "categoria":  "Cardiovascular"
+    },
+    {
+        "slug":  "pos-infarto",
+        "nome":  "Pós-Infarto do Miocárdio",
+        "nomePopular":  "Pós-infarto",
+        "cid10":  "I25.2",
+        "especialidade":  "Cardiologia",
+        "categoria":  "Cardiovascular"
+    },
+    {
+        "slug":  "hipotensao-arterial",
+        "nome":  "Hipotensão Arterial",
+        "nomePopular":  "Pressão baixa",
+        "cid10":  "I95",
+        "especialidade":  "Cardiologia",
+        "categoria":  "Cardiovascular"
+    },
+    {
+        "slug":  "trombose-venosa-profunda",
+        "nome":  "Trombose Venosa Profunda",
+        "nomePopular":  "Trombose / TVP",
+        "cid10":  "I80.2",
+        "especialidade":  "Cirurgia Vascular",
+        "categoria":  "Cardiovascular"
+    },
+    {
+        "slug":  "embolia-pulmonar",
+        "nome":  "Embolia Pulmonar",
+        "nomePopular":  "Embolia no pulmão",
+        "cid10":  "I26",
+        "especialidade":  "Pneumologia",
+        "categoria":  "Cardiovascular"
+    },
+    {
+        "slug":  "avc",
+        "nome":  "Acidente Vascular Cerebral",
+        "nomePopular":  "AVC / derrame",
+        "cid10":  "I64",
+        "especialidade":  "Neurologia",
+        "categoria":  "Cardiovascular"
+    },
+    {
+        "slug":  "ataque-isquemico-transitorio",
+        "nome":  "Ataque Isquêmico Transitório",
+        "nomePopular":  "AIT / mini-AVC",
+        "cid10":  "G45",
+        "especialidade":  "Neurologia",
+        "categoria":  "Cardiovascular"
+    },
+    {
+        "slug":  "palpitacoes",
+        "nome":  "Palpitações",
+        "nomePopular":  "Palpitações no coração",
+        "cid10":  "R00.2",
+        "especialidade":  "Cardiologia",
+        "categoria":  "Cardiovascular"
+    },
+    {
+        "slug":  "dor-no-peito",
+        "nome":  "Dor no Peito",
+        "nomePopular":  "Dor no peito",
+        "cid10":  "R07.4",
+        "especialidade":  "Cardiologia",
+        "categoria":  "Cardiovascular"
+    },
+    {
+        "slug":  "edema-de-membros-inferiores",
+        "nome":  "Edema de Membros Inferiores",
+        "nomePopular":  "Inchaço nas pernas",
+        "cid10":  "R60.0",
+        "especialidade":  "Cirurgia Vascular",
+        "categoria":  "Cardiovascular"
+    },
+    {
+        "slug":  "resistencia-a-insulina",
+        "nome":  "Resistência à Insulina",
+        "nomePopular":  "Resistência à insulina",
+        "cid10":  "E88.81",
+        "especialidade":  "Endocrinologia",
+        "categoria":  "Endócrino"
+    },
+    {
+        "slug":  "diabetes-gestacional",
+        "nome":  "Diabetes Gestacional",
+        "nomePopular":  "Diabetes na gravidez",
+        "cid10":  "O24.4",
+        "especialidade":  "Endocrinologia",
+        "categoria":  "Endócrino"
+    },
+    {
+        "slug":  "nodulo-tireoidiano",
+        "nome":  "Nódulo Tireoidiano",
+        "nomePopular":  "Nódulo na tireoide",
+        "cid10":  "E04.1",
+        "especialidade":  "Endocrinologia",
+        "categoria":  "Endócrino"
+    },
+    {
+        "slug":  "bocio",
+        "nome":  "Bócio",
+        "nomePopular":  "Bócio",
+        "cid10":  "E04.9",
+        "especialidade":  "Endocrinologia",
+        "categoria":  "Endócrino"
+    },
+    {
+        "slug":  "osteopenia",
+        "nome":  "Osteopenia",
+        "nomePopular":  "Osteopenia",
+        "cid10":  "M85.8",
+        "especialidade":  "Endocrinologia",
+        "categoria":  "Endócrino"
+    },
+    {
+        "slug":  "hiperparatireoidismo",
+        "nome":  "Hiperparatireoidismo",
+        "nomePopular":  "Paratireoide alta",
+        "cid10":  "E21.0",
+        "especialidade":  "Endocrinologia",
+        "categoria":  "Endócrino"
+    },
+    {
+        "slug":  "estresse",
+        "nome":  "Estresse",
+        "nomePopular":  "Estresse",
+        "cid10":  "Z73.3",
+        "especialidade":  "Psiquiatria",
+        "categoria":  "Saúde Mental"
+    },
+    {
+        "slug":  "depressao-pos-parto",
+        "nome":  "Depressão Pós-Parto",
+        "nomePopular":  "Depressão pós-parto",
+        "cid10":  "F53.0",
+        "especialidade":  "Psiquiatria",
+        "categoria":  "Saúde Mental"
+    },
+    {
+        "slug":  "transtorno-alimentar",
+        "nome":  "Transtorno Alimentar",
+        "nomePopular":  "Transtorno alimentar",
+        "cid10":  "F50",
+        "especialidade":  "Psiquiatria",
+        "categoria":  "Saúde Mental"
+    },
+    {
+        "slug":  "anorexia-nervosa",
+        "nome":  "Anorexia Nervosa",
+        "nomePopular":  "Anorexia",
+        "cid10":  "F50.0",
+        "especialidade":  "Psiquiatria",
+        "categoria":  "Saúde Mental"
+    },
+    {
+        "slug":  "bulimia-nervosa",
+        "nome":  "Bulimia Nervosa",
+        "nomePopular":  "Bulimia",
+        "cid10":  "F50.2",
+        "especialidade":  "Psiquiatria",
+        "categoria":  "Saúde Mental"
+    },
+    {
+        "slug":  "compulsao-alimentar",
+        "nome":  "Compulsão Alimentar",
+        "nomePopular":  "Compulsão alimentar",
+        "cid10":  "F50.8",
+        "especialidade":  "Psiquiatria",
+        "categoria":  "Saúde Mental"
+    },
+    {
+        "slug":  "transtorno-do-espectro-autista",
+        "nome":  "Transtorno do Espectro Autista",
+        "nomePopular":  "Autismo / TEA",
+        "cid10":  "F84.0",
+        "especialidade":  "Psiquiatria",
+        "categoria":  "Saúde Mental"
+    },
+    {
+        "slug":  "transtorno-borderline",
+        "nome":  "Transtorno de Personalidade Borderline",
+        "nomePopular":  "Borderline",
+        "cid10":  "F60.3",
+        "especialidade":  "Psiquiatria",
+        "categoria":  "Saúde Mental"
+    },
+    {
+        "slug":  "dependencia-de-drogas",
+        "nome":  "Dependência de Drogas",
+        "nomePopular":  "Vício em drogas",
+        "cid10":  "F19.2",
+        "especialidade":  "Psiquiatria",
+        "categoria":  "Saúde Mental"
+    },
+    {
+        "slug":  "fobia-especifica",
+        "nome":  "Fobia Específica",
+        "nomePopular":  "Fobia",
+        "cid10":  "F40.2",
+        "especialidade":  "Psiquiatria",
+        "categoria":  "Saúde Mental"
+    },
+    {
+        "slug":  "tristeza-persistente",
+        "nome":  "Tristeza Persistente",
+        "nomePopular":  "Tristeza constante",
+        "cid10":  "R45.2",
+        "especialidade":  "Psiquiatria",
+        "categoria":  "Saúde Mental"
+    },
+    {
+        "slug":  "tosse-cronica",
+        "nome":  "Tosse Crônica",
+        "nomePopular":  "Tosse que não passa",
+        "cid10":  "R05",
+        "especialidade":  "Pneumologia",
+        "categoria":  "Respiratório"
+    },
+    {
+        "slug":  "dispneia",
+        "nome":  "Dispneia",
+        "nomePopular":  "Falta de ar",
+        "cid10":  "R06.0",
+        "especialidade":  "Pneumologia",
+        "categoria":  "Respiratório"
+    },
+    {
+        "slug":  "tuberculose",
+        "nome":  "Tuberculose",
+        "nomePopular":  "Tuberculose",
+        "cid10":  "A15",
+        "especialidade":  "Pneumologia",
+        "categoria":  "Respiratório"
+    },
+    {
+        "slug":  "bronquiolite",
+        "nome":  "Bronquiolite",
+        "nomePopular":  "Bronquiolite",
+        "cid10":  "J21",
+        "especialidade":  "Pediatria",
+        "categoria":  "Respiratório"
+    },
+    {
+        "slug":  "ronco",
+        "nome":  "Ronco",
+        "nomePopular":  "Ronco",
+        "cid10":  "R06.5",
+        "especialidade":  "Pneumologia",
+        "categoria":  "Respiratório"
+    },
+    {
+        "slug":  "alergia-respiratoria",
+        "nome":  "Alergia Respiratória",
+        "nomePopular":  "Alergia respiratória",
+        "cid10":  "J30.4",
+        "especialidade":  "Alergologia",
+        "categoria":  "Respiratório"
+    },
+    {
+        "slug":  "esteatose-hepatica",
+        "nome":  "Esteatose Hepática",
+        "nomePopular":  "Fígado gorduroso",
+        "cid10":  "K76.0",
+        "especialidade":  "Gastroenterologia",
+        "categoria":  "Gastrointestinal"
+    },
+    {
+        "slug":  "hepatite-a",
+        "nome":  "Hepatite A",
+        "nomePopular":  "Hepatite A",
+        "cid10":  "B15",
+        "especialidade":  "Infectologia",
+        "categoria":  "Gastrointestinal"
+    },
+    {
+        "slug":  "hepatite-b",
+        "nome":  "Hepatite B",
+        "nomePopular":  "Hepatite B",
+        "cid10":  "B16",
+        "especialidade":  "Infectologia",
+        "categoria":  "Gastrointestinal"
+    },
+    {
+        "slug":  "hepatite-c",
+        "nome":  "Hepatite C",
+        "nomePopular":  "Hepatite C",
+        "cid10":  "B18.2",
+        "especialidade":  "Infectologia",
+        "categoria":  "Gastrointestinal"
+    },
+    {
+        "slug":  "pancreatite",
+        "nome":  "Pancreatite",
+        "nomePopular":  "Pancreatite",
+        "cid10":  "K85",
+        "especialidade":  "Gastroenterologia",
+        "categoria":  "Gastrointestinal"
+    },
+    {
+        "slug":  "calculo-biliar",
+        "nome":  "Cálculo Biliar",
+        "nomePopular":  "Pedra na vesícula",
+        "cid10":  "K80",
+        "especialidade":  "Cirurgia Geral",
+        "categoria":  "Gastrointestinal"
+    },
+    {
+        "slug":  "colecistite",
+        "nome":  "Colecistite",
+        "nomePopular":  "Inflamação da vesícula",
+        "cid10":  "K81",
+        "especialidade":  "Cirurgia Geral",
+        "categoria":  "Gastrointestinal"
+    },
+    {
+        "slug":  "diverticulite",
+        "nome":  "Diverticulite",
+        "nomePopular":  "Diverticulite",
+        "cid10":  "K57",
+        "especialidade":  "Gastroenterologia",
+        "categoria":  "Gastrointestinal"
+    },
+    {
+        "slug":  "hernia-de-hiato",
+        "nome":  "Hérnia de Hiato",
+        "nomePopular":  "Hérnia de hiato",
+        "cid10":  "K44",
+        "especialidade":  "Gastroenterologia",
+        "categoria":  "Gastrointestinal"
+    },
+    {
+        "slug":  "hernia-inguinal",
+        "nome":  "Hérnia Inguinal",
+        "nomePopular":  "Hérnia inguinal",
+        "cid10":  "K40",
+        "especialidade":  "Cirurgia Geral",
+        "categoria":  "Gastrointestinal"
+    },
+    {
+        "slug":  "azia",
+        "nome":  "Azia",
+        "nomePopular":  "Azia",
+        "cid10":  "R12",
+        "especialidade":  "Gastroenterologia",
+        "categoria":  "Gastrointestinal"
+    },
+    {
+        "slug":  "nausea-e-vomito",
+        "nome":  "Náusea e Vômito",
+        "nomePopular":  "Enjoo e vômito",
+        "cid10":  "R11",
+        "especialidade":  "Clínica Geral",
+        "categoria":  "Gastrointestinal"
+    },
+    {
+        "slug":  "dor-abdominal",
+        "nome":  "Dor Abdominal",
+        "nomePopular":  "Dor na barriga",
+        "cid10":  "R10.4",
+        "especialidade":  "Clínica Geral",
+        "categoria":  "Gastrointestinal"
+    },
+    {
+        "slug":  "apendicite",
+        "nome":  "Apendicite",
+        "nomePopular":  "Apendicite",
+        "cid10":  "K35",
+        "especialidade":  "Cirurgia Geral",
+        "categoria":  "Gastrointestinal"
+    },
+    {
+        "slug":  "cirrose-hepatica",
+        "nome":  "Cirrose Hepática",
+        "nomePopular":  "Cirrose",
+        "cid10":  "K74",
+        "especialidade":  "Gastroenterologia",
+        "categoria":  "Gastrointestinal"
+    },
+    {
+        "slug":  "cervicalgia",
+        "nome":  "Cervicalgia",
+        "nomePopular":  "Dor no pescoço",
+        "cid10":  "M54.2",
+        "especialidade":  "Ortopedia",
+        "categoria":  "Musculoesquelético"
+    },
+    {
+        "slug":  "ciatica",
+        "nome":  "Ciática",
+        "nomePopular":  "Ciática",
+        "cid10":  "M54.3",
+        "especialidade":  "Ortopedia",
+        "categoria":  "Musculoesquelético"
+    },
+    {
+        "slug":  "dor-no-joelho",
+        "nome":  "Dor no Joelho",
+        "nomePopular":  "Dor no joelho",
+        "cid10":  "M25.5",
+        "especialidade":  "Ortopedia",
+        "categoria":  "Musculoesquelético"
+    },
+    {
+        "slug":  "artrose-do-joelho",
+        "nome":  "Artrose do Joelho",
+        "nomePopular":  "Artrose no joelho",
+        "cid10":  "M17",
+        "especialidade":  "Ortopedia",
+        "categoria":  "Musculoesquelético"
+    },
+    {
+        "slug":  "artrose-do-quadril",
+        "nome":  "Artrose do Quadril",
+        "nomePopular":  "Artrose no quadril",
+        "cid10":  "M16",
+        "especialidade":  "Ortopedia",
+        "categoria":  "Musculoesquelético"
+    },
+    {
+        "slug":  "fascite-plantar",
+        "nome":  "Fascite Plantar",
+        "nomePopular":  "Dor no calcanhar",
+        "cid10":  "M72.2",
+        "especialidade":  "Ortopedia",
+        "categoria":  "Musculoesquelético"
+    },
+    {
+        "slug":  "epicondilite",
+        "nome":  "Epicondilite",
+        "nomePopular":  "Cotovelo de tenista",
+        "cid10":  "M77.1",
+        "especialidade":  "Ortopedia",
+        "categoria":  "Musculoesquelético"
+    },
+    {
+        "slug":  "escoliose",
+        "nome":  "Escoliose",
+        "nomePopular":  "Escoliose",
+        "cid10":  "M41",
+        "especialidade":  "Ortopedia",
+        "categoria":  "Musculoesquelético"
+    },
+    {
+        "slug":  "entorse",
+        "nome":  "Entorse",
+        "nomePopular":  "Torção / entorse",
+        "cid10":  "T14.3",
+        "especialidade":  "Ortopedia",
+        "categoria":  "Musculoesquelético"
+    },
+    {
+        "slug":  "condromalacia-patelar",
+        "nome":  "Condromalácia Patelar",
+        "nomePopular":  "Joelho de corredor",
+        "cid10":  "M22.4",
+        "especialidade":  "Ortopedia",
+        "categoria":  "Musculoesquelético"
+    },
+    {
+        "slug":  "espondilite-anquilosante",
+        "nome":  "Espondilite Anquilosante",
+        "nomePopular":  "Espondilite",
+        "cid10":  "M45",
+        "especialidade":  "Reumatologia",
+        "categoria":  "Musculoesquelético"
+    },
+    {
+        "slug":  "dores-musculares",
+        "nome":  "Dores Musculares",
+        "nomePopular":  "Dor muscular",
+        "cid10":  "M79.1",
+        "especialidade":  "Clínica Geral",
+        "categoria":  "Musculoesquelético"
+    },
+    {
+        "slug":  "dermatite-seborreica",
+        "nome":  "Dermatite Seborreica",
+        "nomePopular":  "Caspa / oleosidade",
+        "cid10":  "L21",
+        "especialidade":  "Dermatologia",
+        "categoria":  "Dermatológico"
+    },
+    {
+        "slug":  "melasma",
+        "nome":  "Melasma",
+        "nomePopular":  "Manchas no rosto",
+        "cid10":  "L81.1",
+        "especialidade":  "Dermatologia",
+        "categoria":  "Dermatológico"
+    },
+    {
+        "slug":  "vitiligo",
+        "nome":  "Vitiligo",
+        "nomePopular":  "Vitiligo",
+        "cid10":  "L80",
+        "especialidade":  "Dermatologia",
+        "categoria":  "Dermatológico"
+    },
+    {
+        "slug":  "onicomicose",
+        "nome":  "Onicomicose",
+        "nomePopular":  "Micose na unha",
+        "cid10":  "B35.1",
+        "especialidade":  "Dermatologia",
+        "categoria":  "Dermatológico"
+    },
+    {
+        "slug":  "unha-encravada",
+        "nome":  "Unha Encravada",
+        "nomePopular":  "Unha encravada",
+        "cid10":  "L60.0",
+        "especialidade":  "Dermatologia",
+        "categoria":  "Dermatológico"
+    },
+    {
+        "slug":  "escabiose",
+        "nome":  "Escabiose",
+        "nomePopular":  "Sarna",
+        "cid10":  "B86",
+        "especialidade":  "Dermatologia",
+        "categoria":  "Dermatológico"
+    },
+    {
+        "slug":  "pediculose",
+        "nome":  "Pediculose",
+        "nomePopular":  "Piolho",
+        "cid10":  "B85",
+        "especialidade":  "Dermatologia",
+        "categoria":  "Dermatológico"
+    },
+    {
+        "slug":  "celulite-infecciosa",
+        "nome":  "Celulite Infecciosa",
+        "nomePopular":  "Infecção na pele",
+        "cid10":  "L03",
+        "especialidade":  "Dermatologia",
+        "categoria":  "Dermatológico"
+    },
+    {
+        "slug":  "verrugas",
+        "nome":  "Verrugas",
+        "nomePopular":  "Verruga",
+        "cid10":  "B07",
+        "especialidade":  "Dermatologia",
+        "categoria":  "Dermatológico"
+    },
+    {
+        "slug":  "foliculite",
+        "nome":  "Foliculite",
+        "nomePopular":  "Foliculite",
+        "cid10":  "L73.9",
+        "especialidade":  "Dermatologia",
+        "categoria":  "Dermatológico"
+    },
+    {
+        "slug":  "hiperidrose",
+        "nome":  "Hiperidrose",
+        "nomePopular":  "Suor excessivo",
+        "cid10":  "R61",
+        "especialidade":  "Dermatologia",
+        "categoria":  "Dermatológico"
+    },
+    {
+        "slug":  "manchas-na-pele",
+        "nome":  "Manchas na Pele",
+        "nomePopular":  "Manchas na pele",
+        "cid10":  "L81.9",
+        "especialidade":  "Dermatologia",
+        "categoria":  "Dermatológico"
+    },
+    {
+        "slug":  "vaginose-bacteriana",
+        "nome":  "Vaginose Bacteriana",
+        "nomePopular":  "Vaginose",
+        "cid10":  "N76.0",
+        "especialidade":  "Ginecologia",
+        "categoria":  "Saúde da Mulher"
+    },
+    {
+        "slug":  "amenorreia",
+        "nome":  "Amenorreia",
+        "nomePopular":  "Falta de menstruação",
+        "cid10":  "N91",
+        "especialidade":  "Ginecologia",
+        "categoria":  "Saúde da Mulher"
+    },
+    {
+        "slug":  "ciclo-menstrual-irregular",
+        "nome":  "Ciclo Menstrual Irregular",
+        "nomePopular":  "Menstruação irregular",
+        "cid10":  "N92.6",
+        "especialidade":  "Ginecologia",
+        "categoria":  "Saúde da Mulher"
+    },
+    {
+        "slug":  "sangramento-uterino-anormal",
+        "nome":  "Sangramento Uterino Anormal",
+        "nomePopular":  "Sangramento irregular",
+        "cid10":  "N93.9",
+        "especialidade":  "Ginecologia",
+        "categoria":  "Saúde da Mulher"
+    },
+    {
+        "slug":  "climatério",
+        "nome":  "Climatério",
+        "nomePopular":  "Climatério",
+        "cid10":  "N95.1",
+        "especialidade":  "Ginecologia",
+        "categoria":  "Saúde da Mulher"
+    },
+    {
+        "slug":  "mastite",
+        "nome":  "Mastite",
+        "nomePopular":  "Mastite",
+        "cid10":  "N61",
+        "especialidade":  "Ginecologia",
+        "categoria":  "Saúde da Mulher"
+    },
+    {
+        "slug":  "nodulo-na-mama",
+        "nome":  "Nódulo na Mama",
+        "nomePopular":  "Nódulo no peito",
+        "cid10":  "N63",
+        "especialidade":  "Mastologia",
+        "categoria":  "Saúde da Mulher"
+    },
+    {
+        "slug":  "dispareunia",
+        "nome":  "Dispareunia",
+        "nomePopular":  "Dor na relação",
+        "cid10":  "N94.1",
+        "especialidade":  "Ginecologia",
+        "categoria":  "Saúde da Mulher"
+    },
+    {
+        "slug":  "baixa-libido-feminina",
+        "nome":  "Baixa Libido Feminina",
+        "nomePopular":  "Queda de desejo sexual",
+        "cid10":  "F52.0",
+        "especialidade":  "Ginecologia",
+        "categoria":  "Saúde da Mulher"
+    },
+    {
+        "slug":  "anticoncepcao",
+        "nome":  "Anticoncepção",
+        "nomePopular":  "Pílula / DIU / anticoncepcional",
+        "cid10":  "Z30",
+        "especialidade":  "Ginecologia",
+        "categoria":  "Saúde da Mulher"
+    },
+    {
+        "slug":  "prenatal",
+        "nome":  "Pré-Natal",
+        "nomePopular":  "Acompanhamento de gravidez",
+        "cid10":  "Z34",
+        "especialidade":  "Obstetrícia",
+        "categoria":  "Saúde da Mulher"
+    },
+    {
+        "slug":  "hipertensao-gestacional",
+        "nome":  "Hipertensão Gestacional",
+        "nomePopular":  "Pressão alta na gravidez",
+        "cid10":  "O13",
+        "especialidade":  "Obstetrícia",
+        "categoria":  "Saúde da Mulher"
+    },
+    {
+        "slug":  "prostatite",
+        "nome":  "Prostatite",
+        "nomePopular":  "Prostatite",
+        "cid10":  "N41",
+        "especialidade":  "Urologia",
+        "categoria":  "Saúde do Homem"
+    },
+    {
+        "slug":  "varicocele",
+        "nome":  "Varicocele",
+        "nomePopular":  "Varicocele",
+        "cid10":  "I86.1",
+        "especialidade":  "Urologia",
+        "categoria":  "Saúde do Homem"
+    },
+    {
+        "slug":  "baixa-libido-masculina",
+        "nome":  "Baixa Libido Masculina",
+        "nomePopular":  "Queda de libido masculina",
+        "cid10":  "F52.0",
+        "especialidade":  "Urologia",
+        "categoria":  "Saúde do Homem"
+    },
+    {
+        "slug":  "cancer-de-prostata",
+        "nome":  "Câncer de Próstata",
+        "nomePopular":  "Câncer de próstata",
+        "cid10":  "C61",
+        "especialidade":  "Urologia",
+        "categoria":  "Saúde do Homem"
+    },
+    {
+        "slug":  "virose",
+        "nome":  "Virose",
+        "nomePopular":  "Virose",
+        "cid10":  "B34.9",
+        "especialidade":  "Clínica Geral",
+        "categoria":  "Infecções"
+    },
+    {
+        "slug":  "caxumba",
+        "nome":  "Caxumba",
+        "nomePopular":  "Caxumba",
+        "cid10":  "B26",
+        "especialidade":  "Infectologia",
+        "categoria":  "Infecções"
+    },
+    {
+        "slug":  "varicela",
+        "nome":  "Varicela",
+        "nomePopular":  "Catapora",
+        "cid10":  "B01",
+        "especialidade":  "Infectologia",
+        "categoria":  "Infecções"
+    },
+    {
+        "slug":  "sarampo",
+        "nome":  "Sarampo",
+        "nomePopular":  "Sarampo",
+        "cid10":  "B05",
+        "especialidade":  "Infectologia",
+        "categoria":  "Infecções"
+    },
+    {
+        "slug":  "chikungunya",
+        "nome":  "Chikungunya",
+        "nomePopular":  "Chikungunya",
+        "cid10":  "A92.0",
+        "especialidade":  "Infectologia",
+        "categoria":  "Infecções"
+    },
+    {
+        "slug":  "zika",
+        "nome":  "Zika",
+        "nomePopular":  "Zika",
+        "cid10":  "A92.5",
+        "especialidade":  "Infectologia",
+        "categoria":  "Infecções"
+    },
+    {
+        "slug":  "mononucleose",
+        "nome":  "Mononucleose",
+        "nomePopular":  "Mono / doença do beijo",
+        "cid10":  "B27",
+        "especialidade":  "Infectologia",
+        "categoria":  "Infecções"
+    },
+    {
+        "slug":  "hiv",
+        "nome":  "HIV",
+        "nomePopular":  "HIV / AIDS",
+        "cid10":  "B24",
+        "especialidade":  "Infectologia",
+        "categoria":  "Infecções"
+    },
+    {
+        "slug":  "febre",
+        "nome":  "Febre",
+        "nomePopular":  "Febre",
+        "cid10":  "R50.9",
+        "especialidade":  "Clínica Geral",
+        "categoria":  "Infecções"
+    },
+    {
+        "slug":  "coqueluche",
+        "nome":  "Coqueluche",
+        "nomePopular":  "Coqueluche",
+        "cid10":  "A37",
+        "especialidade":  "Infectologia",
+        "categoria":  "Infecções"
+    },
+    {
+        "slug":  "epilepsia",
+        "nome":  "Epilepsia",
+        "nomePopular":  "Epilepsia / convulsão",
+        "cid10":  "G40",
+        "especialidade":  "Neurologia",
+        "categoria":  "Neurológico"
+    },
+    {
+        "slug":  "doenca-de-parkinson",
+        "nome":  "Doença de Parkinson",
+        "nomePopular":  "Parkinson",
+        "cid10":  "G20",
+        "especialidade":  "Neurologia",
+        "categoria":  "Neurológico"
+    },
+    {
+        "slug":  "alzheimer",
+        "nome":  "Doença de Alzheimer",
+        "nomePopular":  "Alzheimer",
+        "cid10":  "G30",
+        "especialidade":  "Neurologia",
+        "categoria":  "Neurológico"
+    },
+    {
+        "slug":  "demencia",
+        "nome":  "Demência",
+        "nomePopular":  "Demência",
+        "cid10":  "F03",
+        "especialidade":  "Neurologia",
+        "categoria":  "Neurológico"
+    },
+    {
+        "slug":  "esclerose-multipla",
+        "nome":  "Esclerose Múltipla",
+        "nomePopular":  "Esclerose múltipla",
+        "cid10":  "G35",
+        "especialidade":  "Neurologia",
+        "categoria":  "Neurológico"
+    },
+    {
+        "slug":  "neuropatia-periferica",
+        "nome":  "Neuropatia Periférica",
+        "nomePopular":  "Neuropatia",
+        "cid10":  "G62.9",
+        "especialidade":  "Neurologia",
+        "categoria":  "Neurológico"
+    },
+    {
+        "slug":  "neuralgia-do-trigemeo",
+        "nome":  "Neuralgia do Trigêmeo",
+        "nomePopular":  "Neuralgia do trigêmeo",
+        "cid10":  "G50.0",
+        "especialidade":  "Neurologia",
+        "categoria":  "Neurológico"
+    },
+    {
+        "slug":  "sindrome-das-pernas-inquietas",
+        "nome":  "Síndrome das Pernas Inquietas",
+        "nomePopular":  "Pernas inquietas",
+        "cid10":  "G25.8",
+        "especialidade":  "Neurologia",
+        "categoria":  "Neurológico"
+    },
+    {
+        "slug":  "vertigem",
+        "nome":  "Vertigem",
+        "nomePopular":  "Vertigem",
+        "cid10":  "R42",
+        "especialidade":  "Otorrinolaringologia",
+        "categoria":  "Neurológico"
+    },
+    {
+        "slug":  "sindrome-de-meniere",
+        "nome":  "Síndrome de Ménière",
+        "nomePopular":  "Doença de Ménière",
+        "cid10":  "H81.0",
+        "especialidade":  "Otorrinolaringologia",
+        "categoria":  "Neurológico"
+    },
+    {
+        "slug":  "pielonefrite",
+        "nome":  "Pielonefrite",
+        "nomePopular":  "Infecção no rim",
+        "cid10":  "N10",
+        "especialidade":  "Urologia",
+        "categoria":  "Urinário"
+    },
+    {
+        "slug":  "hematuria",
+        "nome":  "Hematúria",
+        "nomePopular":  "Sangue na urina",
+        "cid10":  "R31",
+        "especialidade":  "Urologia",
+        "categoria":  "Urinário"
+    },
+    {
+        "slug":  "deficiencia-de-vitamina-b12",
+        "nome":  "Deficiência de Vitamina B12",
+        "nomePopular":  "Falta de vitamina B12",
+        "cid10":  "E53.8",
+        "especialidade":  "Clínica Geral",
+        "categoria":  "Nutrição"
+    },
+    {
+        "slug":  "fadiga-cronica",
+        "nome":  "Fadiga Crônica",
+        "nomePopular":  "Cansaço excessivo",
+        "cid10":  "G93.3",
+        "especialidade":  "Clínica Geral",
+        "categoria":  "Nutrição"
+    },
+    {
+        "slug":  "perda-de-peso-inexplicada",
+        "nome":  "Perda de Peso Inexplicada",
+        "nomePopular":  "Emagrecimento sem causa",
+        "cid10":  "R63.4",
+        "especialidade":  "Clínica Geral",
+        "categoria":  "Nutrição"
+    },
+    {
+        "slug":  "sobrepeso",
+        "nome":  "Sobrepeso",
+        "nomePopular":  "Sobrepeso",
+        "cid10":  "E66.3",
+        "especialidade":  "Endocrinologia",
+        "categoria":  "Nutrição"
+    },
+    {
+        "slug":  "desidratacao",
+        "nome":  "Desidratação",
+        "nomePopular":  "Desidratação",
+        "cid10":  "E86",
+        "especialidade":  "Clínica Geral",
+        "categoria":  "Nutrição"
+    },
+    {
+        "slug":  "doenca-de-sjogren",
+        "nome":  "Doença de Sjögren",
+        "nomePopular":  "Síndrome de Sjögren",
+        "cid10":  "M35.0",
+        "especialidade":  "Reumatologia",
+        "categoria":  "Autoimune"
+    },
+    {
+        "slug":  "psoriase-artropatica",
+        "nome":  "Psoríase Artropática",
+        "nomePopular":  "Artrite psoriásica",
+        "cid10":  "L40.5",
+        "especialidade":  "Reumatologia",
+        "categoria":  "Autoimune"
+    },
+    {
+        "slug":  "alergia-a-medicamento",
+        "nome":  "Alergia a Medicamento",
+        "nomePopular":  "Alergia a remédio",
+        "cid10":  "T88.7",
+        "especialidade":  "Alergologia",
+        "categoria":  "Alergia"
+    },
+    {
+        "slug":  "alergia-a-acaro",
+        "nome":  "Alergia a Ácaro",
+        "nomePopular":  "Alergia a ácaro",
+        "cid10":  "J30.3",
+        "especialidade":  "Alergologia",
+        "categoria":  "Alergia"
+    },
+    {
+        "slug":  "anafilaxia",
+        "nome":  "Anafilaxia",
+        "nomePopular":  "Choque alérgico",
+        "cid10":  "T78.2",
+        "especialidade":  "Alergologia",
+        "categoria":  "Alergia"
+    },
+    {
+        "slug":  "catarata",
+        "nome":  "Catarata",
+        "nomePopular":  "Catarata",
+        "cid10":  "H25",
+        "especialidade":  "Oftalmologia",
+        "categoria":  "Oftalmológico"
+    },
+    {
+        "slug":  "glaucoma",
+        "nome":  "Glaucoma",
+        "nomePopular":  "Glaucoma",
+        "cid10":  "H40",
+        "especialidade":  "Oftalmologia",
+        "categoria":  "Oftalmológico"
+    },
+    {
+        "slug":  "miopia",
+        "nome":  "Miopia",
+        "nomePopular":  "Miopia",
+        "cid10":  "H52.1",
+        "especialidade":  "Oftalmologia",
+        "categoria":  "Oftalmológico"
+    },
+    {
+        "slug":  "tercol",
+        "nome":  "Terçol",
+        "nomePopular":  "Terçol / orgelete",
+        "cid10":  "H00.0",
+        "especialidade":  "Oftalmologia",
+        "categoria":  "Oftalmológico"
+    },
+    {
+        "slug":  "daltonismo",
+        "nome":  "Daltonismo",
+        "nomePopular":  "Daltonismo",
+        "cid10":  "H53.5",
+        "especialidade":  "Oftalmologia",
+        "categoria":  "Oftalmológico"
+    },
+    {
+        "slug":  "tricomoniase",
+        "nome":  "Tricomoníase",
+        "nomePopular":  "Tricomoníase",
+        "cid10":  "A59",
+        "especialidade":  "Infectologia",
+        "categoria":  "Saúde Sexual"
+    },
+    {
+        "slug":  "condiloma-acuminado",
+        "nome":  "Condiloma Acuminado",
+        "nomePopular":  "Verruga genital",
+        "cid10":  "A63.0",
+        "especialidade":  "Infectologia",
+        "categoria":  "Saúde Sexual"
+    },
+    {
+        "slug":  "candidiase-masculina",
+        "nome":  "Candidíase Masculina",
+        "nomePopular":  "Candidíase no homem",
+        "cid10":  "B37.4",
+        "especialidade":  "Urologia",
+        "categoria":  "Saúde Sexual"
+    },
+    {
+        "slug":  "ist",
+        "nome":  "Infecções Sexualmente Transmissíveis",
+        "nomePopular":  "IST / DST",
+        "cid10":  "A64",
+        "especialidade":  "Infectologia",
+        "categoria":  "Saúde Sexual"
+    },
+    {
+        "slug":  "febre-em-crianca",
+        "nome":  "Febre em Criança",
+        "nomePopular":  "Febre infantil",
+        "cid10":  "R50.9",
+        "especialidade":  "Pediatria",
+        "categoria":  "Pediátrico"
+    },
+    {
+        "slug":  "refluxo-infantil",
+        "nome":  "Refluxo Infantil",
+        "nomePopular":  "Refluxo do bebê",
+        "cid10":  "P78.8",
+        "especialidade":  "Pediatria",
+        "categoria":  "Pediátrico"
+    },
+    {
+        "slug":  "otite-media-infantil",
+        "nome":  "Otite Média Infantil",
+        "nomePopular":  "Otite em criança",
+        "cid10":  "H66",
+        "especialidade":  "Pediatria",
+        "categoria":  "Pediátrico"
+    },
+    {
+        "slug":  "dor-de-dente",
+        "nome":  "Dor de Dente",
+        "nomePopular":  "Dor de dente",
+        "cid10":  "K08.8",
+        "especialidade":  "Odontologia",
+        "categoria":  "Odontológico"
+    },
+    {
+        "slug":  "periodontite",
+        "nome":  "Periodontite",
+        "nomePopular":  "Periodontite",
+        "cid10":  "K05.3",
+        "especialidade":  "Odontologia",
+        "categoria":  "Odontológico"
+    },
+    {
+        "slug":  "halitose",
+        "nome":  "Halitose",
+        "nomePopular":  "Mau hálito",
+        "cid10":  "R19.6",
+        "especialidade":  "Odontologia",
+        "categoria":  "Odontológico"
+    },
+    {
+        "slug":  "sensibilidade-dentaria",
+        "nome":  "Sensibilidade Dentária",
+        "nomePopular":  "Dente sensível",
+        "cid10":  "K03.8",
+        "especialidade":  "Odontologia",
+        "categoria":  "Odontológico"
+    },
+    {
+        "slug":  "carie",
+        "nome":  "Cárie",
+        "nomePopular":  "Cárie",
+        "cid10":  "K02",
+        "especialidade":  "Odontologia",
+        "categoria":  "Odontológico"
+    },
+    {
+        "slug":  "cancer-de-mama",
+        "nome":  "Câncer de Mama",
+        "nomePopular":  "Câncer de mama",
+        "cid10":  "C50",
+        "especialidade":  "Mastologia",
+        "categoria":  "Oncológico"
+    },
+    {
+        "slug":  "cancer-de-pele",
+        "nome":  "Câncer de Pele",
+        "nomePopular":  "Câncer de pele",
+        "cid10":  "C44",
+        "especialidade":  "Dermatologia",
+        "categoria":  "Oncológico"
+    },
+    {
+        "slug":  "cancer-de-pulmao",
+        "nome":  "Câncer de Pulmão",
+        "nomePopular":  "Câncer de pulmão",
+        "cid10":  "C34",
+        "especialidade":  "Pneumologia",
+        "categoria":  "Oncológico"
+    },
+    {
+        "slug":  "cancer-de-colo-do-utero",
+        "nome":  "Câncer de Colo do Útero",
+        "nomePopular":  "Câncer de colo",
+        "cid10":  "C53",
+        "especialidade":  "Ginecologia",
+        "categoria":  "Oncológico"
+    }
+]

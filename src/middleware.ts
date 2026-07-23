@@ -24,6 +24,7 @@ import {
   canAccessPharmacyPharmacistPortal,
   canAccessPharmacyValidatePortal,
 } from "@/lib/pharmacy-portal-guards";
+import { isConditionSeoPath } from "@/lib/condition-seo";
 
 const PRIVATE_CACHE_CONTROL = "private, no-store";
 
@@ -140,6 +141,8 @@ function isPublicRoute(pathname: string): boolean {
   if (pathname === "/diabetes") return true;
   if (pathname === "/ansiedade") return true;
   if (pathname === "/depressao") return true;
+  // Condition SEO landings: /{slug} from condition catalog
+  if (isConditionSeoPath(pathname)) return true;
   if (pathname === "/marketing" || pathname.startsWith("/marketing/")) return true;
   return PUBLIC_ROUTES.some((route) => {
     // "/" must be exact — every path starts with "/"

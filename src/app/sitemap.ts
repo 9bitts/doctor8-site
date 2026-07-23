@@ -10,6 +10,7 @@ import {
   SITEMAP_SPECIALTY_CITY_COMBOS,
   SITEMAP_CONVENIO_SLUGS,
 } from "@/lib/seo-index";
+import { listConditionSlugsForStatic } from "@/lib/condition-seo";
 
 export const dynamic = "force-dynamic";
 
@@ -72,6 +73,15 @@ function buildProgrammaticEntries(now: Date): MetadataRoute.Sitemap {
         priority: 0.6,
       });
     }
+  }
+
+  for (const slug of listConditionSlugsForStatic()) {
+    entries.push({
+      url: `${APP_BASE_URL}/${slug}`,
+      lastModified: now,
+      changeFrequency: "monthly",
+      priority: 0.65,
+    });
   }
 
   return entries;
