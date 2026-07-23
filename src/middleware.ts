@@ -136,7 +136,7 @@ function isPublicRoute(pathname: string): boolean {
   if (pathname === "/laboratorios") return true;
   if (pathname === "/laboratorios/buscar") return true;
   if (pathname === "/distribuidores") return true;
-  if (pathname === "/marketing") return true;
+  if (pathname === "/marketing" || pathname.startsWith("/marketing/")) return true;
   return PUBLIC_ROUTES.some((route) => {
     // "/" must be exact — every path starts with "/"
     if (route === "/") return pathname === "/";

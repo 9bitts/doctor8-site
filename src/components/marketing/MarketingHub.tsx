@@ -59,6 +59,12 @@ export default function MarketingHub() {
               Quem é você?
             </a>
             <Link
+              href="/marketing/estrategias"
+              className="inline-flex items-center gap-2 rounded-xl border border-white/20 px-5 py-3 text-sm font-semibold text-white hover:bg-white/10 transition"
+            >
+              Estratégias por público
+            </Link>
+            <Link
               href="/pacientes"
               className="inline-flex items-center gap-2 rounded-xl px-5 py-3 text-sm font-medium text-slate-300 hover:text-white transition"
             >
@@ -334,8 +340,12 @@ export default function MarketingHub() {
               </a>
               <p className="mt-4 text-xs text-slate-500">
                 Dica para SDRs e parceiros: compartilhe âncoras como{" "}
-                <code className="text-slate-700">/marketing#empresas</code> ou{" "}
-                <code className="text-slate-700">/marketing#farmacias</code>.
+                <code className="text-slate-700">/marketing#empresas</code>,{" "}
+                <code className="text-slate-700">/marketing#farmacias</code> ou as{" "}
+                <Link href="/marketing/estrategias" className="text-brand-700 font-medium hover:underline">
+                  estratégias por público
+                </Link>
+                .
               </p>
             </div>
             <div className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-7 shadow-sm">
