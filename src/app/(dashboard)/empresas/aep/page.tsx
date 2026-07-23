@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Loader2, Plus, CheckCircle2 } from "lucide-react";
+import { Loader2, Plus, CheckCircle2, AlertTriangle } from "lucide-react";
 import Link from "next/link";
 
 type AepRecord = {
@@ -13,6 +13,9 @@ type AepRecord = {
   methodologyRationale: string | null;
   workerParticipation: string | null;
   notes: string | null;
+  workstationDescription: string | null;
+  recommendAet: boolean;
+  ergonomicScreeningJson: unknown;
   approvedByName: string | null;
   surveyCampaignId: string | null;
   _count: { riskEntries: number };
@@ -29,10 +32,19 @@ export default function AepPage() {
   const [records, setRecords] = useState<AepRecord[]>([]);
   const [campaigns, setCampaigns] = useState<SurveyCampaign[]>([]);
   const [loading, setLoading] = useState(true);
-  const [title, setTitle] = useState("AEP — Riscos psicossociais");
+  const [title, setTitle] = useState("AEP — Postos e organização do trabalho");
   const [methodologyRationale, setMethodologyRationale] = useState("");
   const [workerParticipation, setWorkerParticipation] = useState("");
+  const [workstationDescription, setWorkstationDescription] = useState("");
   const [surveyCampaignId, setSurveyCampaignId] = useState("");
+  const [repetitions, setRepetitions] = useState("");
+  const [loadKg, setLoadKg] = useState("");
+  const [armsAbove, setArmsAbove] = useState(false);
+  const [trunkFlexion, setTrunkFlexion] = useState(false);
+  const [wristForce, setWristForce] = useState(false);
+  const [vibration, setVibration] = useState(false);
+  const [standing, setStanding] = useState(false);
+  const [computer, setComputer] = useState(true);
   const [error, setError] = useState("");
   const [approvedByName, setApprovedByName] = useState("");
 
@@ -47,6 +59,20 @@ export default function AepPage() {
 
   useEffect(() => { load(); }, []);
 
+  function ergoPayload() {
+    return {
+      workstationDescription: workstationDescription || undefined,
+      repetitionsPerShift: repetitions ? Number(repetitions) : null,
+      loadKg: loadKg ? Number(loadKg) : null,
+      armsAboveShoulders: armsAbove,
+      trunkFlexionFrequent: trunkFlexion,
+      wristForceDeviation: wristForce,
+      vibrationTools: vibration,
+      prolongedStanding: standing,
+      computerWorkstation: computer,
+    };
+  }
+
   async function createDraft(e: React.FormEvent) {
     e.preventDefault();
     setError("");
@@ -55,9 +81,11 @@ export default function AepPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         title,
-        methodology: "COPSOQ-LITE + entrevistas + observação",
+        methodology: "AEP qualitativa/semiquantitativa (NR-17) + fatores psicossociais",
         methodologyRationale,
         workerParticipation,
+        workstationDescription,
+        ergonomicScreening: ergoPayload(),
         surveyCampaignId: surveyCampaignId || undefined,
         status: "IN_PROGRESS",
       }),
@@ -84,7 +112,7 @@ export default function AepPage() {
     });
     const data = await res.json();
     if (!res.ok) {
-      setError(data.error || "Não foi possível concluir. Vincule riscos em NR-1 e preencha o racional.");
+      setError(typeof data.error === "string" ? data.error : "Não foi possível concluir. Vincule riscos, participação e racional.");
       return;
     }
     load();
@@ -102,7 +130,7 @@ export default function AepPage() {
     });
     const data = await res.json();
     if (!res.ok) {
-      setError(data.error || "Erro ao aprovar.");
+      setError(typeof data.error === "string" ? data.error : "Erro ao aprovar.");
       return;
     }
     load();
@@ -114,15 +142,20 @@ export default function AepPage() {
     return c ? `${c.title} (${c.instrument})` : id;
   };
 
+  const ergoSummary = (r: AepRecord) => {
+    const j = r.ergonomicScreeningJson as { summary?: string } | null;
+    return j?.summary ?? null;
+  };
+
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-8">
       <div>
         <h1 className="text-2xl font-bold text-slate-900">Avaliação Ergonômica Preliminar (AEP)</h1>
         <p className="text-slate-500 text-sm mt-1">
-          Obrigatória para todas as empresas (NR-17 + NR-1). Vincule riscos em{" "}
+          Obrigatória (NR-17 + NR-1). Inclui triagem semiquantitativa de posto e fatores psicossociais.
+          Vincule riscos no{" "}
           <Link href="/empresas/nr1" className="text-sky-600 hover:underline">Inventário NR-1</Link>
-          {" "}e pesquisas em{" "}
-          <Link href="/empresas/pesquisas" className="text-sky-600 hover:underline">Pesquisas</Link>.
+          . AET é aprofundamento quando a triagem indicar.
         </p>
       </div>
 
@@ -140,15 +173,70 @@ export default function AepPage() {
         <textarea
           value={methodologyRationale}
           onChange={(e) => setMethodologyRationale(e.target.value)}
-          placeholder="Racional da metodologia escolhida (subitem 1.5.4.4.2.2 NR-1)"
+          placeholder="Racional da metodologia (subitem 1.5.4.4.2.2 NR-1)"
           className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm min-h-[72px]"
         />
         <textarea
           value={workerParticipation}
           onChange={(e) => setWorkerParticipation(e.target.value)}
-          placeholder="Participação dos trabalhadores / CIPA"
+          placeholder="Participação dos trabalhadores / CIPA (obrigatória para concluir)"
           className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm min-h-[72px]"
         />
+        <textarea
+          value={workstationDescription}
+          onChange={(e) => setWorkstationDescription(e.target.value)}
+          placeholder="Descrição do(s) posto(s) / situação de trabalho avaliada"
+          className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm min-h-[64px]"
+        />
+
+        <div className="rounded-xl border border-slate-100 bg-slate-50 p-4 space-y-3">
+          <p className="text-sm font-medium text-slate-800">Triagem ergonômica (semiquantitativa)</p>
+          <div className="grid sm:grid-cols-2 gap-3">
+            <label className="text-xs text-slate-600 block">
+              Repetições / jornada
+              <input
+                type="number"
+                min={0}
+                value={repetitions}
+                onChange={(e) => setRepetitions(e.target.value)}
+                placeholder="ex.: 2800"
+                className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm bg-white"
+              />
+            </label>
+            <label className="text-xs text-slate-600 block">
+              Peso manipulado (kg)
+              <input
+                type="number"
+                min={0}
+                step="0.1"
+                value={loadKg}
+                onChange={(e) => setLoadKg(e.target.value)}
+                placeholder="ex.: 22"
+                className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm bg-white"
+              />
+            </label>
+          </div>
+          <div className="grid sm:grid-cols-2 gap-2 text-xs text-slate-700">
+            {[
+              [armsAbove, setArmsAbove, "Braços acima dos ombros"],
+              [trunkFlexion, setTrunkFlexion, "Flexão de tronco frequente"],
+              [wristForce, setWristForce, "Punho com força / desvio"],
+              [vibration, setVibration, "Ferramentas vibratórias"],
+              [standing, setStanding, "Permanência prolongada em pé"],
+              [computer, setComputer, "Posto informatizado"],
+            ].map(([checked, setter, label], idx) => (
+              <label key={idx} className="inline-flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={checked as boolean}
+                  onChange={(e) => (setter as (v: boolean) => void)(e.target.checked)}
+                />
+                {label as string}
+              </label>
+            ))}
+          </div>
+        </div>
+
         <label className="block text-sm text-slate-600">
           Pesquisa vinculada (opcional)
           <select
@@ -186,16 +274,26 @@ export default function AepPage() {
           {records.map((r) => (
             <li key={r.id} className="rounded-xl border border-slate-200 p-4 bg-white flex justify-between gap-4 items-start">
               <div className="min-w-0 flex-1">
-                <p className="font-medium text-slate-900 flex items-center gap-2">
+                <p className="font-medium text-slate-900 flex items-center gap-2 flex-wrap">
                   {r.title} · v{r.version}
                   {(r.status === "COMPLETED" || r.status === "APPROVED") && (
                     <CheckCircle2 size={16} className="text-emerald-600" />
+                  )}
+                  {r.recommendAet && (
+                    <span className="inline-flex items-center gap-1 text-xs text-amber-800 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
+                      <AlertTriangle size={12} /> Recomenda AET
+                    </span>
                   )}
                 </p>
                 <p className="text-xs text-slate-500 mt-1">
                   Status: {r.status} · {r._count.riskEntries} riscos vinculados
                 </p>
-                {r.methodology && <p className="text-xs text-slate-600 mt-2">Método: {r.methodology}</p>}
+                {r.workstationDescription && (
+                  <p className="text-xs text-slate-600 mt-2">Posto: {r.workstationDescription}</p>
+                )}
+                {ergoSummary(r) && (
+                  <p className="text-xs text-slate-600 mt-1">{ergoSummary(r)}</p>
+                )}
                 {r.approvedByName && <p className="text-xs text-slate-600">Aprovado por: {r.approvedByName}</p>}
                 <label className="block text-xs text-slate-500 mt-3">
                   Pesquisa vinculada

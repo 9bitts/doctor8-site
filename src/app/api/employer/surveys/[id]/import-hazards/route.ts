@@ -32,14 +32,28 @@ export async function POST(
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
+  if (!campaign.analyzedAt || !campaign.analysisJson) {
+    return NextResponse.json(
+      {
+        error: "TECHNICAL_ANALYSIS_REQUIRED",
+        message:
+          "Registre a análise técnica da pesquisa antes de importar ao inventário (FAQ MTE: questionário isolado não basta).",
+      },
+      { status: 400 },
+    );
+  }
+
   const report = aggregateSurveyResponses(campaign.responses, campaign.anonymousMinGroup, campaign.instrument);
   if (!report.meetsAnonymityThreshold) {
     return NextResponse.json({ error: "ANONYMITY_THRESHOLD" }, { status: 400 });
   }
 
+  const analysis = campaign.analysisJson as { confirmedHazardCodes?: string[] } | null;
   const codes = parsed.data.hazardCodes?.length
     ? parsed.data.hazardCodes
-    : report.suggestedHazardsOverall;
+    : analysis?.confirmedHazardCodes?.length
+      ? analysis.confirmedHazardCodes
+      : report.suggestedHazardsOverall;
 
   const existing = await db.employerRiskEntry.findMany({
     where: { employerCompanyId: ctx.employerCompanyId },

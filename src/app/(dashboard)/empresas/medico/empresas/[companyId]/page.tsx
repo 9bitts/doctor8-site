@@ -14,6 +14,11 @@ import {
 } from "lucide-react";
 import { useToast } from "@/components/ui/toast";
 import { ASO_RESULT_LABELS } from "@/lib/employer-occupational-exams";
+import {
+  PCMSO_SCREENING_OPTIONS,
+  PCMSO_SCREENING_QUESTIONS,
+  buildPcmsoScreeningResult,
+} from "@/lib/employer-pcmso-screening";
 
 type Risk = {
   id: string;
@@ -84,6 +89,8 @@ export default function MedicoEmpresaDetailPage() {
   const [historyStatus, setHistoryStatus] = useState("");
   const [historyExams, setHistoryExams] = useState<HistoryExam[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
+  const [includeScreening, setIncludeScreening] = useState(true);
+  const [screeningAnswers, setScreeningAnswers] = useState<Record<string, number>>({});
   const [data, setData] = useState<{
     company: { nomeFantasia: string; cnpj: string; nr1ComplianceScore: number | null };
     pcmso: {
@@ -155,6 +162,8 @@ export default function MedicoEmpresaDetailPage() {
     setExamAction({ mode: "complete", examId, asoResult });
     setAsoRestrictions("");
     setExamNotes("");
+    setIncludeScreening(true);
+    setScreeningAnswers({});
   }
 
   function openRectify(exam: CompletedExam) {
@@ -162,13 +171,20 @@ export default function MedicoEmpresaDetailPage() {
     setExamNotes("");
     setAsoRestrictions(exam.asoRestrictions ?? "");
     setRectifyAsoResult((exam.asoResult as AsoResult) ?? "APTO");
+    setIncludeScreening(false);
   }
 
   function closeExamModal() {
     setExamAction(null);
     setAsoRestrictions("");
     setExamNotes("");
+    setScreeningAnswers({});
   }
+
+  const screeningPreview =
+    includeScreening && Object.keys(screeningAnswers).length > 0
+      ? buildPcmsoScreeningResult(screeningAnswers)
+      : null;
 
   async function submitExamAction() {
     if (!examAction) return;
@@ -190,11 +206,13 @@ export default function MedicoEmpresaDetailPage() {
           asoResult,
           asoRestrictions: asoResult === "APTO_COM_RESTRICAO" ? asoRestrictions.trim() : undefined,
           notes: examNotes.trim() || undefined,
+          screeningAnswers: includeScreening ? screeningAnswers : undefined,
         }),
       });
       setSaving(false);
       if (res.ok) {
-        toast.success("ASO registrado.");
+        const band = screeningPreview?.bandLabel;
+        toast.success(band ? `ASO registrado. Triagem: ${band}.` : "ASO registrado.");
         closeExamModal();
         await load();
         await loadHistory();
@@ -501,7 +519,7 @@ export default function MedicoEmpresaDetailPage() {
 
       {examAction && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 space-y-4">
+          <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between">
               <h3 className="font-semibold text-slate-900">
                 {examAction.mode === "complete" ? "Registrar ASO" : "Retificar ASO"}
@@ -538,6 +556,54 @@ export default function MedicoEmpresaDetailPage() {
                   placeholder="Descreva as restrições ocupacionais"
                   className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
                 />
+              </div>
+            )}
+
+            {examAction.mode === "complete" && (
+              <div className="rounded-xl border border-teal-100 bg-teal-50/50 p-3 space-y-3">
+                <label className="flex items-center gap-2 text-sm text-teal-950 font-medium">
+                  <input
+                    type="checkbox"
+                    checked={includeScreening}
+                    onChange={(e) => setIncludeScreening(e.target.checked)}
+                  />
+                  Incluir triagem psicossocial PCMSO (últimos 30 dias)
+                </label>
+                {includeScreening && (
+                  <>
+                    <p className="text-[11px] text-teal-800">
+                      Triagem individual — não diagnostica e não substitui o GRO/PGR. Dados ficam no prontuário do exame (sigilo médico).
+                    </p>
+                    <div className="space-y-3 max-h-56 overflow-y-auto pr-1">
+                      {PCMSO_SCREENING_QUESTIONS.map((q) => (
+                        <div key={q.id} className="text-xs space-y-1">
+                          <p className="text-slate-700">{q.label}</p>
+                          <div className="flex flex-wrap gap-2">
+                            {PCMSO_SCREENING_OPTIONS.map((opt) => (
+                              <label key={opt.value} className="inline-flex items-center gap-1 cursor-pointer">
+                                <input
+                                  type="radio"
+                                  name={q.id}
+                                  checked={screeningAnswers[q.id] === opt.value}
+                                  onChange={() =>
+                                    setScreeningAnswers((prev) => ({ ...prev, [q.id]: opt.value }))
+                                  }
+                                />
+                                {opt.value} · {opt.label}
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    {screeningPreview && (
+                      <p className="text-xs font-medium text-teal-900">
+                        Score {screeningPreview.totalScore} — {screeningPreview.bandLabel}.{" "}
+                        {screeningPreview.suggestedConduct}
+                      </p>
+                    )}
+                  </>
+                )}
               </div>
             )}
 

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
+import type { Prisma } from "@prisma/client";
 import { requireEmployerApi } from "@/lib/api-auth";
 import { parsePcmsoChecklist, pcmsoCompletionPercent } from "@/lib/employer-pcmso-checklist";
+import { parseExamMatrix } from "@/lib/employer-pcmso-exam-matrix";
 import { db } from "@/lib/db";
 import { z } from "zod";
 
@@ -13,6 +15,7 @@ export async function GET() {
   });
 
   const checklist = parsePcmsoChecklist(config?.checklistJson);
+  const examMatrix = parseExamMatrix(config?.examMatrixJson);
 
   return NextResponse.json({
     config: config
@@ -25,6 +28,7 @@ export async function GET() {
         }
       : null,
     checklist,
+    examMatrix,
     completionPercent: pcmsoCompletionPercent(checklist),
   });
 }
@@ -40,6 +44,7 @@ const saveSchema = z.object({
     label: z.string(),
     done: z.boolean(),
   })).optional(),
+  examMatrix: z.array(z.unknown()).optional(),
 });
 
 export async function PUT(req: NextRequest) {
@@ -51,6 +56,11 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
+  const examMatrixJson =
+    parsed.data.examMatrix !== undefined
+      ? (parsed.data.examMatrix as Prisma.InputJsonValue)
+      : undefined;
+
   const config = await db.employerPcmsoConfig.upsert({
     where: { employerCompanyId: ctx.employerCompanyId },
     create: {
@@ -61,6 +71,7 @@ export async function PUT(req: NextRequest) {
       lastReviewAt: parsed.data.lastReviewAt ? new Date(parsed.data.lastReviewAt) : null,
       notes: parsed.data.notes,
       checklistJson: parsed.data.checklist ?? undefined,
+      examMatrixJson,
     },
     update: {
       coordinatorName: parsed.data.coordinatorName,
@@ -69,14 +80,17 @@ export async function PUT(req: NextRequest) {
       lastReviewAt: parsed.data.lastReviewAt ? new Date(parsed.data.lastReviewAt) : undefined,
       notes: parsed.data.notes,
       checklistJson: parsed.data.checklist ?? undefined,
+      examMatrixJson,
     },
   });
 
   const checklist = parsePcmsoChecklist(config.checklistJson);
+  const examMatrix = parseExamMatrix(config.examMatrixJson);
 
   return NextResponse.json({
     config,
     checklist,
+    examMatrix,
     completionPercent: pcmsoCompletionPercent(checklist),
   });
 }

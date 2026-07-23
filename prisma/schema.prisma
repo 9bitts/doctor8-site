@@ -5151,6 +5151,7 @@ model EmployerCompany {
   eapUsageSnapshots    EmployerEapUsageSnapshot[]
   esocialTransmissions EmployerEsocialTransmission[]
   eapMeteredUsages     EmployerEapMeteredUsage[]
+  gheGroups            EmployerGheGroup[]
 
   createdAt            DateTime            @default(now())
   updatedAt            DateTime            @updatedAt
@@ -5292,6 +5293,10 @@ model EmployerAepRecord {
   methodologyRationale  String?           @db.Text
   workerParticipation   String?           @db.Text
   notes                 String?           @db.Text
+  workstationDescription String?          @db.Text
+  /// Semiquantitative NR-17 screening: repetition, load, posture, etc.
+  ergonomicScreeningJson Json?
+  recommendAet          Boolean           @default(false)
 
   completedAt           DateTime?
   approvedByName        String?
@@ -5358,6 +5363,11 @@ model EmployerSurveyCampaign {
 
   startsAt         DateTime?
   endsAt           DateTime?
+
+  /// Technical analysis required by MTE before treating survey as GRO evidence
+  analysisJson     Json?
+  analyzedAt       DateTime?
+  analyzedByName   String?
 
   responses        EmployerSurveyResponse[]
 
@@ -5440,10 +5450,31 @@ model EmployerPcmsoConfig {
   coordinatorCrm    String?
   lastReviewAt      DateTime?
   checklistJson     Json?
+  /// Exam protocol matrix by GHE / function (admissional, periódico, etc.)
+  examMatrixJson    Json?
   notes             String?         @db.Text
 
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt
+}
+
+/// Homogeneous exposure group (GHE) — light model for psychosocial + ergonomic scope
+model EmployerGheGroup {
+  id                String          @id @default(cuid())
+  employerCompanyId String
+  employerCompany   EmployerCompany @relation(fields: [employerCompanyId], references: [id], onDelete: Cascade)
+
+  name              String
+  sector            String?
+  functions         String?         @db.Text
+  workerCount       Int?
+  hazardCodes       Json?
+  notes             String?         @db.Text
+
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@index([employerCompanyId])
 }
 
 enum EmployerLinkedPsychologistStatus {
@@ -5582,6 +5613,8 @@ model EmployerOccupationalExam {
   asoRetifiedAt       DateTime?
   esocialS2220QueuedAt DateTime?
   notes               String?                 @db.Text
+  /// Individual PCMSO mental-health screening (not organizational GRO survey)
+  screeningJson       Json?
 
   createdAt           DateTime                @default(now())
   updatedAt           DateTime                @updatedAt

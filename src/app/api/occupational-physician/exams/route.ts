@@ -8,6 +8,7 @@ import {
   isAsoCompletionTransition,
   validatePhysicianExamPatch,
 } from "@/lib/employer-aso-patch";
+import { buildPcmsoScreeningResult } from "@/lib/employer-pcmso-screening";
 import type { EmployerAsoResult, EmployerAsoSource, EmployerExamStatus } from "@prisma/client";
 
 const patchSchema = z.object({
@@ -20,6 +21,8 @@ const patchSchema = z.object({
   physicianCrm: z.string().max(30).optional(),
   notes: z.string().max(2000).optional(),
   rectify: z.boolean().optional(),
+  /** Answers 0–3 keyed by question id (q1…q20) */
+  screeningAnswers: z.record(z.string(), z.number().int().min(0).max(3)).optional(),
 });
 
 export async function GET(req: NextRequest) {
@@ -127,6 +130,10 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: validationError.error }, { status: validationError.status });
   }
 
+  const screeningJson = parsed.data.screeningAnswers
+    ? buildPcmsoScreeningResult(parsed.data.screeningAnswers)
+    : undefined;
+
   const updated = await db.employerOccupationalExam.update({
     where: { id: exam.id },
     data: {
@@ -147,6 +154,7 @@ export async function PATCH(req: NextRequest) {
         parsed.data.notes !== undefined
           ? parsed.data.notes
           : undefined,
+      screeningJson: screeningJson ?? undefined,
       completedAt:
         parsed.data.status === "COMPLETED" || parsed.data.asoResult || parsed.data.rectify
           ? new Date()

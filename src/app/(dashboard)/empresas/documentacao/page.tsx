@@ -18,7 +18,9 @@ export default function DocumentacaoPage() {
   const [exporting, setExporting] = useState(false);
   const [exportingPdf, setExportingPdf] = useState(false);
   const [exportingGro, setExportingGro] = useState(false);
+  const [exportingDossier, setExportingDossier] = useState(false);
   const [lastExport, setLastExport] = useState<object | null>(null);
+  const [dossierGaps, setDossierGaps] = useState<string[]>([]);
 
   async function load() {
     setLoading(true);
@@ -83,16 +85,45 @@ export default function DocumentacaoPage() {
     }
   }
 
+  async function exportDossier() {
+    setExportingDossier(true);
+    setDossierGaps([]);
+    const res = await fetch("/api/employer/documents/dossier", { method: "POST" });
+    const data = await res.json();
+    setExportingDossier(false);
+    load();
+    if (data.export) {
+      setLastExport(data.export);
+      setDossierGaps(data.export.evidenceChecklist?.gaps ?? []);
+      const blob = new Blob([JSON.stringify(data.export, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `dossie-conformidade-nr1-${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+  }
+
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-8">
       <div>
         <h1 className="text-2xl font-bold text-slate-900">Documentação NR-1</h1>
         <p className="text-slate-500 text-sm mt-1">
-          Inventário PGR, critérios GRO, AEP e plano de ação — prontos para auditoria MTE.
+          Inventário PGR, critérios GRO, AEP, plano de ação e dossiê de conformidade (FAQ MTE 2026).
         </p>
       </div>
 
       <div className="flex flex-wrap gap-3">
+        <button
+          type="button"
+          onClick={exportDossier}
+          disabled={exportingDossier}
+          className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-emerald-700 text-white font-medium disabled:opacity-50"
+        >
+          {exportingDossier ? <Loader2 size={18} className="animate-spin" /> : <FileDown size={18} />}
+          Dossiê conformidade (JSON)
+        </button>
         <button
           type="button"
           onClick={exportPgr}
@@ -124,6 +155,16 @@ export default function DocumentacaoPage() {
 
       {lastExport && (
         <p className="text-sm text-emerald-700">Exportação gerada e salva no histórico.</p>
+      )}
+      {dossierGaps.length > 0 && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950 space-y-1">
+          <p className="font-medium">Lacunas para auditoria MTE</p>
+          <ul className="list-disc pl-5">
+            {dossierGaps.map((g) => (
+              <li key={g}>{g}</li>
+            ))}
+          </ul>
+        </div>
       )}
 
       <DocumentSignSection />

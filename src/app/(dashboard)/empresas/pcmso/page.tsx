@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Loader2, Mail, Stethoscope } from "lucide-react";
+import { Loader2, Mail, Plus, Stethoscope, Trash2 } from "lucide-react";
+import { NR1_PSYCHOSOCIAL_HAZARDS } from "@/lib/nr1-hazards";
+import type { PcmsoExamMatrixRow } from "@/lib/employer-pcmso-exam-matrix";
 
 type ChecklistItem = { id: string; label: string; done: boolean };
 
@@ -12,6 +14,16 @@ type InviteLink = {
   status: string;
   invitedAt: string;
   joinedAt: string | null;
+};
+
+type GheGroup = {
+  id: string;
+  name: string;
+  sector: string | null;
+  functions: string | null;
+  workerCount: number | null;
+  hazardCodes: string[] | null;
+  notes: string | null;
 };
 
 export default function PcmsoPage() {
@@ -25,27 +37,44 @@ export default function PcmsoPage() {
   const [coordinatorCrm, setCoordinatorCrm] = useState("");
   const [notes, setNotes] = useState("");
   const [checklist, setChecklist] = useState<ChecklistItem[]>([]);
+  const [examMatrix, setExamMatrix] = useState<PcmsoExamMatrixRow[]>([]);
+  const [gheGroups, setGheGroups] = useState<GheGroup[]>([]);
+  const [gheName, setGheName] = useState("");
+  const [gheSector, setGheSector] = useState("");
+  const [gheFunctions, setGheFunctions] = useState("");
+  const [gheWorkers, setGheWorkers] = useState("");
   const [completionPercent, setCompletionPercent] = useState(0);
   const [replaceConfirm, setReplaceConfirm] = useState<{ activeEmail: string } | null>(null);
 
   async function load() {
     setLoading(true);
-    const [pcmsoRes, inviteRes] = await Promise.all([
+    const [pcmsoRes, inviteRes, gheRes] = await Promise.all([
       fetch("/api/employer/pcmso"),
       fetch("/api/employer/pcmso/invite"),
+      fetch("/api/employer/ghe"),
     ]);
     const data = await pcmsoRes.json();
     const inviteData = await inviteRes.json();
+    const gheData = await gheRes.json();
     if (pcmsoRes.ok) {
       setCoordinatorName(data.config?.coordinatorName ?? "");
       setCoordinatorEmail(data.config?.coordinatorEmail ?? "");
       setCoordinatorCrm(data.config?.coordinatorCrm ?? "");
       setNotes(data.config?.notes ?? "");
       setChecklist(data.checklist ?? []);
+      setExamMatrix(data.examMatrix ?? []);
       setCompletionPercent(data.completionPercent ?? 0);
     }
     if (inviteRes.ok) {
       setInviteLink(inviteData.link ?? null);
+    }
+    if (gheRes.ok) {
+      setGheGroups(
+        (gheData.groups ?? []).map((g: GheGroup & { hazardCodes: unknown }) => ({
+          ...g,
+          hazardCodes: Array.isArray(g.hazardCodes) ? (g.hazardCodes as string[]) : [],
+        })),
+      );
     }
     setLoading(false);
   }
@@ -64,10 +93,54 @@ export default function PcmsoPage() {
         coordinatorCrm,
         notes,
         checklist,
+        examMatrix,
       }),
     });
     setSaving(false);
     load();
+  }
+
+  async function addGhe(e: React.FormEvent) {
+    e.preventDefault();
+    if (!gheName.trim()) return;
+    await fetch("/api/employer/ghe", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: gheName.trim(),
+        sector: gheSector.trim() || undefined,
+        functions: gheFunctions.trim() || undefined,
+        workerCount: gheWorkers ? Number(gheWorkers) : undefined,
+        hazardCodes: [],
+      }),
+    });
+    setGheName("");
+    setGheSector("");
+    setGheFunctions("");
+    setGheWorkers("");
+    load();
+  }
+
+  async function deleteGhe(id: string) {
+    await fetch(`/api/employer/ghe?id=${id}`, { method: "DELETE" });
+    load();
+  }
+
+  function updateMatrixExam(
+    rowId: string,
+    examIdx: number,
+    field: "admissional" | "periodico" | "demissional" | "periodicity",
+    value: boolean | string,
+  ) {
+    setExamMatrix((prev) =>
+      prev.map((row) => {
+        if (row.id !== rowId) return row;
+        const exams = row.exams.map((ex, i) =>
+          i === examIdx ? { ...ex, [field]: value } : ex,
+        );
+        return { ...row, exams };
+      }),
+    );
   }
 
   async function handleInvite(replaceActive = false) {
@@ -212,6 +285,123 @@ export default function PcmsoPage() {
               />
               {item.label}
             </label>
+          ))}
+        </div>
+
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 space-y-4">
+          <div>
+            <h2 className="font-semibold text-slate-900">Grupos homogêneos de exposição (GHE)</h2>
+            <p className="text-xs text-slate-500 mt-1">
+              Escopo light: psicossocial + ergonômico. Riscos físico/químico ficam no PGR da engenharia (anexo).
+            </p>
+          </div>
+          <div className="grid sm:grid-cols-2 gap-3">
+            <input
+              value={gheName}
+              onChange={(e) => setGheName(e.target.value)}
+              placeholder="Nome do GHE"
+              className="rounded-lg border border-slate-200 px-3 py-2 text-sm"
+            />
+            <input
+              value={gheSector}
+              onChange={(e) => setGheSector(e.target.value)}
+              placeholder="Setor"
+              className="rounded-lg border border-slate-200 px-3 py-2 text-sm"
+            />
+            <input
+              value={gheFunctions}
+              onChange={(e) => setGheFunctions(e.target.value)}
+              placeholder="Funções"
+              className="rounded-lg border border-slate-200 px-3 py-2 text-sm"
+            />
+            <input
+              type="number"
+              min={0}
+              value={gheWorkers}
+              onChange={(e) => setGheWorkers(e.target.value)}
+              placeholder="Nº trabalhadores"
+              className="rounded-lg border border-slate-200 px-3 py-2 text-sm"
+            />
+          </div>
+          <button
+            type="button"
+            onClick={addGhe}
+            className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 text-sm"
+          >
+            <Plus size={14} /> Adicionar GHE
+          </button>
+          <ul className="space-y-2">
+            {gheGroups.map((g) => (
+              <li key={g.id} className="flex justify-between gap-3 rounded-lg border border-slate-100 px-3 py-2 text-sm">
+                <div>
+                  <p className="font-medium text-slate-800">{g.name}</p>
+                  <p className="text-xs text-slate-500">
+                    {g.sector || "—"} · {g.functions || "funções n/d"} · {g.workerCount ?? "?"} pessoas
+                  </p>
+                  <p className="text-[11px] text-slate-400 mt-1">
+                    Catálogo psicossocial disponível: {NR1_PSYCHOSOCIAL_HAZARDS.length} fatores (vincule no inventário NR-1)
+                  </p>
+                </div>
+                <button type="button" onClick={() => deleteGhe(g.id)} className="text-slate-400 hover:text-red-600">
+                  <Trash2 size={16} />
+                </button>
+              </li>
+            ))}
+            {gheGroups.length === 0 && (
+              <p className="text-xs text-slate-400">Nenhum GHE cadastrado.</p>
+            )}
+          </ul>
+        </div>
+
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 space-y-4">
+          <div>
+            <h2 className="font-semibold text-slate-900">Matriz de exames PCMSO</h2>
+            <p className="text-xs text-slate-500 mt-1">
+              Protocolo por GHE/função — inclui triagem psicossocial no periódico.
+            </p>
+          </div>
+          {examMatrix.map((row) => (
+            <div key={row.id} className="rounded-xl border border-slate-100 p-3 space-y-2">
+              <p className="text-sm font-medium text-slate-800">
+                {row.gheName} · {row.functionName}
+              </p>
+              <div className="space-y-2">
+                {row.exams.map((ex, idx) => (
+                  <div key={`${row.id}-${ex.name}`} className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-xs items-center">
+                    <span className="col-span-2 sm:col-span-1 text-slate-700">{ex.name}</span>
+                    <label className="inline-flex items-center gap-1">
+                      <input
+                        type="checkbox"
+                        checked={ex.admissional}
+                        onChange={(e) => updateMatrixExam(row.id, idx, "admissional", e.target.checked)}
+                      />
+                      Adm
+                    </label>
+                    <label className="inline-flex items-center gap-1">
+                      <input
+                        type="checkbox"
+                        checked={ex.periodico}
+                        onChange={(e) => updateMatrixExam(row.id, idx, "periodico", e.target.checked)}
+                      />
+                      Per
+                    </label>
+                    <label className="inline-flex items-center gap-1">
+                      <input
+                        type="checkbox"
+                        checked={ex.demissional}
+                        onChange={(e) => updateMatrixExam(row.id, idx, "demissional", e.target.checked)}
+                      />
+                      Dem
+                    </label>
+                    <input
+                      value={ex.periodicity}
+                      onChange={(e) => updateMatrixExam(row.id, idx, "periodicity", e.target.value)}
+                      className="rounded border border-slate-200 px-2 py-1"
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
           ))}
         </div>
 

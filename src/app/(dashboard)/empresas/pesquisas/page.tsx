@@ -10,6 +10,8 @@ type Campaign = {
   instrument: string;
   status: string;
   publicToken: string;
+  analyzedAt?: string | null;
+  analyzedByName?: string | null;
   _count: { responses: number };
 };
 
@@ -42,6 +44,12 @@ export default function PesquisasPage() {
   const [reports, setReports] = useState<Record<string, Report>>({});
   const [loadingReport, setLoadingReport] = useState<string | null>(null);
   const [importing, setImporting] = useState<string | null>(null);
+  const [analyzing, setAnalyzing] = useState<string | null>(null);
+  const [analystName, setAnalystName] = useState("");
+  const [techNotes, setTechNotes] = useState("");
+  const [remoteIncluded, setRemoteIncluded] = useState(true);
+  const [methods, setMethods] = useState<string[]>(["SURVEY", "OBSERVATION"]);
+  const [msg, setMsg] = useState("");
 
   async function load() {
     setLoading(true);
@@ -87,8 +95,45 @@ export default function PesquisasPage() {
     setLoadingReport(null);
   }
 
+  function toggleMethod(m: string) {
+    setMethods((prev) => (prev.includes(m) ? prev.filter((x) => x !== m) : [...prev, m]));
+  }
+
+  async function saveAnalysis(campaignId: string) {
+    setMsg("");
+    if (analystName.trim().length < 2 || techNotes.trim().length < 20) {
+      setMsg("Informe o responsável e notas técnicas (mín. 20 caracteres).");
+      return;
+    }
+    if (methods.length === 0) {
+      setMsg("Selecione ao menos um método complementar à pesquisa.");
+      return;
+    }
+    setAnalyzing(campaignId);
+    const res = await fetch(`/api/employer/surveys/${campaignId}/technical-analysis`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        analyzedByName: analystName.trim(),
+        technicalNotes: techNotes.trim(),
+        methodsUsed: methods,
+        remoteWorkIncluded: remoteIncluded,
+      }),
+    });
+    const data = await res.json();
+    setAnalyzing(null);
+    if (!res.ok) {
+      setMsg(data.error === "ANONYMITY_THRESHOLD" ? "Aguarde o mínimo de respostas." : "Erro ao salvar análise.");
+      return;
+    }
+    setMsg("Análise técnica registrada. Agora você pode importar ao inventário.");
+    setTechNotes("");
+    load();
+  }
+
   async function importHazards(campaignId: string) {
     setImporting(campaignId);
+    setMsg("");
     const res = await fetch(`/api/employer/surveys/${campaignId}/import-hazards`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -97,9 +142,11 @@ export default function PesquisasPage() {
     const data = await res.json();
     setImporting(null);
     if (res.ok) {
-      alert(`${data.created?.length ?? 0} risco(s) importado(s) para o inventário NR-1.`);
+      setMsg(`${data.created?.length ?? 0} risco(s) importado(s) para o inventário NR-1.`);
+    } else if (data.error === "TECHNICAL_ANALYSIS_REQUIRED") {
+      setMsg(data.message || "Registre a análise técnica antes de importar.");
     } else {
-      alert(data.error === "ANONYMITY_THRESHOLD" ? "Aguarde o mínimo de respostas anônimas." : "Não foi possível importar.");
+      setMsg(data.error === "ANONYMITY_THRESHOLD" ? "Aguarde o mínimo de respostas anônimas." : "Não foi possível importar.");
     }
   }
 
@@ -110,7 +157,7 @@ export default function PesquisasPage() {
 
   async function copyLink(token: string) {
     await navigator.clipboard.writeText(surveyUrl(token));
-    alert("Link copiado!");
+    setMsg("Link copiado!");
   }
 
   return (
@@ -118,9 +165,14 @@ export default function PesquisasPage() {
       <div>
         <h1 className="text-2xl font-bold text-slate-900">Pesquisas organizacionais</h1>
         <p className="text-slate-500 text-sm mt-1">
-          Instrumentos validados com anonimato — avaliam condições de trabalho, não saúde mental individual.
+          Instrumentos com anonimato — avaliam condições de trabalho. Pelo FAQ MTE, questionário isolado não basta:
+          registre análise técnica e integre ao inventário/AEP/plano de ação.
         </p>
       </div>
+
+      {msg && (
+        <p className="text-sm rounded-lg border border-sky-200 bg-sky-50 text-sky-900 px-3 py-2">{msg}</p>
+      )}
 
       <form onSubmit={createCampaign} className="rounded-2xl border border-slate-200 bg-white p-6 space-y-3">
         <div className="flex flex-col sm:flex-row gap-3">
@@ -142,9 +194,6 @@ export default function PesquisasPage() {
             <Plus size={16} /> Criar
           </button>
         </div>
-        <p className="text-xs text-slate-500">
-          {SURVEY_INSTRUMENTS.find((i) => i.id === instrument)?.description}
-        </p>
       </form>
 
       {loading ? (
@@ -158,6 +207,7 @@ export default function PesquisasPage() {
                   <p className="font-medium text-slate-900">{c.title}</p>
                   <p className="text-xs text-slate-500 mt-1">
                     {c.instrument} · {c.status} · {c._count.responses} respostas
+                    {c.analyzedAt ? ` · análise por ${c.analyzedByName}` : " · sem análise técnica"}
                   </p>
                 </div>
                 <div className="flex gap-2 shrink-0 items-center">
@@ -203,29 +253,84 @@ export default function PesquisasPage() {
                     </p>
                   ) : (
                     <>
-                      <div>
-                        <p className="text-xs font-medium text-slate-500 uppercase mb-2">Dimensões (geral)</p>
-                        <div className="flex flex-wrap gap-2">
-                          {Object.entries(reports[c.id].overallDimensions).map(([dim, score]) => {
-                            const level = dimensionRiskLevel(score);
-                            return (
-                              <span key={dim} className={`text-xs px-2 py-1 rounded-full ${riskColor(level)}`}>
-                                {dim}: {score}%
-                              </span>
-                            );
-                          })}
-                        </div>
+                      <div className="flex flex-wrap gap-2">
+                        {Object.entries(reports[c.id].overallDimensions).map(([dim, score]) => {
+                          const level = dimensionRiskLevel(score);
+                          return (
+                            <span key={dim} className={`text-xs px-2 py-1 rounded-full ${riskColor(level)}`}>
+                              {dim}: {score}%
+                            </span>
+                          );
+                        })}
                       </div>
+
                       {reports[c.id].suggestedHazardsOverall?.length > 0 && (
-                        <div className="rounded-lg bg-sky-50 border border-sky-100 p-3 space-y-2">
-                          <p className="text-xs font-medium text-sky-900 uppercase">Riscos sugeridos (pesquisa → NR-1)</p>
-                          <div className="flex flex-wrap gap-1">
-                            {reports[c.id].suggestedHazardsOverall.map((code) => (
-                              <span key={code} className="text-xs px-2 py-0.5 rounded bg-white border border-sky-200 text-sky-800">
-                                {code}
-                              </span>
+                        <div className="flex flex-wrap gap-1">
+                          {reports[c.id].suggestedHazardsOverall.map((code) => (
+                            <span key={code} className="text-xs px-2 py-0.5 rounded bg-sky-50 border border-sky-200 text-sky-800">
+                              {code}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+
+                      {!c.analyzedAt ? (
+                        <div className="rounded-lg border border-amber-200 bg-amber-50/60 p-4 space-y-3">
+                          <p className="text-sm font-medium text-amber-950">
+                            1) Análise técnica (obrigatória antes do inventário)
+                          </p>
+                          <input
+                            value={analystName}
+                            onChange={(e) => setAnalystName(e.target.value)}
+                            placeholder="Responsável SST / técnico que analisou"
+                            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm bg-white"
+                          />
+                          <textarea
+                            value={techNotes}
+                            onChange={(e) => setTechNotes(e.target.value)}
+                            placeholder="Parecer técnico: o que os dados mostram, limitações do questionário, observação/entrevistas, teletrabalho, medidas iniciais…"
+                            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm min-h-[88px] bg-white"
+                          />
+                          <div className="flex flex-wrap gap-3 text-xs text-slate-700">
+                            {[
+                              ["SURVEY", "Pesquisa"],
+                              ["OBSERVATION", "Observação"],
+                              ["INTERVIEWS", "Entrevistas"],
+                              ["WHISTLEBLOWER", "Denúncias"],
+                              ["DOCUMENT_REVIEW", "Documentos"],
+                            ].map(([id, label]) => (
+                              <label key={id} className="inline-flex items-center gap-1.5 cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={methods.includes(id)}
+                                  onChange={() => toggleMethod(id)}
+                                />
+                                {label}
+                              </label>
                             ))}
                           </div>
+                          <label className="flex items-center gap-2 text-xs text-slate-700">
+                            <input
+                              type="checkbox"
+                              checked={remoteIncluded}
+                              onChange={(e) => setRemoteIncluded(e.target.checked)}
+                            />
+                            Trabalho remoto/híbrido considerado na análise
+                          </label>
+                          <button
+                            type="button"
+                            disabled={analyzing === c.id}
+                            onClick={() => saveAnalysis(c.id)}
+                            className="text-sm font-medium px-3 py-2 rounded-lg bg-amber-700 text-white disabled:opacity-50"
+                          >
+                            {analyzing === c.id ? "Salvando…" : "Registrar análise técnica"}
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="rounded-lg bg-sky-50 border border-sky-100 p-3 space-y-2">
+                          <p className="text-xs text-sky-900">
+                            Análise técnica registrada. 2) Importar riscos confirmados ao inventário NR-1.
+                          </p>
                           <button
                             type="button"
                             disabled={importing === c.id}
@@ -234,25 +339,6 @@ export default function PesquisasPage() {
                           >
                             {importing === c.id ? "Importando…" : "Importar ao inventário de riscos"}
                           </button>
-                        </div>
-                      )}
-                      {reports[c.id].byDepartment.length > 0 && (
-                        <div>
-                          <p className="text-xs font-medium text-slate-500 uppercase mb-2">Por setor</p>
-                          <div className="space-y-2">
-                            {reports[c.id].byDepartment.map((d) => (
-                              <div key={d.department} className="text-sm bg-slate-50 rounded-lg p-3">
-                                <p className="font-medium text-slate-800">{d.department} ({d.count} respostas)</p>
-                                <div className="flex flex-wrap gap-1 mt-2">
-                                  {Object.entries(d.dimensions).map(([dim, score]) => (
-                                    <span key={dim} className={`text-xs px-1.5 py-0.5 rounded ${riskColor(dimensionRiskLevel(score))}`}>
-                                      {dim}: {score}%
-                                    </span>
-                                  ))}
-                                </div>
-                              </div>
-                            ))}
-                          </div>
                         </div>
                       )}
                     </>

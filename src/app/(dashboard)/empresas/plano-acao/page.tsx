@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Loader2, Plus, CheckCircle2 } from "lucide-react";
+import { NR1_MEASURE_TEMPLATES, getMeasureTemplate } from "@/lib/nr1-measure-templates";
 
 type PlanItem = {
   id: string;
@@ -25,6 +26,8 @@ export default function PlanoAcaoPage() {
   const [planId, setPlanId] = useState("");
   const [measure, setMeasure] = useState("");
   const [responsible, setResponsible] = useState("");
+  const [templateId, setTemplateId] = useState("");
+  const [hazardCode, setHazardCode] = useState("");
 
   async function load() {
     setLoading(true);
@@ -46,6 +49,14 @@ export default function PlanoAcaoPage() {
     load();
   }
 
+  function applyTemplate(id: string) {
+    setTemplateId(id);
+    const t = getMeasureTemplate(id);
+    if (!t) return;
+    setMeasure(t.measureDescription);
+    setHazardCode(t.hazardCodes[0] ?? "");
+  }
+
   async function addItem(e: React.FormEvent) {
     e.preventDefault();
     if (!planId) return;
@@ -56,10 +67,13 @@ export default function PlanoAcaoPage() {
         planId,
         measureDescription: measure,
         responsibleName: responsible,
+        hazardCode: hazardCode || undefined,
       }),
     });
     setMeasure("");
     setResponsible("");
+    setTemplateId("");
+    setHazardCode("");
     load();
   }
 
@@ -101,6 +115,18 @@ export default function PlanoAcaoPage() {
           </p>
           <form onSubmit={addItem} className="rounded-2xl border border-slate-200 bg-white p-6 space-y-3">
             <h2 className="font-semibold text-sm">Adicionar medida preventiva</h2>
+            <select
+              value={templateId}
+              onChange={(e) => applyTemplate(e.target.value)}
+              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+            >
+              <option value="">Modelo pronto (anexos psicossocial/ergonômico)…</option>
+              {NR1_MEASURE_TEMPLATES.map((t) => (
+                <option key={t.id} value={t.id}>
+                  [{t.category}] {t.label}
+                </option>
+              ))}
+            </select>
             <textarea
               required
               value={measure}
@@ -108,12 +134,20 @@ export default function PlanoAcaoPage() {
               placeholder="Descreva a intervenção organizacional (priorize mudanças na organização do trabalho)"
               className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm min-h-[72px]"
             />
-            <input
-              value={responsible}
-              onChange={(e) => setResponsible(e.target.value)}
-              placeholder="Responsável"
-              className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
-            />
+            <div className="grid sm:grid-cols-2 gap-3">
+              <input
+                value={responsible}
+                onChange={(e) => setResponsible(e.target.value)}
+                placeholder="Responsável"
+                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+              />
+              <input
+                value={hazardCode}
+                onChange={(e) => setHazardCode(e.target.value)}
+                placeholder="Código de risco (ex.: SOBRECARGA)"
+                className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+              />
+            </div>
             <button type="submit" className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-sky-600 text-white text-sm font-medium">
               <Plus size={16} /> Adicionar
             </button>
