@@ -1,4 +1,3 @@
-import MarketingNav from "@/components/marketing/MarketingNav";
 import MarketingFooter from "@/components/marketing/MarketingFooter";
 import AnsiedadeLanding from "@/components/marketing/AnsiedadeLanding";
 import { ANSIEDADE_LANDING } from "@/lib/ansiedade-landing-content";
@@ -42,7 +41,6 @@ export default function AnsiedadePage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
       />
-      <MarketingNav logoHref="/marketing" />
       <AnsiedadeLanding />
       <MarketingFooter />
     </div>

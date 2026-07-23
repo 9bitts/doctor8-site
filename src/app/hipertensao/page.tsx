@@ -1,4 +1,3 @@
-import MarketingNav from "@/components/marketing/MarketingNav";
 import MarketingFooter from "@/components/marketing/MarketingFooter";
 import HipertensaoLanding from "@/components/marketing/HipertensaoLanding";
 import { HIPERTENSAO_LANDING } from "@/lib/hipertensao-landing-content";
@@ -42,7 +41,6 @@ export default function HipertensaoPage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
       />
-      <MarketingNav logoHref="/marketing" />
       <HipertensaoLanding />
       <MarketingFooter />
     </div>

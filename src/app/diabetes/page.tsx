@@ -1,4 +1,3 @@
-import MarketingNav from "@/components/marketing/MarketingNav";
 import MarketingFooter from "@/components/marketing/MarketingFooter";
 import DiabetesLanding from "@/components/marketing/DiabetesLanding";
 import { DIABETES_LANDING } from "@/lib/diabetes-landing-content";
@@ -42,7 +41,6 @@ export default function DiabetesPage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
       />
-      <MarketingNav logoHref="/marketing" />
       <DiabetesLanding />
       <MarketingFooter />
     </div>

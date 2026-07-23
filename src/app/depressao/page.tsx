@@ -1,4 +1,3 @@
-import MarketingNav from "@/components/marketing/MarketingNav";
 import MarketingFooter from "@/components/marketing/MarketingFooter";
 import DepressaoLanding from "@/components/marketing/DepressaoLanding";
 import { DEPRESSAO_LANDING } from "@/lib/depressao-landing-content";
@@ -42,7 +41,6 @@ export default function DepressaoPage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
       />
-      <MarketingNav logoHref="/marketing" />
       <DepressaoLanding />
       <MarketingFooter />
     </div>
