@@ -21,7 +21,7 @@ import {
 } from "@/lib/appointment-slots";
 import { getProfessionLabel, specialtyMatchesSearch, PSYCHOANALYSIS_SPECIALTY } from "@/lib/professions";
 import { getProfessionInfo, formatPatientProviderDisplayName } from "@/lib/profession-label";
-import { bookingProviderIds, type ProviderType } from "@/lib/providers";
+import { bookingProviderIds, type ProviderType } from "@/lib/provider-type";
 import { useUserTimeZone } from "@/hooks/useUserTimeZone";
 import {
   formatShortDate,

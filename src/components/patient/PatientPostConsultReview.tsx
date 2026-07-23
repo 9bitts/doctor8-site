@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import ReviewPromptModal from "@/components/ReviewPromptModal";
-import type { ProviderType } from "@/lib/providers";
+import type { ProviderType } from "@/lib/provider-type";
 
 type PastAppt = {
   id: string;
