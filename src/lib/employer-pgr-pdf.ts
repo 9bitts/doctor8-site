@@ -52,17 +52,24 @@ export async function buildPgrInventoryPdf(payload: PgrPayload): Promise<Uint8Ar
 
   addLine("Empresa", true, 11);
   addLine(`${payload.company.nomeFantasia} (${payload.company.razaoSocial})`);
-  addLine(`CNPJ: ${payload.company.cnpj} · Grau de risco: ${payload.company.grauRisco ?? "—"}`);
+  addLine(`CNPJ: ${payload.company.cnpj} · CNAE: ${payload.company.cnae ?? "—"} · Grau de risco: ${payload.company.grauRisco ?? "—"}`);
   addLine(`Colaboradores: ${payload.company.employeeCount ?? "—"}`);
   addLine(`Score NR-1: ${payload.complianceScore ?? 0}%`);
   y -= 8;
 
-  addLine("Inventário de riscos", true, 11);
+  addLine("Inventário de riscos (PGR multi-categoria)", true, 11);
   if (payload.inventory.length === 0) {
     addLine("Nenhum risco registrado.");
   } else {
     for (const r of payload.inventory) {
-      addLine(`${r.hazardCode} — ${r.hazardLabel}`, true, 9);
+      const agent = r.agent || r.hazardLabel;
+      addLine(`[${r.riskCategory}] ${agent}`, true, 9);
+      for (const line of wrapText(
+        `Exposição: ${r.exposureType ?? "—"} · Nível: ${r.exposureLevel ?? "—"} · LT: ${r.toleranceLimit ?? "—"}`,
+        90,
+      )) {
+        addLine(line, false, 8);
+      }
       for (const line of wrapText(`Severidade ${r.severity} × Prob. ${r.probability} = ${r.riskLevel}`, 90)) {
         addLine(line, false, 9);
       }

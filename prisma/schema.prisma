@@ -5120,6 +5120,8 @@ model EmployerCompany {
   companySize          EmployerCompanySize?
   employeeCount        Int?
   grauRisco            Int?
+  /// CNAE principal (7 dígitos sem formatação, ou com máscara xx.xx-x-xx)
+  cnae                 String?
 
   timezone             String              @default("America/Sao_Paulo")
   currency             String              @default("BRL")
@@ -5152,6 +5154,11 @@ model EmployerCompany {
   esocialTransmissions EmployerEsocialTransmission[]
   eapMeteredUsages     EmployerEapMeteredUsage[]
   gheGroups            EmployerGheGroup[]
+  sectors              EmployerSector[]
+  jobFunctions         EmployerJobFunction[]
+  careReferrals        EmployerCareReferral[]
+  catRecords           EmployerCatRecord[]
+  medicalCertificates  EmployerMedicalCertificate[]
 
   createdAt            DateTime            @default(now())
   updatedAt            DateTime            @updatedAt
@@ -5231,6 +5238,12 @@ model EmployerWorkforceMember {
   admissionDate    DateTime?
   department       String?
   jobTitle         String?
+  sectorId         String?
+  sector           EmployerSector?         @relation(fields: [sectorId], references: [id], onDelete: SetNull)
+  jobFunctionId    String?
+  jobFunction      EmployerJobFunction?    @relation(fields: [jobFunctionId], references: [id], onDelete: SetNull)
+  gheGroupId       String?
+  gheGroup         EmployerGheGroup?       @relation(fields: [gheGroupId], references: [id], onDelete: SetNull)
   userId           String?
 
   status           EmployerWorkforceStatus @default(INVITED)
@@ -5245,11 +5258,65 @@ model EmployerWorkforceMember {
   eapJitQueues     JitQueue[]
   contentProgress  EmployerContentProgress[]
   occupationalExams EmployerOccupationalExam[]
+  careReferrals    EmployerCareReferral[]
+  catRecords       EmployerCatRecord[]
+  medicalCertificates EmployerMedicalCertificate[]
 
   @@unique([employerCompanyId, email])
   @@index([employerCompanyId])
   @@index([userId])
   @@index([inviteToken])
+  @@index([sectorId])
+  @@index([jobFunctionId])
+  @@index([gheGroupId])
+}
+
+/// Organizational sector (SESMT master data — step 1)
+model EmployerSector {
+  id                String          @id @default(cuid())
+  employerCompanyId String
+  employerCompany   EmployerCompany @relation(fields: [employerCompanyId], references: [id], onDelete: Cascade)
+  name              String
+  description       String?         @db.Text
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  jobFunctions      EmployerJobFunction[]
+  gheGroups         EmployerGheGroup[]
+  workforce         EmployerWorkforceMember[]
+
+  @@unique([employerCompanyId, name])
+  @@index([employerCompanyId])
+}
+
+/// Job role / função (SESMT master data — step 1)
+model EmployerJobFunction {
+  id                String          @id @default(cuid())
+  employerCompanyId String
+  employerCompany   EmployerCompany @relation(fields: [employerCompanyId], references: [id], onDelete: Cascade)
+  sectorId          String?
+  sector            EmployerSector? @relation(fields: [sectorId], references: [id], onDelete: SetNull)
+  name              String
+  description       String?         @db.Text
+  weeklyHours       Int?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  gheGroups         EmployerGheGroup[]
+  workforce         EmployerWorkforceMember[]
+
+  @@unique([employerCompanyId, name])
+  @@index([employerCompanyId])
+  @@index([sectorId])
+}
+
+enum EmployerRiskCategory {
+  FISICO
+  QUIMICO
+  BIOLOGICO
+  ACIDENTE
+  ERGONOMICO
+  PSICOSSOCIAL
 }
 
 model EmployerRiskEntry {
@@ -5258,13 +5325,25 @@ model EmployerRiskEntry {
   employerCompany       EmployerCompany   @relation(fields: [employerCompanyId], references: [id], onDelete: Cascade)
   aepRecordId           String?
   aepRecord             EmployerAepRecord? @relation(fields: [aepRecordId], references: [id], onDelete: SetNull)
+  gheGroupId            String?
+  gheGroup              EmployerGheGroup? @relation(fields: [gheGroupId], references: [id], onDelete: SetNull)
 
+  /// PSICOSSOCIAL for NR-1 catalog; other categories for classic PGR agents
+  riskCategory          EmployerRiskCategory @default(PSICOSSOCIAL)
   hazardCode            String
   hazardLabel           String
+  /// Specific agent (e.g. Ruído, Fumos de manganês) — PDF-style column
+  agent                 String?
   processDescription    String?           @db.Text
   exposedGroups         String?           @db.Text
   possibleHarm          String?           @db.Text
   exposureCharacterization String?        @db.Text
+  /// Habitual e intermitente / Habitual e permanente / etc.
+  exposureType          String?
+  /// Quantitative or qualitative level (e.g. 80.68 dB(A), Baixo, Médio)
+  exposureLevel         String?
+  /// Regulatory tolerance limit (e.g. 85 dB(A))
+  toleranceLimit        String?
   existingControls      String?           @db.Text
 
   severity              Int
@@ -5278,7 +5357,9 @@ model EmployerRiskEntry {
 
   @@index([employerCompanyId])
   @@index([aepRecordId])
+  @@index([gheGroupId])
   @@index([hazardCode])
+  @@index([riskCategory])
 }
 
 model EmployerAepRecord {
@@ -5470,13 +5551,18 @@ model EmployerPcmsoConfig {
   updatedAt         DateTime        @updatedAt
 }
 
-/// Homogeneous exposure group (GHE) — light model for psychosocial + ergonomic scope
+/// Homogeneous exposure group (GHE) — SESMT axis linking sector/function/risks/workforce
 model EmployerGheGroup {
   id                String          @id @default(cuid())
   employerCompanyId String
   employerCompany   EmployerCompany @relation(fields: [employerCompanyId], references: [id], onDelete: Cascade)
+  sectorId          String?
+  sectorRef         EmployerSector? @relation(fields: [sectorId], references: [id], onDelete: SetNull)
+  jobFunctionId     String?
+  jobFunction       EmployerJobFunction? @relation(fields: [jobFunctionId], references: [id], onDelete: SetNull)
 
   name              String
+  /// Legacy free-text sector (kept for backward compatibility)
   sector            String?
   functions         String?         @db.Text
   workerCount       Int?
@@ -5486,7 +5572,12 @@ model EmployerGheGroup {
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt
 
+  workforce         EmployerWorkforceMember[]
+  riskEntries       EmployerRiskEntry[]
+
   @@index([employerCompanyId])
+  @@index([sectorId])
+  @@index([jobFunctionId])
 }
 
 enum EmployerLinkedPsychologistStatus {
@@ -5627,6 +5718,8 @@ model EmployerOccupationalExam {
   notes               String?                 @db.Text
   /// Individual PCMSO mental-health screening (not organizational GRO survey)
   screeningJson       Json?
+  /// Protocol line from PCMSO matrix (e.g. Audiometria, Questionário psicossocial)
+  protocolExamName    String?
 
   createdAt           DateTime                @default(now())
   updatedAt           DateTime                @updatedAt
@@ -5636,6 +5729,109 @@ model EmployerOccupationalExam {
   @@index([status])
   @@index([dueDate])
   @@index([clinicPartnerId])
+}
+
+enum EmployerCareReferralSource {
+  SCREENING
+  RISK
+  CID_F
+  PAIN_COMPLAINT
+  MANUAL
+  AET_FLAG
+}
+
+enum EmployerCareReferralTarget {
+  EAP
+  AET
+  ERGONOMIST
+  PHYSICIAN
+}
+
+enum EmployerCareReferralStatus {
+  OPEN
+  IN_PROGRESS
+  CLOSED
+  DISMISSED
+}
+
+/// Automatic / manual handoff from PCMSO screening, CID F, ergonomic flags, etc.
+model EmployerCareReferral {
+  id                  String                      @id @default(cuid())
+  employerCompanyId   String
+  employerCompany     EmployerCompany             @relation(fields: [employerCompanyId], references: [id], onDelete: Cascade)
+  workforceMemberId   String?
+  workforceMember     EmployerWorkforceMember?    @relation(fields: [workforceMemberId], references: [id], onDelete: SetNull)
+
+  source              EmployerCareReferralSource
+  sourceRefId         String?
+  target              EmployerCareReferralTarget
+  status              EmployerCareReferralStatus  @default(OPEN)
+  reason              String                      @db.Text
+  notes               String?                     @db.Text
+
+  createdAt           DateTime                    @default(now())
+  updatedAt           DateTime                    @updatedAt
+  closedAt            DateTime?
+
+  @@index([employerCompanyId])
+  @@index([workforceMemberId])
+  @@index([status])
+  @@index([target])
+}
+
+/// CAT / eSocial S-2210 preparation
+model EmployerCatRecord {
+  id                  String                   @id @default(cuid())
+  employerCompanyId   String
+  employerCompany     EmployerCompany          @relation(fields: [employerCompanyId], references: [id], onDelete: Cascade)
+  workforceMemberId   String
+  workforceMember     EmployerWorkforceMember  @relation(fields: [workforceMemberId], references: [id], onDelete: Cascade)
+
+  occurrenceAt        DateTime
+  registrationAt      DateTime                 @default(now())
+  catType             String                   @default("INICIAL")
+  accidentType        String?
+  bodyPart            String?
+  cidCode             String?
+  description         String?                  @db.Text
+  leaveDays           Int?
+  esocialQueuedAt     DateTime?
+  notes               String?                  @db.Text
+
+  createdAt           DateTime                 @default(now())
+  updatedAt           DateTime                 @updatedAt
+
+  @@index([employerCompanyId])
+  @@index([workforceMemberId])
+  @@index([occurrenceAt])
+}
+
+/// Medical certificate / afastamento (eSocial S-2230 prep)
+model EmployerMedicalCertificate {
+  id                  String                   @id @default(cuid())
+  employerCompanyId   String
+  employerCompany     EmployerCompany          @relation(fields: [employerCompanyId], references: [id], onDelete: Cascade)
+  workforceMemberId   String
+  workforceMember     EmployerWorkforceMember  @relation(fields: [workforceMemberId], references: [id], onDelete: Cascade)
+
+  startDate           DateTime
+  endDate             DateTime?
+  days                Int?
+  cidCode             String?
+  /// True when CID is mental/behavioral (F00–F99) and worker relates to work
+  workRelatedMental   Boolean                  @default(false)
+  physicianName       String?
+  physicianCrm        String?
+  notes               String?                  @db.Text
+  esocialQueuedAt     DateTime?
+
+  createdAt           DateTime                 @default(now())
+  updatedAt           DateTime                 @updatedAt
+
+  @@index([employerCompanyId])
+  @@index([workforceMemberId])
+  @@index([startDate])
+  @@index([cidCode])
 }
 
 enum EmployerSignatureStatus {

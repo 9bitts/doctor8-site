@@ -36,6 +36,7 @@ export async function GET() {
       id: e.id,
       examType: e.examType,
       examTypeLabel: EXAM_TYPE_LABELS[e.examType],
+      protocolExamName: e.protocolExamName,
       status: e.status,
       scheduledAt: e.scheduledAt?.toISOString() ?? null,
       dueDate: e.dueDate?.toISOString() ?? null,

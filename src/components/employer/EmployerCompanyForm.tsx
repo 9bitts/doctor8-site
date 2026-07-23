@@ -12,6 +12,7 @@ type Company = {
   companySize: string | null;
   employeeCount: number | null;
   grauRisco: number | null;
+  cnae: string | null;
   addressStreet: string | null;
   addressNumber: string | null;
   addressComplement: string | null;
@@ -75,6 +76,7 @@ export default function EmployerCompanyForm() {
         {field("contactEmail", "E-mail de contato")}
         {field("contactPhone", "Telefone")}
         {field("employeeCount", "Nº colaboradores", "number")}
+        {field("cnae", "CNAE principal")}
         <label className="block text-sm">
           <span className="text-slate-600">Grau de risco (1–4)</span>
           <input

@@ -10,6 +10,7 @@ type Member = {
   lastName: string;
   department: string | null;
   jobTitle: string | null;
+  gheGroupId: string | null;
   status: string;
   sessionsUsed: number;
   sessionsQuota: number | null;
@@ -17,26 +18,36 @@ type Member = {
   matriculaEsocial: string | null;
 };
 
+type GheOpt = { id: string; name: string };
+
 export default function ColaboradoresPage() {
   const [members, setMembers] = useState<Member[]>([]);
+  const [gheGroups, setGheGroups] = useState<GheOpt[]>([]);
   const [loading, setLoading] = useState(true);
   const [email, setEmail] = useState("");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [department, setDepartment] = useState("");
+  const [gheGroupId, setGheGroupId] = useState("");
   const [invitingId, setInvitingId] = useState<string | null>(null);
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editCpf, setEditCpf] = useState("");
   const [editMatricula, setEditMatricula] = useState("");
+  const [editGheId, setEditGheId] = useState("");
   const [savingSst, setSavingSst] = useState(false);
 
   async function load() {
     setLoading(true);
-    const res = await fetch("/api/employer/workforce");
+    const [res, gheRes] = await Promise.all([
+      fetch("/api/employer/workforce"),
+      fetch("/api/employer/ghe"),
+    ]);
     const data = await res.json();
+    const gheData = await gheRes.json();
     setMembers(data.members ?? []);
+    if (gheRes.ok) setGheGroups((gheData.groups ?? []).map((g: GheOpt) => ({ id: g.id, name: g.name })));
     setLoading(false);
   }
 
@@ -47,12 +58,19 @@ export default function ColaboradoresPage() {
     await fetch("/api/employer/workforce", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, firstName, lastName, department }),
+      body: JSON.stringify({
+        email,
+        firstName,
+        lastName,
+        department,
+        gheGroupId: gheGroupId || null,
+      }),
     });
     setEmail("");
     setFirstName("");
     setLastName("");
     setDepartment("");
+    setGheGroupId("");
     load();
   }
 
@@ -93,6 +111,7 @@ export default function ColaboradoresPage() {
       body: JSON.stringify({
         cpf: editCpf || null,
         matriculaEsocial: editMatricula || null,
+        gheGroupId: editGheId || null,
       }),
     });
     setSavingSst(false);
@@ -103,9 +122,9 @@ export default function ColaboradoresPage() {
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-8">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">Colaboradores (EAP)</h1>
+        <h1 className="text-2xl font-bold text-slate-900">Colaboradores</h1>
         <p className="text-slate-500 text-sm mt-1">
-          Cadastro de elegibilidade para atendimento psicológico corporativo. Dados clínicos permanecem sigilosos.
+          Cadastro SESMT + elegibilidade EAP. Vincule cada pessoa a um GHE para gerar exames do PCMSO.
         </p>
       </div>
 
@@ -113,7 +132,17 @@ export default function ColaboradoresPage() {
         <input required type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="E-mail" className="rounded-lg border border-slate-200 px-3 py-2 text-sm" />
         <input required value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="Nome" className="rounded-lg border border-slate-200 px-3 py-2 text-sm" />
         <input required value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Sobrenome" className="rounded-lg border border-slate-200 px-3 py-2 text-sm" />
-        <input value={department} onChange={(e) => setDepartment(e.target.value)} placeholder="Setor" className="rounded-lg border border-slate-200 px-3 py-2 text-sm" />
+        <input value={department} onChange={(e) => setDepartment(e.target.value)} placeholder="Setor (texto)" className="rounded-lg border border-slate-200 px-3 py-2 text-sm" />
+        <select
+          value={gheGroupId}
+          onChange={(e) => setGheGroupId(e.target.value)}
+          className="sm:col-span-2 rounded-lg border border-slate-200 px-3 py-2 text-sm"
+        >
+          <option value="">GHE (opcional)</option>
+          {gheGroups.map((g) => (
+            <option key={g.id} value={g.id}>{g.name}</option>
+          ))}
+        </select>
         <button type="submit" className="sm:col-span-2 inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-sky-600 text-white text-sm font-medium">
           <Plus size={16} /> Adicionar colaborador
         </button>
@@ -139,7 +168,7 @@ export default function ColaboradoresPage() {
             <thead className="bg-slate-50 text-slate-500 text-left">
               <tr>
                 <th className="px-4 py-2">Nome</th>
-                <th className="px-4 py-2">Setor</th>
+                <th className="px-4 py-2">Setor / GHE</th>
                 <th className="px-4 py-2">CPF / Matrícula</th>
                 <th className="px-4 py-2">Status</th>
                 <th className="px-4 py-2">Sessões</th>
@@ -153,7 +182,12 @@ export default function ColaboradoresPage() {
                     <p className="font-medium text-slate-800">{m.firstName} {m.lastName}</p>
                     <p className="text-xs text-slate-500">{m.email}</p>
                   </td>
-                  <td className="px-4 py-3 text-slate-600">{m.department || "—"}</td>
+                  <td className="px-4 py-3 text-slate-600 text-xs">
+                    <p>{m.department || "—"}</p>
+                    <p className="text-slate-400">
+                      {gheGroups.find((g) => g.id === m.gheGroupId)?.name || "sem GHE"}
+                    </p>
+                  </td>
                   <td className="px-4 py-3 text-slate-600 text-xs">
                     {editingId === m.id ? (
                       <div className="space-y-1">
@@ -169,6 +203,16 @@ export default function ColaboradoresPage() {
                           placeholder="Matrícula eSocial"
                           className="w-full rounded border border-slate-200 px-2 py-1"
                         />
+                        <select
+                          value={editGheId}
+                          onChange={(e) => setEditGheId(e.target.value)}
+                          className="w-full rounded border border-slate-200 px-2 py-1"
+                        >
+                          <option value="">Sem GHE</option>
+                          {gheGroups.map((g) => (
+                            <option key={g.id} value={g.id}>{g.name}</option>
+                          ))}
+                        </select>
                         <button
                           type="button"
                           disabled={savingSst}
@@ -188,6 +232,7 @@ export default function ColaboradoresPage() {
                             setEditingId(m.id);
                             setEditCpf(m.cpf ?? "");
                             setEditMatricula(m.matriculaEsocial ?? "");
+                            setEditGheId(m.gheGroupId ?? "");
                           }}
                           className="text-sky-600 hover:underline mt-1"
                         >

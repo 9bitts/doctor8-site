@@ -22,6 +22,9 @@ const createSchema = z.object({
   lastName: z.string().min(1).max(100),
   department: z.string().optional(),
   jobTitle: z.string().optional(),
+  gheGroupId: z.string().optional().nullable(),
+  sectorId: z.string().optional().nullable(),
+  jobFunctionId: z.string().optional().nullable(),
   sessionsQuota: z.number().int().min(0).max(100).optional(),
 });
 
@@ -75,6 +78,9 @@ export async function POST(req: NextRequest) {
       lastName: parsed.data.lastName,
       department: parsed.data.department,
       jobTitle: parsed.data.jobTitle,
+      gheGroupId: parsed.data.gheGroupId ?? null,
+      sectorId: parsed.data.sectorId ?? null,
+      jobFunctionId: parsed.data.jobFunctionId ?? null,
       sessionsQuota: parsed.data.sessionsQuota,
       status: "INVITED",
     },
@@ -83,6 +89,9 @@ export async function POST(req: NextRequest) {
       lastName: parsed.data.lastName,
       department: parsed.data.department,
       jobTitle: parsed.data.jobTitle,
+      gheGroupId: parsed.data.gheGroupId === undefined ? undefined : parsed.data.gheGroupId,
+      sectorId: parsed.data.sectorId === undefined ? undefined : parsed.data.sectorId,
+      jobFunctionId: parsed.data.jobFunctionId === undefined ? undefined : parsed.data.jobFunctionId,
       sessionsQuota: parsed.data.sessionsQuota,
     },
   });

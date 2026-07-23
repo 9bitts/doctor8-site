@@ -7,27 +7,90 @@ export type OnboardingStep = {
   done: boolean;
 };
 
+/** SESMT chronological onboarding — matches médico do trabalho workflow. */
 export function buildEmployerOnboardingSteps(input: {
+  hasCnae: boolean;
+  sectorCount: number;
+  functionCount: number;
+  gheCount: number;
   riskCount: number;
+  pcmsoPercent: number;
+  examCount: number;
   aepCompleted: boolean;
   surveyActive: boolean;
   workforceCount: number;
   eapEnabled: boolean;
   actionItemCount: number;
-  pcmsoPercent: number;
-  exportedDoc: boolean;
   psychNetworkCount: number;
+  exportedDoc: boolean;
 }): OnboardingStep[] {
   return [
-    { id: "risks", label: "Cadastrar inventário de riscos psicossociais", href: "/empresas/nr1", done: input.riskCount > 0 },
-    { id: "survey", label: "Ativar pesquisa organizacional (COPSOQ)", href: "/empresas/pesquisas", done: input.surveyActive },
-    { id: "aep", label: "Concluir AEP (NR-17)", href: "/empresas/aep", done: input.aepCompleted },
-    { id: "action", label: "Criar plano de ação", href: "/empresas/plano-acao", done: input.actionItemCount > 0 },
-    { id: "workforce", label: "Cadastrar colaboradores EAP", href: "/empresas/colaboradores", done: input.workforceCount > 0 },
-    { id: "eap", label: "Configurar benefício EAP", href: "/empresas/eap", done: input.eapEnabled },
-    { id: "network", label: "Credenciar rede de psicólogos EAP", href: "/empresas/rede-psicologos", done: input.psychNetworkCount > 0 },
-    { id: "pcmso", label: "Integrar PCMSO (checklist ≥ 50%)", href: "/empresas/pcmso", done: input.pcmsoPercent >= 50 },
-    { id: "export", label: "Exportar documentação PGR", href: "/empresas/documentacao", done: input.exportedDoc },
+    {
+      id: "company",
+      label: "Completar dados da empresa (CNAE)",
+      href: "/empresas/configuracoes",
+      done: input.hasCnae,
+    },
+    {
+      id: "structure",
+      label: "Cadastrar setores, funções e GHE",
+      href: "/empresas/estrutura",
+      done: input.sectorCount > 0 && input.functionCount > 0 && input.gheCount > 0,
+    },
+    {
+      id: "workforce",
+      label: "Vincular colaboradores aos GHE",
+      href: "/empresas/colaboradores",
+      done: input.workforceCount > 0,
+    },
+    {
+      id: "risks",
+      label: "Mapear riscos do PGR por GHE",
+      href: "/empresas/nr1",
+      done: input.riskCount > 0,
+    },
+    {
+      id: "pcmso",
+      label: "Definir matriz PCMSO (médico)",
+      href: "/empresas/pcmso",
+      done: input.pcmsoPercent >= 50,
+    },
+    {
+      id: "exams",
+      label: "Gerar / lançar exames ocupacionais",
+      href: "/empresas/exames",
+      done: input.examCount > 0,
+    },
+    {
+      id: "aep",
+      label: "Ergonomia simplificada (AEP) / AET se necessário",
+      href: "/empresas/aep",
+      done: input.aepCompleted,
+    },
+    {
+      id: "survey",
+      label: "Ativar pesquisa psicossocial organizacional",
+      href: "/empresas/pesquisas",
+      done: input.surveyActive,
+    },
+    {
+      id: "eap",
+      label: "Configurar EAP e rede de psicólogos",
+      href: "/empresas/eap",
+      done: input.eapEnabled && input.psychNetworkCount > 0,
+    },
+    {
+      id: "action",
+      label: "Criar plano de ação",
+      href: "/empresas/plano-acao",
+      done: input.actionItemCount > 0,
+    },
+    {
+      id: "export",
+      label: "Exportar documentação PGR",
+      href: "/empresas/documentacao",
+      done: input.exportedDoc,
+    },
   ];
 }
 

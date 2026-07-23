@@ -24,6 +24,10 @@ export async function buildEmployerAnalytics(employerCompanyId: string) {
     openReports,
     wellnessPulses30d,
     contentViews30d,
+    sectorCount,
+    functionCount,
+    gheCount,
+    examCount,
   ] = await Promise.all([
     db.employerCompany.findUnique({
       where: { id: employerCompanyId },
@@ -34,6 +38,7 @@ export async function buildEmployerAnalytics(employerCompanyId: string) {
         lastPgrReviewAt: true,
         companySize: true,
         grauRisco: true,
+        cnae: true,
       },
     }),
     db.employerRiskEntry.count({ where: { employerCompanyId } }),
@@ -89,6 +94,10 @@ export async function buildEmployerAnalytics(employerCompanyId: string) {
     db.employerContentProgress.count({
       where: { employerCompanyId, completedAt: { gte: thirtyDaysAgo } },
     }),
+    db.employerSector.count({ where: { employerCompanyId } }),
+    db.employerJobFunction.count({ where: { employerCompanyId } }),
+    db.employerGheGroup.count({ where: { employerCompanyId } }),
+    db.employerOccupationalExam.count({ where: { employerCompanyId } }),
   ]);
 
   const activeWorkforce = workforce.filter((w) => w.status === "ACTIVE");
@@ -102,6 +111,10 @@ export async function buildEmployerAnalytics(employerCompanyId: string) {
   const pcmsoPercent = pcmsoCompletionPercent(parsePcmsoChecklist(pcmsoConfig?.checklistJson));
 
   const onboardingSteps = buildEmployerOnboardingSteps({
+    hasCnae: Boolean(company?.cnae?.trim()),
+    sectorCount,
+    functionCount,
+    gheCount,
     riskCount,
     aepCompleted: Boolean(aepCompleted),
     surveyActive: Boolean(surveyActive),
@@ -109,6 +122,7 @@ export async function buildEmployerAnalytics(employerCompanyId: string) {
     eapEnabled: Boolean(eap?.enabled),
     actionItemCount: actionItems.length,
     pcmsoPercent,
+    examCount,
     exportedDoc: exportedDocs > 0,
     psychNetworkCount: linkedPsychologists,
   });

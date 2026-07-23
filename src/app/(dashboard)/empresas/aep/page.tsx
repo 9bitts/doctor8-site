@@ -507,6 +507,9 @@ export default function AepPage() {
       <div>
         <h1 className="text-2xl font-bold text-slate-900">Ergonomia — AEP / AET em campo</h1>
         <p className="text-slate-500 text-sm mt-1">
+          Passo 5 — SST faz screening/AEP simplificada; AET aprofundada só quando complexidade ou fiscalização exigir (gera encaminhamento).
+        </p>
+        <p className="text-slate-500 text-sm mt-1">
           Triagem preliminar + visita no posto pelo celular (checklist, fotos e relatório assinado).
           Vincule riscos no{" "}
           <Link href="/empresas/nr1" className="text-sky-600 hover:underline">Inventário NR-1</Link>.

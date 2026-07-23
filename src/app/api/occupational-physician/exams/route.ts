@@ -212,5 +212,18 @@ export async function PATCH(req: NextRequest) {
       .catch(() => {});
   }
 
+  if (screeningJson) {
+    import("@/lib/employer-care-referrals")
+      .then(({ referralsFromScreening }) =>
+        referralsFromScreening({
+          employerCompanyId: parsed.data.employerCompanyId,
+          workforceMemberId: updated.workforceMemberId,
+          examId: updated.id,
+          screening: screeningJson,
+        }),
+      )
+      .catch(() => {});
+  }
+
   return NextResponse.json({ exam: updated });
 }

@@ -9,6 +9,9 @@ const patchSchema = z.object({
   admissionDate: z.string().datetime().optional().nullable(),
   department: z.string().max(100).optional().nullable(),
   jobTitle: z.string().max(100).optional().nullable(),
+  sectorId: z.string().optional().nullable(),
+  jobFunctionId: z.string().optional().nullable(),
+  gheGroupId: z.string().optional().nullable(),
 });
 
 export async function PATCH(
@@ -42,6 +45,9 @@ export async function PATCH(
             : undefined,
       department: parsed.data.department === null ? null : parsed.data.department,
       jobTitle: parsed.data.jobTitle === null ? null : parsed.data.jobTitle,
+      sectorId: parsed.data.sectorId === undefined ? undefined : parsed.data.sectorId,
+      jobFunctionId: parsed.data.jobFunctionId === undefined ? undefined : parsed.data.jobFunctionId,
+      gheGroupId: parsed.data.gheGroupId === undefined ? undefined : parsed.data.gheGroupId,
     },
   });
 

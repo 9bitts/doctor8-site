@@ -141,6 +141,18 @@ export async function POST(req: NextRequest) {
   });
 
   await refreshEmployerNr1Compliance(ctx.employerCompanyId);
+
+  if (record.recommendAet) {
+    import("@/lib/employer-care-referrals")
+      .then(({ referralFromAetFlag }) =>
+        referralFromAetFlag({
+          employerCompanyId: ctx.employerCompanyId,
+          aepRecordId: record.id,
+        }),
+      )
+      .catch(() => {});
+  }
+
   return NextResponse.json({ record }, { status: 201 });
 }
 
@@ -301,5 +313,17 @@ export async function PATCH(req: NextRequest) {
   });
 
   await refreshEmployerNr1Compliance(ctx.employerCompanyId);
+
+  if (record.recommendAet) {
+    import("@/lib/employer-care-referrals")
+      .then(({ referralFromAetFlag }) =>
+        referralFromAetFlag({
+          employerCompanyId: ctx.employerCompanyId,
+          aepRecordId: record.id,
+        }),
+      )
+      .catch(() => {});
+  }
+
   return NextResponse.json({ record });
 }

@@ -10,7 +10,7 @@ export async function GET() {
 
   const company = await db.employerCompany.findUnique({
     where: { id: ctx.employerCompanyId },
-    select: { onboardingJson: true, planTier: true },
+    select: { onboardingJson: true, planTier: true, cnae: true },
   });
 
   const [
@@ -24,6 +24,10 @@ export async function GET() {
     docCount,
     highRisks,
     psychNetworkCount,
+    sectorCount,
+    functionCount,
+    gheCount,
+    examCount,
   ] = await Promise.all([
     db.employerRiskEntry.count({ where: { employerCompanyId: ctx.employerCompanyId } }),
     db.employerAepRecord.findFirst({
@@ -46,11 +50,19 @@ export async function GET() {
     db.employerLinkedPsychologist.count({
       where: { employerCompanyId: ctx.employerCompanyId, status: "ACTIVE" },
     }),
+    db.employerSector.count({ where: { employerCompanyId: ctx.employerCompanyId } }),
+    db.employerJobFunction.count({ where: { employerCompanyId: ctx.employerCompanyId } }),
+    db.employerGheGroup.count({ where: { employerCompanyId: ctx.employerCompanyId } }),
+    db.employerOccupationalExam.count({ where: { employerCompanyId: ctx.employerCompanyId } }),
   ]);
 
   const pcmsoPercent = pcmsoCompletionPercent(parsePcmsoChecklist(pcmso?.checklistJson));
 
   const steps = buildEmployerOnboardingSteps({
+    hasCnae: Boolean(company?.cnae?.trim()),
+    sectorCount,
+    functionCount,
+    gheCount,
     riskCount,
     aepCompleted: aepLatest?.status === "COMPLETED" || aepLatest?.status === "APPROVED",
     surveyActive: Boolean(surveyActive),
@@ -58,6 +70,7 @@ export async function GET() {
     eapEnabled: Boolean(eap?.enabled),
     actionItemCount,
     pcmsoPercent,
+    examCount,
     exportedDoc: docCount > 0,
     psychNetworkCount,
   });

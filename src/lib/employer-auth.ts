@@ -118,6 +118,21 @@ export function canManageNr1(role: EmployerMemberRole): boolean {
   return SST_ROLES.includes(role);
 }
 
+/** Step 1 master data: sectors, functions, GHE structure — RH + SST */
+export function canManageStructure(role: EmployerMemberRole): boolean {
+  return HR_ROLES.includes(role);
+}
+
+/** Step 3 PCMSO matrix — typically physician via portal; company SST/admin may draft */
+export function canManagePcmso(role: EmployerMemberRole): boolean {
+  return SST_ROLES.includes(role) || role === "HR";
+}
+
+/** Step 4 eSocial / CAT / certificates — RH + SST */
+export function canManageEsocial(role: EmployerMemberRole): boolean {
+  return HR_ROLES.includes(role);
+}
+
 export function canManageWorkforce(role: EmployerMemberRole): boolean {
   return HR_ROLES.includes(role);
 }

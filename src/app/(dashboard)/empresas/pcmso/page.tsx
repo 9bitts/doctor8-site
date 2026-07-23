@@ -129,7 +129,7 @@ export default function PcmsoPage() {
   function updateMatrixExam(
     rowId: string,
     examIdx: number,
-    field: "admissional" | "periodico" | "demissional" | "periodicity",
+    field: "admissional" | "periodico" | "retorno" | "demissional" | "periodicity",
     value: boolean | string,
   ) {
     setExamMatrix((prev) =>
@@ -194,10 +194,18 @@ export default function PcmsoPage() {
   return (
     <div className="p-6 max-w-3xl mx-auto space-y-8">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">Integração PCMSO (NR-7)</h1>
+        <h1 className="text-2xl font-bold text-slate-900">PCMSO (NR-7)</h1>
         <p className="text-slate-500 text-sm mt-1">
-          Vincule o médico coordenador e acompanhe a integração PGR ↔ PCMSO para riscos psicossociais.
+          Passo 3 — Médico do Trabalho. Defina exames por GHE a partir dos riscos do PGR, incluindo o questionário psicossocial.
         </p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <Link href="/empresas/estrutura" className="text-sm text-sky-700 hover:underline">
+            Estrutura / GHE →
+          </Link>
+          <Link href="/empresas/nr1" className="text-sm text-sky-700 hover:underline">
+            Inventário de riscos →
+          </Link>
+        </div>
       </div>
 
       <div className="rounded-2xl border border-sky-200 bg-sky-50 p-4 flex items-center justify-between gap-3 flex-wrap">
@@ -292,7 +300,7 @@ export default function PcmsoPage() {
           <div>
             <h2 className="font-semibold text-slate-900">Grupos homogêneos de exposição (GHE)</h2>
             <p className="text-xs text-slate-500 mt-1">
-              Escopo light: psicossocial + ergonômico. Riscos físico/químico ficam no PGR da engenharia (anexo).
+              Cadastro completo em <Link href="/empresas/estrutura" className="text-sky-700 hover:underline">Estrutura</Link>. Atalho rápido abaixo.
             </p>
           </div>
           <div className="grid sm:grid-cols-2 gap-3">
@@ -354,11 +362,43 @@ export default function PcmsoPage() {
         </div>
 
         <div className="rounded-2xl border border-slate-200 bg-white p-6 space-y-4">
-          <div>
-            <h2 className="font-semibold text-slate-900">Matriz de exames PCMSO</h2>
-            <p className="text-xs text-slate-500 mt-1">
-              Protocolo por GHE/função — inclui triagem psicossocial no periódico.
-            </p>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h2 className="font-semibold text-slate-900">Matriz de exames PCMSO</h2>
+              <p className="text-xs text-slate-500 mt-1">
+                Protocolo por GHE — admissional / periódico / retorno / demissional. Inclui questionário psicossocial.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={async () => {
+                  const res = await fetch("/api/employer/pcmso/sync-matrix", { method: "POST" });
+                  const data = await res.json();
+                  if (res.ok) setExamMatrix(data.examMatrix ?? []);
+                }}
+                className="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-medium text-slate-700 hover:bg-slate-50"
+              >
+                Sugerir a partir dos riscos
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  const res = await fetch("/api/employer/pcmso/generate-exams", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ examTypes: ["ADMISSIONAL", "PERIODICO"] }),
+                  });
+                  const data = await res.json();
+                  if (res.ok) {
+                    alert(`Exames gerados: ${data.created}. Ignorados (já pendentes): ${data.skipped}.`);
+                  }
+                }}
+                className="px-3 py-1.5 rounded-lg bg-teal-600 text-white text-xs font-medium"
+              >
+                Gerar exames da matriz
+              </button>
+            </div>
           </div>
           {examMatrix.map((row) => (
             <div key={row.id} className="rounded-xl border border-slate-100 p-3 space-y-2">
@@ -367,7 +407,7 @@ export default function PcmsoPage() {
               </p>
               <div className="space-y-2">
                 {row.exams.map((ex, idx) => (
-                  <div key={`${row.id}-${ex.name}`} className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-xs items-center">
+                  <div key={`${row.id}-${ex.name}`} className="grid grid-cols-2 sm:grid-cols-6 gap-2 text-xs items-center">
                     <span className="col-span-2 sm:col-span-1 text-slate-700">{ex.name}</span>
                     <label className="inline-flex items-center gap-1">
                       <input
@@ -384,6 +424,14 @@ export default function PcmsoPage() {
                         onChange={(e) => updateMatrixExam(row.id, idx, "periodico", e.target.checked)}
                       />
                       Per
+                    </label>
+                    <label className="inline-flex items-center gap-1">
+                      <input
+                        type="checkbox"
+                        checked={Boolean(ex.retorno)}
+                        onChange={(e) => updateMatrixExam(row.id, idx, "retorno", e.target.checked)}
+                      />
+                      Ret
                     </label>
                     <label className="inline-flex items-center gap-1">
                       <input
