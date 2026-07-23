@@ -7,6 +7,7 @@ import {
   MessageCircle,
   Phone,
 } from "lucide-react";
+import IntentLandingHeader from "@/components/marketing/IntentLandingHeader";
 import {
   DIABETES_LANDING as C,
   DIABETES_WHATSAPP_DEFAULT_MESSAGE,
@@ -19,37 +20,39 @@ const waHref = diabetesWhatsAppHref(DIABETES_WHATSAPP_DEFAULT_MESSAGE);
 export default function DiabetesLanding() {
   return (
     <main>
-      <section className="relative overflow-hidden bg-slate-950">
+      <section className="relative overflow-hidden bg-slate-950 min-h-[70vh] sm:min-h-[75vh] flex flex-col">
         <div className="absolute inset-0">
           <Image
             src={C.hero.image.src}
             alt={C.hero.image.alt}
             fill
             priority
-            className="object-cover object-center opacity-55"
+            className="object-cover object-[center_28%] opacity-45"
             sizes="100vw"
           />
           <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/90 to-slate-950/40" />
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-slate-950/50" />
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/35 to-slate-950/55" />
         </div>
 
-        <div className="relative max-w-6xl mx-auto px-4 pt-16 pb-20 sm:pt-24 sm:pb-28">
-          <p className="text-sm font-semibold uppercase tracking-wide text-teal-300">
+        <div className="relative flex flex-col flex-1">
+          <IntentLandingHeader />
+          <div className="flex-1 flex flex-col justify-center max-w-6xl mx-auto w-full px-4 sm:px-6 pt-8 sm:pt-12 pb-16 sm:pb-24">
+          <p className="text-sm font-semibold uppercase tracking-wide text-teal-200">
             {C.hero.eyebrow}
           </p>
           <h1 className="mt-4 max-w-2xl text-3xl sm:text-5xl font-bold tracking-tight text-white leading-[1.1]">
             {C.hero.title}
-            <span className="block mt-2 text-teal-300 text-2xl sm:text-3xl font-semibold">
+            <span className="block mt-2 text-teal-200 text-2xl sm:text-3xl font-semibold">
               {C.hero.titleHighlight}
             </span>
           </h1>
-          <p className="mt-5 max-w-xl text-base sm:text-lg text-slate-300 leading-relaxed">
+          <p className="mt-5 max-w-xl text-base sm:text-lg text-slate-200 leading-relaxed">
             {C.hero.subtitle}
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Link
               href={C.hero.primaryCta.href}
-              className="inline-flex items-center gap-2 rounded-xl bg-teal-500 px-5 py-3 text-sm font-semibold text-white hover:bg-teal-600 transition shadow-lg shadow-teal-500/25"
+              className="inline-flex items-center gap-2 rounded-xl bg-teal-700 px-5 py-3 text-sm font-semibold text-white hover:bg-teal-800 transition shadow-lg shadow-teal-500/25 min-h-11"
             >
               {C.hero.primaryCta.label} <ArrowRight size={16} />
             </Link>
@@ -57,21 +60,22 @@ export default function DiabetesLanding() {
               href={waHref}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 rounded-xl border border-white/25 bg-white/5 px-5 py-3 text-sm font-semibold text-white hover:bg-white/10 transition"
+              className="inline-flex items-center gap-2 rounded-xl border border-white/25 bg-white/5 px-5 py-3 text-sm font-semibold text-white hover:bg-white/10 transition min-h-11"
             >
               <MessageCircle size={16} /> {C.hero.secondaryCta.label}
             </a>
             <Link
               href={C.hero.browseCta.href}
-              className="inline-flex items-center gap-2 rounded-xl px-5 py-3 text-sm font-medium text-slate-100 hover:text-white transition"
+              className="inline-flex items-center gap-2 rounded-xl px-5 py-3 text-sm font-medium text-slate-100 hover:text-white transition min-h-11"
             >
               {C.hero.browseCta.label}
             </Link>
           </div>
-          <p className="mt-6 max-w-lg text-xs text-slate-200 leading-relaxed flex gap-2">
-            <Phone size={14} className="shrink-0 mt-0.5 text-teal-400" />
+          <p className="mt-6 max-w-lg text-sm text-slate-200 leading-relaxed flex gap-2">
+            <Phone size={16} className="shrink-0 mt-0.5 text-teal-200" />
             {C.hero.emergencyNote}
           </p>
+          </div>
         </div>
       </section>
 
@@ -108,12 +112,12 @@ export default function DiabetesLanding() {
       <section className="bg-slate-50 border-b border-slate-200">
         <div className="max-w-6xl mx-auto px-4 py-14 sm:py-16">
           <div className="grid lg:grid-cols-2 gap-10 lg:gap-14 items-center">
-            <div className="relative aspect-[16/10] overflow-hidden rounded-2xl">
+            <div className="relative aspect-[16/10] sm:aspect-[16/9] overflow-hidden rounded-2xl">
               <Image
                 src={C.howItWorks.image.src}
                 alt={C.howItWorks.image.alt}
                 fill
-                className="object-cover"
+                className="object-cover object-[center_30%]"
                 sizes="(max-width: 1024px) 100vw, 50vw"
               />
             </div>
@@ -195,12 +199,12 @@ export default function DiabetesLanding() {
                 ))}
               </ul>
             </div>
-            <div className="relative aspect-[16/10] overflow-hidden rounded-2xl order-first lg:order-last">
+            <div className="relative aspect-[16/10] sm:aspect-[16/9] overflow-hidden rounded-2xl order-first lg:order-last">
               <Image
                 src={C.risks.image.src}
                 alt={C.risks.image.alt}
                 fill
-                className="object-cover"
+                className="object-cover object-[center_30%]"
                 sizes="(max-width: 1024px) 100vw, 50vw"
               />
             </div>
@@ -216,7 +220,7 @@ export default function DiabetesLanding() {
                 src={C.nutrition.image.src}
                 alt={C.nutrition.image.alt}
                 fill
-                className="object-cover"
+                className="object-cover object-[center_30%]"
                 sizes="(max-width: 1024px) 100vw, 50vw"
               />
             </div>

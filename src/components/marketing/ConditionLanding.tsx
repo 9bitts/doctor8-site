@@ -7,7 +7,7 @@ import {
   MessageCircle,
   Phone,
 } from "lucide-react";
-import { BrandLogoLink } from "@/components/brand/BrandLogo";
+import IntentLandingHeader from "@/components/marketing/IntentLandingHeader";
 import {
   CONDITION_WHATSAPP_DISPLAY,
   conditionWhatsAppHref,
@@ -35,81 +35,72 @@ export default function ConditionLanding({
 
   return (
     <main className="overflow-x-hidden">
-      {/* Top bar over hero only — high contrast white on dark */}
-      <div className="absolute top-0 left-0 right-0 z-20 pt-[env(safe-area-inset-top)]">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between gap-3">
-          <BrandLogoLink href="/" variant="on-dark" size="md" />
-          <Link
-            href="/register"
-            className="shrink-0 rounded-lg bg-accent-500 px-3.5 sm:px-4 py-2.5 text-sm font-semibold text-white hover:bg-accent-600 transition shadow-lg shadow-accent-500/20 min-h-11 inline-flex items-center"
-          >
-            Agendar Consulta
-          </Link>
-        </div>
-      </div>
-
-      {/* HERO — dark canvas: only light text */}
-      <section className="relative overflow-hidden bg-slate-950">
+      {/* HERO — header in flow (no absolute overlap) */}
+      <section className="relative overflow-hidden bg-slate-950 min-h-[70vh] sm:min-h-[75vh] flex flex-col">
         <div className="absolute inset-0">
           <Image
             src={heroSrc}
             alt={C.hero.image.alt}
             fill
             priority
-            className="object-cover object-center opacity-50"
+            className="object-cover object-[center_28%] opacity-45"
             sizes="100vw"
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/92 to-slate-950/55" />
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-slate-950/70" />
+          <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/90 to-slate-950/50" />
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/35 to-slate-950/60" />
         </div>
 
-        <div className="relative max-w-6xl mx-auto px-4 sm:px-6 pt-24 sm:pt-28 pb-14 sm:pb-20 lg:pb-24">
-          <p
-            className={`text-sm font-semibold uppercase tracking-wide ${a.heroEyebrow}`}
-          >
-            {C.hero.eyebrow}
-          </p>
-          <h1 className="mt-3 sm:mt-4 max-w-2xl text-[1.75rem] leading-tight sm:text-5xl font-bold tracking-tight text-white sm:leading-[1.1] break-words">
-            {C.hero.title}
-            <span
-              className={`block mt-2 text-xl sm:text-3xl font-semibold ${a.heroHighlight}`}
+        <div className="relative flex flex-col flex-1">
+          <IntentLandingHeader />
+
+          <div className="flex-1 flex flex-col justify-center max-w-6xl mx-auto w-full px-4 sm:px-6 pt-8 sm:pt-12 pb-14 sm:pb-20 lg:pb-24">
+            <p
+              className={`text-sm font-semibold uppercase tracking-wide ${a.heroEyebrow}`}
             >
-              com {C.hero.titleHighlight}
-            </span>
-          </h1>
-          <p className="mt-4 sm:mt-5 max-w-xl text-base sm:text-lg text-slate-200 leading-relaxed">
-            {C.hero.subtitle}
-          </p>
-          <div className="mt-7 sm:mt-8 flex flex-col sm:flex-row flex-wrap gap-3">
-            <Link
-              href={C.hero.primaryCta.href}
-              className={`${CTA_BTN} text-white shadow-lg ${a.ctaBg} hover:opacity-95 w-full sm:w-auto`}
-            >
-              {C.hero.primaryCta.label} <ArrowRight size={16} />
-            </Link>
-            <a
-              href={waHref}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={`${CTA_BTN} border border-white/30 bg-white/10 text-white hover:bg-white/15 w-full sm:w-auto`}
-            >
-              <MessageCircle size={16} /> {C.hero.secondaryCta.label}
-            </a>
-            <Link
-              href={C.hero.browseCta.href}
-              className={`${CTA_BTN} text-slate-100 hover:text-white hover:bg-white/10 w-full sm:w-auto`}
-            >
-              {C.hero.browseCta.label}
-            </Link>
+              {C.hero.eyebrow}
+            </p>
+            <h1 className="mt-3 sm:mt-4 max-w-2xl text-[1.75rem] leading-tight sm:text-5xl font-bold tracking-tight text-white sm:leading-[1.1] break-words">
+              {C.hero.title}
+              <span
+                className={`block mt-2 text-xl sm:text-3xl font-semibold ${a.heroHighlight}`}
+              >
+                com {C.hero.titleHighlight}
+              </span>
+            </h1>
+            <p className="mt-4 sm:mt-5 max-w-xl text-base sm:text-lg text-slate-200 leading-relaxed">
+              {C.hero.subtitle}
+            </p>
+            <div className="mt-7 sm:mt-8 flex flex-col sm:flex-row flex-wrap gap-3">
+              <Link
+                href={C.hero.primaryCta.href}
+                className={`${CTA_BTN} text-white shadow-lg ${a.ctaBg} hover:opacity-95 w-full sm:w-auto`}
+              >
+                {C.hero.primaryCta.label} <ArrowRight size={16} />
+              </Link>
+              <a
+                href={waHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`${CTA_BTN} border border-white/30 bg-white/10 text-white hover:bg-white/15 w-full sm:w-auto`}
+              >
+                <MessageCircle size={16} /> {C.hero.secondaryCta.label}
+              </a>
+              <Link
+                href={C.hero.browseCta.href}
+                className={`${CTA_BTN} text-slate-100 hover:text-white hover:bg-white/10 w-full sm:w-auto`}
+              >
+                {C.hero.browseCta.label}
+              </Link>
+            </div>
+            <p className="mt-6 max-w-lg text-sm text-slate-200 leading-relaxed flex gap-2.5">
+              <Phone
+                size={16}
+                className={`shrink-0 mt-0.5 ${a.darkEyebrow}`}
+                aria-hidden
+              />
+              <span>{C.hero.emergencyNote}</span>
+            </p>
           </div>
-          <p className="mt-6 max-w-lg text-sm text-slate-200 leading-relaxed flex gap-2.5">
-            <Phone
-              size={16}
-              className={`shrink-0 mt-0.5 ${a.darkEyebrow}`}
-              aria-hidden
-            />
-            <span>{C.hero.emergencyNote}</span>
-          </p>
         </div>
       </section>
 
@@ -151,12 +142,12 @@ export default function ConditionLanding({
       <section className="bg-slate-50 border-b border-slate-200">
         <div className={SECTION}>
           <div className="grid lg:grid-cols-2 gap-8 sm:gap-10 lg:gap-14 items-center">
-            <div className="relative aspect-[16/10] overflow-hidden rounded-2xl bg-slate-200">
+            <div className="relative aspect-[16/10] sm:aspect-[16/9] overflow-hidden rounded-2xl bg-slate-200">
               <Image
                 src={C.howItWorks.image.src}
                 alt={C.howItWorks.image.alt}
                 fill
-                className="object-cover"
+                className="object-cover object-[center_30%]"
                 sizes="(max-width: 1024px) 100vw, 50vw"
               />
             </div>
@@ -252,12 +243,12 @@ export default function ConditionLanding({
                 ))}
               </ul>
             </div>
-            <div className="relative aspect-[16/10] overflow-hidden rounded-2xl order-first lg:order-last bg-slate-800">
+            <div className="relative aspect-[16/10] sm:aspect-[16/9] overflow-hidden rounded-2xl order-first lg:order-last bg-slate-800">
               <Image
                 src={careSrc}
                 alt={C.why.image.alt}
                 fill
-                className="object-cover"
+                className="object-cover object-[center_30%]"
                 sizes="(max-width: 1024px) 100vw, 50vw"
               />
             </div>

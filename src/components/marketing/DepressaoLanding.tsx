@@ -7,6 +7,7 @@ import {
   MessageCircle,
   Phone,
 } from "lucide-react";
+import IntentLandingHeader from "@/components/marketing/IntentLandingHeader";
 import {
   DEPRESSAO_LANDING as C,
   DEPRESSAO_WHATSAPP_DEFAULT_MESSAGE,
@@ -19,37 +20,39 @@ const waHref = depressaoWhatsAppHref(DEPRESSAO_WHATSAPP_DEFAULT_MESSAGE);
 export default function DepressaoLanding() {
   return (
     <main>
-      <section className="relative overflow-hidden bg-slate-950">
+      <section className="relative overflow-hidden bg-slate-950 min-h-[70vh] sm:min-h-[75vh] flex flex-col">
         <div className="absolute inset-0">
           <Image
             src={C.hero.image.src}
             alt={C.hero.image.alt}
             fill
             priority
-            className="object-cover object-center opacity-50"
+            className="object-cover object-[center_28%] opacity-45"
             sizes="100vw"
           />
           <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/92 to-slate-950/45" />
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-slate-950/55" />
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/35 to-slate-950/55" />
         </div>
 
-        <div className="relative max-w-6xl mx-auto px-4 pt-16 pb-20 sm:pt-24 sm:pb-28">
-          <p className="text-sm font-semibold uppercase tracking-wide text-sky-300">
+        <div className="relative flex flex-col flex-1">
+          <IntentLandingHeader />
+          <div className="flex-1 flex flex-col justify-center max-w-6xl mx-auto w-full px-4 sm:px-6 pt-8 sm:pt-12 pb-16 sm:pb-24">
+          <p className="text-sm font-semibold uppercase tracking-wide text-sky-200">
             {C.hero.eyebrow}
           </p>
           <h1 className="mt-4 max-w-2xl text-3xl sm:text-5xl font-bold tracking-tight text-white leading-[1.1]">
             {C.hero.title}
-            <span className="block mt-2 text-sky-300 text-2xl sm:text-3xl font-semibold">
+            <span className="block mt-2 text-sky-200 text-2xl sm:text-3xl font-semibold">
               {C.hero.titleHighlight}
             </span>
           </h1>
-          <p className="mt-5 max-w-xl text-base sm:text-lg text-slate-300 leading-relaxed">
+          <p className="mt-5 max-w-xl text-base sm:text-lg text-slate-200 leading-relaxed">
             {C.hero.subtitle}
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Link
               href={C.hero.primaryCta.href}
-              className="inline-flex items-center gap-2 rounded-xl bg-sky-500 px-5 py-3 text-sm font-semibold text-white hover:bg-sky-600 transition shadow-lg shadow-sky-500/25"
+              className="inline-flex items-center gap-2 rounded-xl bg-sky-700 px-5 py-3 text-sm font-semibold text-white hover:bg-sky-800 transition shadow-lg shadow-sky-500/25 min-h-11"
             >
               {C.hero.primaryCta.label} <ArrowRight size={16} />
             </Link>
@@ -57,27 +60,28 @@ export default function DepressaoLanding() {
               href={waHref}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 rounded-xl border border-white/25 bg-white/5 px-5 py-3 text-sm font-semibold text-white hover:bg-white/10 transition"
+              className="inline-flex items-center gap-2 rounded-xl border border-white/25 bg-white/5 px-5 py-3 text-sm font-semibold text-white hover:bg-white/10 transition min-h-11"
             >
               <MessageCircle size={16} /> {C.hero.secondaryCta.label}
             </a>
             <Link
               href={C.hero.urgentCta.href}
-              className="inline-flex items-center gap-2 rounded-xl border border-sky-400/40 px-5 py-3 text-sm font-semibold text-sky-200 hover:bg-sky-500/15 transition"
+              className="inline-flex items-center gap-2 rounded-xl border border-sky-400/40 px-5 py-3 text-sm font-semibold text-sky-100 hover:bg-sky-500/15 transition min-h-11"
             >
               {C.hero.urgentCta.label}
             </Link>
             <Link
               href={C.hero.browseCta.href}
-              className="inline-flex items-center gap-2 rounded-xl px-5 py-3 text-sm font-medium text-slate-100 hover:text-white transition"
+              className="inline-flex items-center gap-2 rounded-xl px-5 py-3 text-sm font-medium text-slate-100 hover:text-white transition min-h-11"
             >
               {C.hero.browseCta.label}
             </Link>
           </div>
-          <p className="mt-6 max-w-xl text-xs text-slate-200 leading-relaxed flex gap-2">
-            <Phone size={14} className="shrink-0 mt-0.5 text-sky-400" />
+          <p className="mt-6 max-w-xl text-sm text-slate-200 leading-relaxed flex gap-2">
+            <Phone size={16} className="shrink-0 mt-0.5 text-sky-200" />
             {C.hero.emergencyNote}
           </p>
+          </div>
         </div>
       </section>
 
@@ -114,12 +118,12 @@ export default function DepressaoLanding() {
       <section className="bg-slate-50 border-b border-slate-200">
         <div className="max-w-6xl mx-auto px-4 py-14 sm:py-16">
           <div className="grid lg:grid-cols-2 gap-10 lg:gap-14 items-center">
-            <div className="relative aspect-[16/10] overflow-hidden rounded-2xl">
+            <div className="relative aspect-[16/10] sm:aspect-[16/9] overflow-hidden rounded-2xl">
               <Image
                 src={C.howItWorks.image.src}
                 alt={C.howItWorks.image.alt}
                 fill
-                className="object-cover"
+                className="object-cover object-[center_30%]"
                 sizes="(max-width: 1024px) 100vw, 50vw"
               />
             </div>
@@ -185,7 +189,7 @@ export default function DepressaoLanding() {
                 src={C.whoHelps.image.src}
                 alt={C.whoHelps.image.alt}
                 fill
-                className="object-cover"
+                className="object-cover object-[center_30%]"
                 sizes="(max-width: 1024px) 100vw, 50vw"
               />
             </div>
@@ -196,12 +200,12 @@ export default function DepressaoLanding() {
       <section className="bg-slate-950 border-b border-white/10">
         <div className="max-w-6xl mx-auto px-4 py-14 sm:py-16">
           <div className="grid lg:grid-cols-2 gap-10 lg:gap-14 items-center">
-            <div className="relative aspect-[16/10] overflow-hidden rounded-2xl">
+            <div className="relative aspect-[16/10] sm:aspect-[16/9] overflow-hidden rounded-2xl">
               <Image
                 src={C.whyOnline.image.src}
                 alt={C.whyOnline.image.alt}
                 fill
-                className="object-cover"
+                className="object-cover object-[center_30%]"
                 sizes="(max-width: 1024px) 100vw, 50vw"
               />
             </div>
