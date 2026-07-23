@@ -729,15 +729,16 @@ export default function DocumentsClient({ initialItems }: { initialItems: Item[]
 
       {/* Add document modal */}
       {showForm && (
-        <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center z-50 p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[90dvh] overflow-y-auto">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 sticky top-0 bg-white">
+        <div className="fixed inset-0 z-50 overflow-y-auto overscroll-contain bg-black/40">
+          <div className="flex min-h-full items-end sm:items-center justify-center p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[calc(100dvh-2rem)] flex flex-col overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 shrink-0 bg-white">
               <h2 className="font-bold text-slate-800">{t("docs.modal.title")}</h2>
               <button onClick={() => setShowForm(false)} className="text-slate-400 hover:text-slate-600">
                 <X size={20} />
               </button>
             </div>
-            <div className="p-5 space-y-4">
+            <div className="p-5 space-y-4 overflow-y-auto overscroll-contain min-h-0 flex-1 touch-pan-y">
               {autoShareProfessionalId && (
                 <div className="flex items-start gap-2 text-sm text-accent-700 bg-accent-50 border border-accent-100 rounded-xl px-3 py-2.5">
                   <Stethoscope size={16} className="shrink-0 mt-0.5" />
@@ -826,6 +827,7 @@ export default function DocumentsClient({ initialItems }: { initialItems: Item[]
                 </button>
               </div>
             </div>
+          </div>
           </div>
         </div>
       )}
