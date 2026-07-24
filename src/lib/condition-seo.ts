@@ -9,6 +9,7 @@ export const CONDITION_RESERVED_SLUGS = new Set([
   "diabetes",
   "ansiedade",
   "depressao",
+  "medicospelavida",
 ]);
 
 export type ConditionCategoria =

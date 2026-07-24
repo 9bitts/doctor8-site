@@ -141,6 +141,7 @@ function isPublicRoute(pathname: string): boolean {
   if (pathname === "/diabetes") return true;
   if (pathname === "/ansiedade") return true;
   if (pathname === "/depressao") return true;
+  if (pathname === "/medicospelavida") return true;
   // Condition SEO landings: /{slug} from condition catalog
   if (isConditionSeoPath(pathname)) return true;
   if (pathname === "/marketing" || pathname.startsWith("/marketing/")) return true;

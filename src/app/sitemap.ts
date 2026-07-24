@@ -44,6 +44,7 @@ const STATIC_PUBLIC_PATHS = [
   "/marketing/estrategias/humanitario",
   "/empresas",
   "/parceiros",
+  "/medicospelavida",
 ] as const;
 
 function buildProgrammaticEntries(now: Date): MetadataRoute.Sitemap {
