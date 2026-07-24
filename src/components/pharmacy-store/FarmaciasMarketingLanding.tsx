@@ -14,8 +14,8 @@ const STEPS = [
   },
   {
     icon: Receipt,
-    title: "Taxa por venda",
-    body: "Sem mensalidade. Cobramos apenas uma taxa mínima por pedido concluído — não por medicamento.",
+    title: "100% gratuito agora",
+    body: "Sem mensalidade e sem taxa por venda neste momento de adesão. Cadastre, publique preços e entre na rede.",
   },
   {
     icon: ShieldCheck,
@@ -34,7 +34,7 @@ export default function FarmaciasMarketingLanding() {
           </h2>
           <p className="text-slate-600 mt-4 text-lg leading-relaxed">
             Cadastre-se grátis, publique preços de balcão e prepare-se para receber pacientes
-            que buscam o medicamento mais perto — sem depender de marketplaces externos.
+            que buscam o medicamento mais perto — sem mensalidade e sem taxa por venda nesta fase.
           </p>
         </div>
 
@@ -55,10 +55,10 @@ export default function FarmaciasMarketingLanding() {
 
         <div className="mt-14 rounded-2xl bg-emerald-600 text-white p-8 sm:p-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
           <div>
-            <h3 className="text-xl font-bold">Comece agora — é grátis</h3>
+            <h3 className="text-xl font-bold">Comece agora — cadastro gratuito</h3>
             <p className="text-emerald-100 mt-2 text-sm max-w-lg">
-              Faça upload do seu banco de preços em CSV ou cadastre item a item.
-              Quanto antes publicar, antes aparece para pacientes na região.
+              Sem mensalidade e sem taxa por venda nesta fase de adesão.
+              Publique preços em CSV ou item a item e apareça para pacientes na região.
             </p>
           </div>
           <Link

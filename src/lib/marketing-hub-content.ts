@@ -151,7 +151,7 @@ export const MARKETING_AUDIENCES: MarketingAudienceCard[] = [
     id: "farmacias",
     anchor: "farmacias",
     title: "Farmácias",
-    summary: "Publique preços e entre na rede Doctor8.",
+    summary: "Cadastro gratuito na rede — sem mensalidade nesta fase.",
     score: "alto",
     landingHref: "/farmacias",
     loginHref: PHARMACY_STORE_LOGIN,
@@ -159,11 +159,11 @@ export const MARKETING_AUDIENCES: MarketingAudienceCard[] = [
     strategyHref: "/marketing/estrategias/farmacia",
     strategyLabel: "Estratégia farmácia",
     whatsappMessage:
-      "Olá, vi o mapa em /marketing. Sou farmácia e quero cadastrar minha drogaria na rede Doctor8.",
+      "Olá, vi o mapa em /marketing. Sou farmácia e quero cadastrar minha drogaria na rede Doctor8 (adesão gratuita).",
     bullets: [
+      "Adesão gratuita (sem taxa por venda agora)",
       "Importação CSV de preços",
       "Busca por proximidade",
-      "Portal do farmacêutico",
     ],
   },
   {

@@ -430,7 +430,7 @@ const PARCEIROS: AudienceLandingContent = {
     note: "Cadastro gratuito para farmácias · APIs documentadas · Revenue share transparente",
   },
   stats: [
-    { value: "0", label: "mensalidade para farmácias — taxa só por venda" },
+    { value: "0", label: "mensalidade e taxa por venda — adesão gratuita agora" },
     { value: "80+", label: "especialidades no diretório Doctor8" },
     { value: "300+", label: "empresas na rede corporativa EAP" },
     { value: "API", label: "webhooks, FHIR e integrações enterprise" },
@@ -467,7 +467,7 @@ const PARCEIROS: AudienceLandingContent = {
       "Buying clubs conectam grupos de pacientes a descontos negociados. Farmácias publicam preços e aparecem na busca por proximidade quando pacientes Doctor8 buscam medicamentos.",
     bullets: [
       "Importação de estoque e preços via CSV (GGREM, drug_catalog_id)",
-      "Taxa mínima por pedido concluído — não por medicamento",
+      "Adesão gratuita: sem mensalidade e sem taxa por venda nesta fase",
       "Validação de receitas integrada com rastro SNCR",
       "Apareça para pacientes na região antes da rede ir ao ar",
     ],
@@ -477,7 +477,7 @@ const PARCEIROS: AudienceLandingContent = {
   modulesTitle: "Escolha seu modelo e comece hoje",
   modulesSubtitle: "Cada vertical tem onboarding dedicado, suporte e documentação.",
   modules: [
-    { icon: Store, tag: "Farmácia", title: "Rede de preços Doctor8", body: "CSV de preços, endereço geolocalizado e taxa por venda." },
+    { icon: Store, tag: "Farmácia", title: "Rede de preços Doctor8", body: "CSV de preços, endereço geolocalizado — adesão gratuita nesta fase." },
     { icon: Building2, tag: "Clínica", title: "Portal organização (CNPJ)", body: "Multi-profissionais, agenda compartilhada e faturamento." },
     { icon: BookOpen, tag: "Cursos", title: "Doctor8 Educação", body: "Publique cursos, certificados e alcance especialistas." },
     { icon: Users, tag: "Buying Club", title: "Grupos de compra", body: "Negocie descontos e conecte pacientes a benefícios." },
@@ -496,7 +496,7 @@ const PARCEIROS: AudienceLandingContent = {
   compareTitle: "Por que ser parceiro Doctor8?",
   compareSubtitle: "Vantagens sobre marketplaces genéricos e integrações isoladas.",
   compare: [
-    { them: "Marketplaces de farmácia", focus: "Taxa alta por item", doctor8: "Taxa mínima por pedido + receitas integradas" },
+    { them: "Marketplaces de farmácia", focus: "Taxa alta por item", doctor8: "Adesão gratuita agora + receitas digitais integradas" },
     { them: "Plataformas de curso", focus: "Público genérico", doctor8: "Audiência de profissionais de saúde verificados" },
     { them: "Integradores avulsos", focus: "Projeto custom", doctor8: "APIs documentadas + sandbox + webhooks prontos" },
   ],

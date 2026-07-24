@@ -22,7 +22,7 @@ const PROFILES = [
     icon: Building2,
     title: "Farmácia",
     subtitle: "CNPJ da drogaria",
-    description: "Cadastre endereço, preços e estoque. Grátis para começar — taxa só por venda realizada.",
+    description: "Cadastre endereço, preços e estoque. Grátis — sem mensalidade e sem taxa por venda nesta fase.",
     cta: "Entrar como farmácia",
     accent: "emerald" as const,
   },

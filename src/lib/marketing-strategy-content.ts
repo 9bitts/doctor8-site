@@ -325,9 +325,10 @@ export const MARKETING_STRATEGIES: MarketingStrategyPage[] = [
     },
     pitch: {
       headline: "Receba receitas Doctor8 por proximidade — valide, dispense e cresça com a rede.",
-      body: "A farmácia entra grátis na rede, publica preços de balcão e aparece para pacientes perto dela. O pitch é volume de receita digital + kit de balcão (QR), não “mais um marketplace”.",
+      body: "A farmácia entra grátis na rede, publica preços de balcão e aparece para pacientes perto dela. Sem mensalidade e sem taxa por venda nesta fase de adesão — o pitch é volume de receita digital + kit de balcão (QR).",
       promises: [
-        "Cadastro na rede Doctor8",
+        "Cadastro gratuito na rede Doctor8",
+        "Sem mensalidade / sem taxa por venda agora",
         "Pacientes por proximidade",
         "Validação de receita digital",
         "Kit balcão (QR + impresso + WhatsApp)",
@@ -346,7 +347,7 @@ export const MARKETING_STRATEGIES: MarketingStrategyPage[] = [
         },
         {
           title: "Painel simples",
-          body: "Pedidos da semana + taxa — clareza operacional para o proprietário.",
+          body: "Pedidos da semana e operação clara — adesão gratuita nesta fase (sem taxa por venda).",
         },
         {
           title: "Associações e redes",
@@ -365,11 +366,11 @@ export const MARKETING_STRATEGIES: MarketingStrategyPage[] = [
       { step: "01", title: "Cadastro loja", body: "CNPJ, endereço, catálogo básico." },
       { step: "02", title: "Ativação balcão", body: "QR e materiais no PDV." },
       { step: "03", title: "1º pedido", body: "Receita digital da rede Doctor8." },
-      { step: "04", title: "Rotina", body: "Pedidos semanais + taxa transparente." },
+      { step: "04", title: "Rotina", body: "Pedidos semanais na rede — adesão gratuita nesta fase." },
     ],
     tools: [
       { kind: "criar", label: "Kit balcão (QR + impresso + Status)" },
-      { kind: "criar", label: "Painel pedidos da semana + taxa" },
+      { kind: "criar", label: "Painel pedidos da semana" },
       { kind: "operar", label: "Cidade-piloto com volume mínimo de receitas" },
       { kind: "operar", label: "Parceria com associações de farmácias" },
     ],
